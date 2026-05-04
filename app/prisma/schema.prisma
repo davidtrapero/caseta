@@ -1,0 +1,340 @@
+// Schema de Caseta — app privada back-office para gestión de casetas de feria.
+// Ver plans/lanza-un-agente-arquitecto-optimized-finch.md para el análisis completo.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =====================
+// AUTH (Better Auth)
+// =====================
+
+enum Rol {
+  admin
+  gerente
+  cajero
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String
+  image         String?
+  rol           Rol       @default(cajero)
+  activo        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  movimientos   MovimientoStock[]
+  gastos        Gasto[]
+  auditLogs     AuditLog[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+// =====================
+// DOMINIO
+// =====================
+
+// Edición de la feria (cada año). Raíz temporal — todo lo operativo cuelga de aquí.
+model Edicion {
+  id           String    @id @default(cuid())
+  anio         Int       @unique
+  nombre       String
+  fechaInicio  DateTime  @db.Date
+  fechaFin     DateTime  @db.Date
+  activa       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  turnos           Turno[]
+  cierres          CierreDiario[]
+  gastos           Gasto[]
+  pedidos          Pedido[]
+  movimientos      MovimientoStock[]
+  nominas          Nomina[]
+}
+
+// Caseta — transversal entre ediciones.
+model Caseta {
+  id        String  @id @default(cuid())
+  nombre    String  @unique
+  ubicacion String?
+  activa    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  turnos       Turno[]
+  productos    Producto[]
+  stock        Stock[]
+  movimientos  MovimientoStock[]
+  pedidos      Pedido[]
+  cierres      CierreDiario[]
+  gastos       Gasto[]
+}
+
+// Empleado — recurso laboral. jornalDiario null ⇒ voluntario (no cobra).
+model Empleado {
+  id                 String   @id @default(cuid())
+  nombre             String
+  dni                String?  @unique
+  telefono           String?
+  jornalDiario       Decimal? @db.Decimal(10, 2)
+  activo             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  turnos  Turno[]
+  nominas Nomina[]
+}
+
+// Día de trabajo asignado. Sin horas (jornal diario).
+model Turno {
+  id         String   @id @default(cuid())
+  edicionId  String
+  casetaId   String
+  empleadoId String
+  fecha      DateTime @db.Date
+  asistio    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  edicion  Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Restrict)
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+
+  @@unique([empleadoId, fecha]) // no doble turno mismo día
+  @@index([casetaId, fecha])
+  @@index([edicionId, fecha])
+}
+
+// Catálogo por caseta.
+model Producto {
+  id        String   @id @default(cuid())
+  casetaId  String
+  nombre    String
+  unidad    String   @default("unidad")
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  caseta         Caseta            @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+  stock          Stock[]
+  movimientos    MovimientoStock[]
+  detallesPedido DetallePedido[]
+
+  @@unique([casetaId, nombre])
+}
+
+// Stock actual por caseta y producto (desnormalizado para lecturas rápidas).
+model Stock {
+  id         String   @id @default(cuid())
+  casetaId   String
+  productoId String
+  cantidad   Decimal  @db.Decimal(12, 3) @default(0)
+  updatedAt  DateTime @updatedAt
+
+  caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+
+  @@unique([casetaId, productoId])
+}
+
+enum TipoMovimiento {
+  entrada    // recepción de pedido
+  ajuste     // ajuste manual por inventario físico
+}
+
+model MovimientoStock {
+  id         String         @id @default(cuid())
+  edicionId  String
+  casetaId   String
+  productoId String
+  tipo       TipoMovimiento
+  cantidad   Decimal        @db.Decimal(12, 3)
+  fecha      DateTime       @default(now())
+  usuarioId  String
+  nota       String?
+
+  edicion  Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  usuario  User     @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([casetaId, productoId, fecha])
+}
+
+// Proveedores — transversales entre ediciones.
+model Proveedor {
+  id        String  @id @default(cuid())
+  nombre    String  @unique
+  contacto  String?
+  email     String?
+  telefono  String?
+  activo    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pedidos Pedido[]
+}
+
+enum EstadoPedido {
+  pendiente
+  recibido
+  cancelado
+}
+
+model Pedido {
+  id             String        @id @default(cuid())
+  edicionId      String
+  proveedorId    String
+  casetaId       String
+  fechaPedido    DateTime      @default(now())
+  fechaRecepcion DateTime?
+  estado         EstadoPedido  @default(pendiente)
+  total          Decimal       @db.Decimal(12, 2) @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  edicion   Edicion         @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  proveedor Proveedor       @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  caseta    Caseta          @relation(fields: [casetaId], references: [id], onDelete: Restrict)
+  detalles  DetallePedido[]
+
+  @@index([estado])
+}
+
+model DetallePedido {
+  id             String  @id @default(cuid())
+  pedidoId       String
+  productoId     String
+  cantidad       Decimal @db.Decimal(12, 3)
+  precioUnitario Decimal @db.Decimal(12, 2)
+
+  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Restrict)
+}
+
+// Cierre diario agregado (solo monto total del día por caseta).
+model CierreDiario {
+  id              String   @id @default(cuid())
+  edicionId       String
+  casetaId        String
+  fecha           DateTime @db.Date
+  ingresosTotales Decimal  @db.Decimal(12, 2)
+  notas           String?
+  bloqueado       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  edicion Edicion @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta  Caseta  @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+
+  @@unique([casetaId, edicionId, fecha])
+}
+
+// Gastos — casetaId null ⇒ gasto transversal de la edición.
+model Gasto {
+  id          String   @id @default(cuid())
+  edicionId   String
+  casetaId    String?
+  descripcion String
+  monto       Decimal  @db.Decimal(12, 2)
+  categoria   String
+  fecha       DateTime @db.Date
+  usuarioId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  edicion Edicion @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta  Caseta? @relation(fields: [casetaId], references: [id], onDelete: SetNull)
+  usuario User    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+
+  @@index([edicionId, fecha])
+}
+
+// Nómina — calculada como días_trabajados × jornalAplicado. Voluntarios excluidos.
+model Nomina {
+  id              String   @id @default(cuid())
+  edicionId       String
+  empleadoId      String
+  diasTrabajados  Int
+  jornalAplicado  Decimal  @db.Decimal(10, 2)
+  total           Decimal  @db.Decimal(12, 2)
+  pagada          Boolean  @default(false)
+  fechaPago       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  edicion  Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+
+  @@unique([empleadoId, edicionId])
+}
+
+// Auditoría universal — escrita automáticamente por extensión Prisma.
+model AuditLog {
+  id        String   @id @default(cuid())
+  entidad   String
+  entidadId String
+  accion    String   // create | update | delete
+  usuarioId String?
+  cambios   Json
+  fecha     DateTime @default(now())
+
+  usuario User? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([entidad, entidadId])
+  @@index([fecha])
+}

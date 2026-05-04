@@ -8,13 +8,16 @@ app/.next/
 app/out/
 app/build/
 
-# Variables de entorno
+# Variables de entorno (nunca commitear secretos)
 .env
 .env.local
 .env*.local
 app/.env
 app/.env.local
 app/.env*.local
+# Excepciones: plantillas versionables
+!.env.example
+!app/.env.example
 
 # Logs
 *.log
