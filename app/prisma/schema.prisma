@@ -139,24 +139,29 @@ model Empleado {
   nominas Nomina[]
 }
 
-// Día de trabajo asignado. Sin horas (jornal diario).
+// Tramo de trabajo asignado. fechaInicio/fechaFin son timestamps reales —
+// permiten turnos que cruzan medianoche (20:00→02:00 del día siguiente).
+// Para nómina, el "día trabajado" es DATE(fechaInicio) (ver plans/).
+// El solape entre turnos del mismo empleado se valida a nivel app (turnos-solape.ts),
+// no por UNIQUE — un empleado puede tener varios tramos el mismo día siempre que no pisen horas.
 model Turno {
-  id         String   @id @default(cuid())
-  edicionId  String
-  casetaId   String
-  empleadoId String
-  fecha      DateTime @db.Date
-  asistio    Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String   @id @default(cuid())
+  edicionId   String
+  casetaId    String
+  empleadoId  String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  asistio     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   edicion  Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
   caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Restrict)
   empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
 
-  @@unique([empleadoId, fecha]) // no doble turno mismo día
-  @@index([casetaId, fecha])
-  @@index([edicionId, fecha])
+  @@index([casetaId, fechaInicio])
+  @@index([empleadoId, fechaInicio])
+  @@index([edicionId, fechaInicio])
 }
 
 // Catálogo por caseta.

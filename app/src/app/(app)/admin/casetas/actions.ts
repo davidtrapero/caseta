@@ -79,7 +79,7 @@ export async function toggleActivaCasetaAction(
 
       const [turnosFuturos, cierreHoy] = await Promise.all([
         prisma.turno.count({
-          where: { casetaId: id, fecha: { gte: hoy } },
+          where: { casetaId: id, fechaInicio: { gte: hoy } },
         }),
         prisma.cierreDiario.count({
           where: { casetaId: id, fecha: hoy },
