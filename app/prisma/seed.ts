@@ -13,6 +13,8 @@ async function main() {
   const { auth } = await import("../src/lib/auth");
 
   // ---- Admin ----
+  // La creación de usuarios via Better Auth también se reutiliza en tests
+  // desde src/test/fixtures.ts (crearUsuario). Mantener ambos sincronizados.
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
   if (existing) {
     console.log(`✓ Admin ya existía: ${adminEmail}`);

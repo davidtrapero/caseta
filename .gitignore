@@ -11,9 +11,11 @@ app/build/
 # Variables de entorno (nunca commitear secretos)
 .env
 .env.local
+.env.test
 .env*.local
 app/.env
 app/.env.local
+app/.env.test
 app/.env*.local
 # Excepciones: plantillas versionables
 !.env.example
