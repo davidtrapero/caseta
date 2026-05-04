@@ -12,32 +12,82 @@ async function main() {
   const { prisma } = await import("../src/lib/prisma");
   const { auth } = await import("../src/lib/auth");
 
+  // ---- Admin ----
   const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
   if (existing) {
-    console.log(`Usuario admin ya existe (${adminEmail}). Saltando creación.`);
-    await prisma.$disconnect();
-    return;
+    console.log(`✓ Admin ya existía: ${adminEmail}`);
+  } else {
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: adminEmail,
+        password: adminPassword,
+        name: adminName,
+      },
+    });
+
+    if (!result.user) {
+      throw new Error("No se pudo crear el usuario admin");
+    }
+
+    await prisma.user.update({
+      where: { id: result.user.id },
+      data: { rol: "admin" },
+    });
+
+    console.log(`✓ Admin creado: ${adminEmail} (contraseña: ${adminPassword})`);
+    console.log("  Cambia la contraseña en el primer login.");
   }
 
-  const result = await auth.api.signUpEmail({
-    body: {
-      email: adminEmail,
-      password: adminPassword,
-      name: adminName,
+  // ---- Edición 2026 ----
+  const edicion = await prisma.edicion.upsert({
+    where: { anio: 2026 },
+    update: {},
+    create: {
+      anio: 2026,
+      nombre: "Feria 2026",
+      fechaInicio: new Date("2026-05-01"),
+      fechaFin: new Date("2026-05-10"),
+      activa: true,
     },
   });
+  console.log(`✓ Edición: ${edicion.nombre}`);
 
-  if (!result.user) {
-    throw new Error("No se pudo crear el usuario admin");
-  }
-
-  await prisma.user.update({
-    where: { id: result.user.id },
-    data: { rol: "admin" },
+  // ---- Caseta escenario ----
+  const caseta = await prisma.caseta.upsert({
+    where: { nombre: "Caseta escenario" },
+    update: {},
+    create: {
+      nombre: "Caseta escenario",
+      activa: true,
+    },
   });
+  console.log(`✓ Caseta: ${caseta.nombre}`);
 
-  console.log(`✓ Admin creado: ${adminEmail} (contraseña: ${adminPassword})`);
-  console.log("  Cambia la contraseña en el primer login.");
+  // ---- Empleados ----
+  const empleados = [
+    { nombre: "María López", dni: "00000001A", jornalDiario: 70 },
+    { nombre: "Carlos Ruiz", dni: "00000002B", jornalDiario: 75 },
+    { nombre: "Ana García", dni: "00000003C", jornalDiario: 65 },
+    { nombre: "Javier Moreno", dni: "00000004D", jornalDiario: 80 },
+    { nombre: "Lucía Hernández", dni: "00000005E", jornalDiario: 60 },
+    { nombre: "Pablo Jiménez", dni: "00000006F", jornalDiario: null },
+    { nombre: "Elena Torres", dni: "00000007G", jornalDiario: null },
+  ];
+
+  for (const e of empleados) {
+    await prisma.empleado.upsert({
+      where: { dni: e.dni },
+      update: {},
+      create: {
+        nombre: e.nombre,
+        dni: e.dni,
+        jornalDiario: e.jornalDiario,
+        activo: true,
+      },
+    });
+  }
+  console.log(`✓ ${empleados.length} empleados listos`);
+
   await prisma.$disconnect();
 }
 

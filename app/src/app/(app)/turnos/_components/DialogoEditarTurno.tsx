@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -96,7 +96,7 @@ export function DialogoEditarTurno({ open, onClose, turno }: Props) {
     const fd = new FormData();
     fd.set("_id", turno.id);
     fd.set("id", turno.id);
-    delAction(fd);
+    startTransition(() => delAction(fd));
   };
 
   return (

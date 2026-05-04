@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useActionState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { colorEmpleado } from "../_lib/colores";
 import {
@@ -100,9 +100,17 @@ export function ChipEmpleado({
           </button>
         </form>
       ) : null}
+      {esVoluntario ? (
+        <Heart
+          className="h-3 w-3 shrink-0 fill-[hsl(var(--primary))] text-[hsl(var(--primary))]"
+          aria-label="Voluntario"
+        />
+      ) : null}
       <span className="font-medium whitespace-nowrap">{nombre}</span>
       {esVoluntario ? (
-        <span className="opacity-60 uppercase tracking-wider text-[9px]">vol.</span>
+        <span className="uppercase tracking-wider text-[9px] font-semibold text-[hsl(var(--primary))]">
+          vol.
+        </span>
       ) : null}
       {!readonly ? (
         <form action={desAction}>
