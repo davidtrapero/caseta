@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { test, expect } from "vitest";
 import { detectarSolape, type TurnoRango } from "./turnos-solape";
 
 const EMP_A = "ckemp000000000000000000a";
@@ -18,7 +17,7 @@ test("sin existentes → no solapa", () => {
     fechaInicio: iso(1, 10),
     fechaFin: iso(1, 14),
   });
-  assert.deepEqual(res, { solapa: false });
+  expect(res).toEqual({ solapa: false });
 });
 
 test("intervalos que se tocan (14→14) → no solapa", () => {
@@ -30,7 +29,7 @@ test("intervalos que se tocan (14→14) → no solapa", () => {
     fechaInicio: iso(1, 14),
     fechaFin: iso(1, 18),
   });
-  assert.deepEqual(res, { solapa: false });
+  expect(res).toEqual({ solapa: false });
 });
 
 test("intervalos solapados misma caseta → solapa", () => {
@@ -42,10 +41,10 @@ test("intervalos solapados misma caseta → solapa", () => {
     fechaInicio: iso(1, 12),
     fechaFin: iso(1, 16),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
   if (res.solapa) {
-    assert.equal(res.conflictos.length, 1);
-    assert.equal(res.conflictos[0].turnoId, "t1");
+    expect(res.conflictos.length).toBe(1);
+    expect(res.conflictos[0].turnoId).toBe("t1");
   }
 });
 
@@ -58,9 +57,9 @@ test("intervalos solapados distinta caseta → solapa (regla de negocio)", () =>
     fechaInicio: iso(1, 12),
     fechaFin: iso(1, 16),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
   if (res.solapa) {
-    assert.equal(res.conflictos[0].casetaId, CASETA_1);
+    expect(res.conflictos[0].casetaId).toBe(CASETA_1);
   }
   // mismo escenario con casetas distintas
   const nuevoEnOtraCaseta = detectarSolape(existentes, {
@@ -68,7 +67,7 @@ test("intervalos solapados distinta caseta → solapa (regla de negocio)", () =>
     fechaInicio: iso(1, 12),
     fechaFin: iso(1, 16),
   });
-  assert.equal(nuevoEnOtraCaseta.solapa, true);
+  expect(nuevoEnOtraCaseta.solapa).toBe(true);
 });
 
 test("turno cross-midnight solapa con turno del día siguiente", () => {
@@ -82,7 +81,7 @@ test("turno cross-midnight solapa con turno del día siguiente", () => {
     fechaInicio: iso(2, 1),
     fechaFin: iso(2, 5),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
 });
 
 test("excluirTurnoId → no solapa consigo mismo", () => {
@@ -94,7 +93,7 @@ test("excluirTurnoId → no solapa consigo mismo", () => {
     { empleadoId: EMP_A, fechaInicio: iso(1, 10), fechaFin: iso(1, 14) },
     { excluirTurnoId: "t1" }
   );
-  assert.deepEqual(res, { solapa: false });
+  expect(res).toEqual({ solapa: false });
 });
 
 test("turnos de otro empleado → ignorados", () => {
@@ -106,7 +105,7 @@ test("turnos de otro empleado → ignorados", () => {
     fechaInicio: iso(1, 12),
     fechaFin: iso(1, 16),
   });
-  assert.deepEqual(res, { solapa: false });
+  expect(res).toEqual({ solapa: false });
 });
 
 test("diferencia de 1 ms en el borde → solapa", () => {
@@ -120,7 +119,7 @@ test("diferencia de 1 ms en el borde → solapa", () => {
     fechaInicio: finMenos1,
     fechaFin: iso(1, 18),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
 });
 
 test("turno de 24h exacto → solapa con cualquier interior", () => {
@@ -132,7 +131,7 @@ test("turno de 24h exacto → solapa con cualquier interior", () => {
     fechaInicio: iso(1, 12),
     fechaFin: iso(1, 13),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
 });
 
 test("nuevo totalmente dentro de existente → solapa", () => {
@@ -144,8 +143,8 @@ test("nuevo totalmente dentro de existente → solapa", () => {
     fechaInicio: iso(1, 10),
     fechaFin: iso(1, 12),
   });
-  assert.equal(res.solapa, true);
-  if (res.solapa) assert.equal(res.conflictos.length, 1);
+  expect(res.solapa).toBe(true);
+  if (res.solapa) expect(res.conflictos.length).toBe(1);
 });
 
 test("nuevo engloba a un existente → solapa", () => {
@@ -157,7 +156,7 @@ test("nuevo engloba a un existente → solapa", () => {
     fechaInicio: iso(1, 8),
     fechaFin: iso(1, 20),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
 });
 
 test("múltiples existentes, varios conflictos reportados", () => {
@@ -171,10 +170,10 @@ test("múltiples existentes, varios conflictos reportados", () => {
     fechaInicio: iso(1, 10),
     fechaFin: iso(1, 14),
   });
-  assert.equal(res.solapa, true);
+  expect(res.solapa).toBe(true);
   if (res.solapa) {
-    assert.equal(res.conflictos.length, 2);
+    expect(res.conflictos.length).toBe(2);
     const ids = res.conflictos.map((c) => c.turnoId).sort();
-    assert.deepEqual(ids, ["t1", "t2"]);
+    expect(ids).toEqual(["t1", "t2"]);
   }
 });
