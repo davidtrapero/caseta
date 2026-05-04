@@ -108,3 +108,73 @@ test("turnos de otro empleado → ignorados", () => {
   });
   assert.deepEqual(res, { solapa: false });
 });
+
+test("diferencia de 1 ms en el borde → solapa", () => {
+  // existente [10:00, 14:00), nuevo [13:59:59.999, 18:00) → solapa por 1ms
+  const existentes: TurnoRango[] = [
+    { id: "t1", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(1, 10), fechaFin: iso(1, 14) },
+  ];
+  const finMenos1 = new Date(new Date(iso(1, 14)).getTime() - 1).toISOString();
+  const res = detectarSolape(existentes, {
+    empleadoId: EMP_A,
+    fechaInicio: finMenos1,
+    fechaFin: iso(1, 18),
+  });
+  assert.equal(res.solapa, true);
+});
+
+test("turno de 24h exacto → solapa con cualquier interior", () => {
+  const existentes: TurnoRango[] = [
+    { id: "t1", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(1, 0), fechaFin: iso(2, 0) },
+  ];
+  const res = detectarSolape(existentes, {
+    empleadoId: EMP_A,
+    fechaInicio: iso(1, 12),
+    fechaFin: iso(1, 13),
+  });
+  assert.equal(res.solapa, true);
+});
+
+test("nuevo totalmente dentro de existente → solapa", () => {
+  const existentes: TurnoRango[] = [
+    { id: "t1", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(1, 8), fechaFin: iso(1, 20) },
+  ];
+  const res = detectarSolape(existentes, {
+    empleadoId: EMP_A,
+    fechaInicio: iso(1, 10),
+    fechaFin: iso(1, 12),
+  });
+  assert.equal(res.solapa, true);
+  if (res.solapa) assert.equal(res.conflictos.length, 1);
+});
+
+test("nuevo engloba a un existente → solapa", () => {
+  const existentes: TurnoRango[] = [
+    { id: "t1", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(1, 10), fechaFin: iso(1, 12) },
+  ];
+  const res = detectarSolape(existentes, {
+    empleadoId: EMP_A,
+    fechaInicio: iso(1, 8),
+    fechaFin: iso(1, 20),
+  });
+  assert.equal(res.solapa, true);
+});
+
+test("múltiples existentes, varios conflictos reportados", () => {
+  const existentes: TurnoRango[] = [
+    { id: "t1", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(1, 8), fechaFin: iso(1, 11) },
+    { id: "t2", empleadoId: EMP_A, casetaId: CASETA_2, fechaInicio: iso(1, 13), fechaFin: iso(1, 16) },
+    { id: "t3", empleadoId: EMP_A, casetaId: CASETA_1, fechaInicio: iso(2, 10), fechaFin: iso(2, 12) },
+  ];
+  const res = detectarSolape(existentes, {
+    empleadoId: EMP_A,
+    fechaInicio: iso(1, 10),
+    fechaFin: iso(1, 14),
+  });
+  assert.equal(res.solapa, true);
+  if (res.solapa) {
+    assert.equal(res.conflictos.length, 2);
+    const ids = res.conflictos.map((c) => c.turnoId).sort();
+    assert.deepEqual(ids, ["t1", "t2"]);
+  }
+});
