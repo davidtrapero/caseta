@@ -34,7 +34,7 @@ export function BloqueTurno({
   return (
     <article
       className={cn(
-        "rounded-lg border bg-card/80 shadow-sm overflow-hidden",
+        "rounded-lg border bg-card/80 shadow-sm",
         "animate-stagger"
       )}
       style={{ animationDelay: `${index * 60}ms` }}
