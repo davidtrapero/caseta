@@ -155,7 +155,7 @@ export function DialogoEditarTurno({
 
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60 mt-2">
           <form action={deleteAction}>
-            <input type="hidden" name="id" value={turno.id} />
+            <input type="hidden" name="_id" value={turno.id} />
             <Button
               type="submit"
               variant="destructive"

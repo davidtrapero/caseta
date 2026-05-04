@@ -41,3 +41,4 @@ next-env.d.ts
 
 # Prisma
 app/prisma/migrations/dev/
+.playwright-mcp/
