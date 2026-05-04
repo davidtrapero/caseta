@@ -26,8 +26,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4500);
   }, []);
 
+  const ctxValue = React.useMemo(() => ({ show }), [show]);
+
   return (
-    <Ctx.Provider value={{ show }}>
+    <Ctx.Provider value={ctxValue}>
       {children}
       <div className="fixed bottom-4 right-4 z-[60] flex flex-col gap-2 pointer-events-none">
         {toasts.map((t) => (

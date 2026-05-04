@@ -29,10 +29,13 @@ export function BotonDuplicarSemana({
   const lunesDestino = lunesIso;
   const lunesOrigen = toIsoDate(addDays(fromIsoDate(lunesIso), -7));
 
+  const lastHandledState = React.useRef<typeof state>(null);
   React.useEffect(() => {
-    if (state?.ok) {
+    if (!state || state === lastHandledState.current) return;
+    lastHandledState.current = state;
+    if (state.ok) {
       toast.show(`Duplicados ${state.data.copiados} turnos de la semana anterior.`, "success");
-    } else if (state && !state.ok) {
+    } else {
       toast.show(state.error, "error");
     }
   }, [state, toast]);

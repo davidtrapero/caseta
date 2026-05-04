@@ -72,9 +72,8 @@ export function DialogoEditarTurno({
       title="Editar turno"
       description={`Empleado actual: ${turno.empleadoNombre}`}
     >
-      <form action={formAction} className="flex flex-col gap-4">
+      <form id="editar-turno-form" action={formAction} className="flex flex-col gap-4">
         <input type="hidden" name="_id" value={turno.id} />
-        <input type="hidden" name="id" value={turno.id} />
         <input type="hidden" name="edicionId" value={turno.edicionId} />
         <input type="hidden" name="casetaId" value={turno.casetaId} />
         <input type="hidden" name="fechaInicio" value={fechaInicioIso} />
@@ -152,35 +151,35 @@ export function DialogoEditarTurno({
         </div>
         <FieldError messages={errores.fechaInicio} />
         <FieldError messages={errores.fechaFin} />
-
-        <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60 mt-2">
-          <form action={deleteAction}>
-            <input type="hidden" name="_id" value={turno.id} />
-            <Button
-              type="submit"
-              variant="destructive"
-              size="sm"
-              disabled={bloqueado || deletePending}
-              onClick={(e) => {
-                if (!confirm("¿Eliminar este turno? Esta acción se registrará en el log.")) {
-                  e.preventDefault();
-                }
-              }}
-            >
-              {deletePending ? "Eliminando…" : "Eliminar"}
-            </Button>
-          </form>
-
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={pending || bloqueado}>
-              {pending ? "Guardando…" : "Guardar cambios"}
-            </Button>
-          </div>
-        </div>
       </form>
+
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60 mt-2">
+        <form action={deleteAction}>
+          <input type="hidden" name="_id" value={turno.id} />
+          <Button
+            type="submit"
+            variant="destructive"
+            size="sm"
+            disabled={bloqueado || deletePending}
+            onClick={(e) => {
+              if (!confirm("¿Eliminar este turno? Esta acción se registrará en el log.")) {
+                e.preventDefault();
+              }
+            }}
+          >
+            {deletePending ? "Eliminando…" : "Eliminar"}
+          </Button>
+        </form>
+
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={pending}>
+            Cancelar
+          </Button>
+          <Button type="submit" form="editar-turno-form" disabled={pending || bloqueado}>
+            {pending ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </div>
+      </div>
     </Modal>
   );
 }
