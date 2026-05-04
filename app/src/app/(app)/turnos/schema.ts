@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Turno = tramo horario dentro de un día (o cruzando medianoche).
+// Turno = tramo horario en una caseta, con 0..N empleados asignados (Fase 3).
 // fechaInicio y fechaFin son timestamps ISO (DateTime completos).
 // Granularidad: hora exacta (minuto === 0).
 // Cross-midnight: permitido. fechaFin puede ser del día siguiente de fechaInicio.
@@ -17,11 +17,27 @@ const isoDateTime = z
   .refine((v) => !Number.isNaN(new Date(v).getTime()), "Fecha/hora inválida")
   .refine(horaExacta, "Sólo horas en punto (minuto = 0)");
 
-const baseTurno = z
+// En FormData, empleadoIds viaja como múltiples entries con la misma key
+// (parseForm sólo coge la última). Para enviar lista desde el cliente se
+// serializa como JSON string en el campo `empleadoIdsJson`.
+const empleadoIdsJson = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v) return [] as string[];
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  })
+  .pipe(z.array(z.string().cuid("Empleado inválido")));
+
+const baseTurnoRango = z
   .object({
     edicionId: z.string().cuid("Edición inválida"),
     casetaId: z.string().cuid("Caseta inválida"),
-    empleadoId: z.string().cuid("Empleado inválido"),
     fechaInicio: isoDateTime,
     fechaFin: isoDateTime,
   })
@@ -37,18 +53,61 @@ const baseTurno = z
     { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
   );
 
-export const crearTurnoSchema = baseTurno;
-export const actualizarTurnoSchema = baseTurno;
+// Crear: rango + lista opcional de empleados (0..N).
+export const crearTurnoSchema = z
+  .object({
+    edicionId: z.string().cuid("Edición inválida"),
+    casetaId: z.string().cuid("Caseta inválida"),
+    fechaInicio: isoDateTime,
+    fechaFin: isoDateTime,
+    empleadoIdsJson,
+  })
+  .refine(
+    (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
+    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+  )
+  .refine(
+    (d) => {
+      const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
+      return ms <= 24 * 60 * 60 * 1000;
+    },
+    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+  );
+
+// Actualizar: sólo horario del turno; las asignaciones se gestionan aparte.
+export const actualizarTurnoSchema = baseTurnoRango;
+
+export const asignarEmpleadoSchema = z.object({
+  turnoId: z.string().cuid(),
+  empleadoId: z.string().cuid(),
+});
+
+export const desasignarEmpleadoSchema = z.object({
+  turnoId: z.string().cuid(),
+  empleadoId: z.string().cuid(),
+});
 
 export const toggleAsistenciaSchema = z.object({
   turnoId: z.string().cuid(),
+  empleadoId: z.string().cuid(),
   asistio: z.preprocess((v) => v === "on" || v === true || v === "true", z.boolean()),
 });
 
-// Duplicar una semana completa dentro de una caseta: copia todos los turnos
-// cuyo fechaInicio cae en la semana origen a la semana destino, preservando
-// el offset relativo (mismo día-de-semana y misma hora).
-// "lunesOrigen" y "lunesDestino" son fechas ISO (YYYY-MM-DD) del lunes de cada semana.
+// Duplicar un día completo dentro de una caseta: copia todos los turnos
+// (con sus asignaciones) cuyo fechaInicio cae en el día origen al día destino.
+export const duplicarDiaSchema = z
+  .object({
+    casetaId: z.string().cuid(),
+    edicionId: z.string().cuid(),
+    diaOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+    diaDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+  })
+  .refine((d) => d.diaOrigen !== d.diaDestino, {
+    message: "El día origen y destino deben ser diferentes",
+    path: ["diaDestino"],
+  });
+
+// Duplicar semana completa (incluye asignaciones).
 export const duplicarSemanaSchema = z
   .object({
     casetaId: z.string().cuid(),
@@ -63,5 +122,8 @@ export const duplicarSemanaSchema = z
 
 export type CrearTurnoInput = z.infer<typeof crearTurnoSchema>;
 export type ActualizarTurnoInput = z.infer<typeof actualizarTurnoSchema>;
+export type AsignarEmpleadoInput = z.infer<typeof asignarEmpleadoSchema>;
+export type DesasignarEmpleadoInput = z.infer<typeof desasignarEmpleadoSchema>;
 export type ToggleAsistenciaInput = z.infer<typeof toggleAsistenciaSchema>;
+export type DuplicarDiaInput = z.infer<typeof duplicarDiaSchema>;
 export type DuplicarSemanaInput = z.infer<typeof duplicarSemanaSchema>;

@@ -135,33 +135,46 @@ model Empleado {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  turnos  Turno[]
-  nominas Nomina[]
+  asignaciones TurnoEmpleado[]
+  nominas      Nomina[]
 }
 
-// Tramo de trabajo asignado. fechaInicio/fechaFin son timestamps reales —
+// Tramo de trabajo en una caseta. fechaInicio/fechaFin son timestamps reales —
 // permiten turnos que cruzan medianoche (20:00→02:00 del día siguiente).
+// Fase 3: un turno puede tener de 0 a N empleados asignados (ver TurnoEmpleado).
+// Se permite que exista sin asignaciones (placeholder para rellenar más tarde).
 // Para nómina, el "día trabajado" es DATE(fechaInicio) (ver plans/).
-// El solape entre turnos del mismo empleado se valida a nivel app (turnos-solape.ts),
-// no por UNIQUE — un empleado puede tener varios tramos el mismo día siempre que no pisen horas.
+// El solape entre turnos del mismo empleado se valida a nivel app (turnos-solape.ts).
 model Turno {
   id          String   @id @default(cuid())
   edicionId   String
   casetaId    String
-  empleadoId  String
   fechaInicio DateTime
   fechaFin    DateTime
-  asistio     Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  edicion  Edicion  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
-  caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Restrict)
-  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  edicion      Edicion         @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta       Caseta          @relation(fields: [casetaId], references: [id], onDelete: Restrict)
+  asignaciones TurnoEmpleado[]
 
   @@index([casetaId, fechaInicio])
-  @@index([empleadoId, fechaInicio])
   @@index([edicionId, fechaInicio])
+}
+
+// Asignación N:M Turno ↔ Empleado. asistio es por-empleado.
+model TurnoEmpleado {
+  id         String   @id @default(cuid())
+  turnoId    String
+  empleadoId String
+  asistio    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  turno    Turno    @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+
+  @@unique([turnoId, empleadoId])
+  @@index([empleadoId])
 }
 
 // Catálogo por caseta.

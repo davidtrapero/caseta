@@ -2,15 +2,20 @@
 // Los campos de fecha viajan como string ISO para evitar problemas de hydration
 // y permitir rehidratar con new Date() en cliente sin ambigüedad de zona.
 
+export type AsignacionSerializable = {
+  empleadoId: string;
+  empleadoNombre: string;
+  esVoluntario: boolean;
+  asistio: boolean;
+};
+
 export type TurnoSerializable = {
   id: string;
   edicionId: string;
   casetaId: string;
-  empleadoId: string;
-  empleadoNombre: string;
   fechaInicio: string; // ISO 8601
   fechaFin: string; // ISO 8601
-  asistio: boolean;
+  asignaciones: AsignacionSerializable[];
 };
 
 export type CasetaMin = {
@@ -35,18 +40,39 @@ export type EdicionMin = {
   fechaFin: string;
 };
 
-// Datos que recibe el RSC de /turnos para pintar la semana.
+// Datos para la vista DÍA (vista principal Fase 3).
+export type DiaTurnos = {
+  edicion: EdicionMin;
+  edicionesDisponibles: EdicionMin[];
+  casetaSeleccionada: CasetaMin;
+  casetas: CasetaMin[];
+  fecha: string; // YYYY-MM-DD
+  fechaAnterior: string; // YYYY-MM-DD (para duplicar día anterior)
+  turnos: TurnoSerializable[];
+  empleados: EmpleadoMin[];
+  hoyIso: string;
+  readonly: boolean;
+};
+
+// Datos para la vista SEMANA (read-only Fase 3).
+export type ResumenDiaSemana = {
+  fecha: string; // YYYY-MM-DD
+  numTurnos: number;
+  numPersonas: number; // empleados distintos asignados ese día
+};
+
 export type SemanaTurnos = {
   edicion: EdicionMin;
   edicionesDisponibles: EdicionMin[];
   casetaSeleccionada: CasetaMin;
   casetas: CasetaMin[];
-  lunes: string; // YYYY-MM-DD
-  domingo: string; // YYYY-MM-DD
-  turnos: TurnoSerializable[];
-  empleados: EmpleadoMin[]; // activos, para el selector "añadir empleado"
-  hoyIso: string; // YYYY-MM-DD — referencia server-side para habilitar/deshabilitar toggle asistencia
-  readonly: boolean; // true si edición no activa o caseta inactiva
+  lunes: string;
+  domingo: string;
+  dias: ResumenDiaSemana[];
+  turnos: TurnoSerializable[]; // todos los de la semana, por si imprimir los necesita
+  empleados: EmpleadoMin[];
+  hoyIso: string;
+  readonly: boolean;
 };
 
 // Resultado tipado de la detección de solape.
