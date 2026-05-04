@@ -229,11 +229,71 @@ AuditLog       (id, entidad, entidadId, accion, usuarioId, cambios JSON, fecha)
 ## Siguientes pasos inmediatos
 
 1. ✅ Descubrimiento cerrado.
-2. Trasladar resumen ejecutivo a [arquitectura-feria.md](../arquitectura-feria.md) y [CLAUDE.md](../CLAUDE.md).
-3. Ejecutar Fase 0 (bootstrap, por mí).
-4. Lanzar Fase 1 con agente de desarrollo + testeador al cerrar.
+2. ✅ CLAUDE.md actualizado con versiones reales.
+3. ✅ Fase 0 completada y pusheada a GitHub (commit `315d219`).
+4. ⏳ Lanzar Fase 1 (módulo Administración) con agente de desarrollo + testeador al cerrar.
 5. Repetir para fases 2, 3, 4.
 6. Lanzar Fase 5 con los 3 testeadores en paralelo.
+
+---
+
+## Handoff para la siguiente sesión
+
+Este bloque resume el **estado actual** para que una futura instancia de Claude pueda continuar sin leer el historial.
+
+### Estado del repo (commit `315d219`, branch `main`, pusheado)
+
+- [app/](../app/) contiene el proyecto Next.js 16 + Prisma 7 + Better Auth + shadcn/ui.
+- Schema completo en [app/prisma/schema.prisma](../app/prisma/schema.prisma) con las 15 entidades del modelo consolidado.
+- Migración inicial aplicada al branch `dev` de Neon.
+- Auth funcionando con rutas protegidas vía [app/src/proxy.ts](../app/src/proxy.ts) y `requireRole()` en [app/src/lib/authz.ts](../app/src/lib/authz.ts).
+- `AuditLog` automático via extensión Prisma en [app/src/lib/audit.ts](../app/src/lib/audit.ts) — escribe a `AuditLog` cada create/update/delete de entidades de dominio. El `usuarioId` se lee de `AsyncLocalStorage` seteado con `withAuditContext(userId, fn)` al inicio de cada Server Action.
+- Sidebar con 5 módulos (Casetas, Empleados, Turnos, Inventario, Caja). Sólo Inicio tiene contenido real; el resto son placeholders.
+- Admin creado: `admin@caseta.local` / `admin1234!` (cambiar en primer login).
+
+### Gotchas del entorno
+
+- **Proxy TLS corporativo (Zscaler + Sanitas)**: cualquier comando que haga fetch externo (prisma, shadcn CLI, algunos installs) requiere `NODE_EXTRA_CA_CERTS='C:\Users\dtrapero\all_certs_full.pem'` prepended. El bundle incluye `all_certs.pem` del usuario + Zscaler Root exportado manualmente del Windows Store.
+- **Shadcn CLI bloqueado por TLS**: los componentes se instalan copiando el código canónico manualmente a [app/src/components/ui/](../app/src/components/ui/). No usar `npx shadcn add <component>`.
+- **Prisma 7 breaking changes respecto al plan original**:
+  - `url` ya no va en `datasource`; vive en [app/prisma.config.ts](../app/prisma.config.ts).
+  - Cliente se genera en `node_modules/@prisma/client` pero con ruta re-exportada — importa `import { PrismaClient } from "@prisma/client"` y funciona.
+  - Runtime usa `PrismaPg` de `@prisma/adapter-pg` (JS puro, sin engine nativo). CLI (`migrate`/`generate`) sí requiere el engine (de ahí el TLS).
+- **Next 16 cambios**:
+  - `src/middleware.ts` → `src/proxy.ts` (export `proxy` no `middleware`).
+  - `useSearchParams` en client components requiere `<Suspense>` al prerender (ver [app/src/app/login/page.tsx](../app/src/app/login/page.tsx)).
+
+### Decisiones cerradas (NO re-litigar)
+
+Ver tabla completa en la sección "Decisiones ya cerradas" al inicio del documento. Resumen de las más impactantes:
+- Multi-caseta con `Edicion` como raíz temporal (feria anual + históricos).
+- Sin obligaciones fiscales — solo control interno de caja.
+- Back-office puro, no TPV, no offline, no fichaje en vivo.
+- Jornal diario fijo; voluntarios (`jornalDiario=null`) no cobran.
+- Solo monto total diario en cierre de caja, sin detalle por producto.
+- No se registran mermas.
+- 3 roles: `admin`, `gerente`, `cajero`. Empleados sin login.
+- Auditoría en todas las entidades de dominio.
+
+### Siguiente tarea: Fase 1 — Módulo Administración
+
+CRUD de las entidades transversales:
+- **Edicion**: año, nombre, fechas, activa. Solo admin puede crearlas/editarlas.
+- **Caseta**: nombre, ubicación. admin+gerente pueden CRUD.
+- **Empleado**: nombre, DNI, teléfono, jornalDiario (null=voluntario), activo. admin+gerente.
+- **Proveedor**: nombre, contacto, email, teléfono. admin+gerente.
+- **Usuario**: email, nombre, rol, activo. **Solo admin**. Creación via `auth.api.signUpEmail()` + update del rol (ver patrón en [app/prisma/seed.ts](../app/prisma/seed.ts)).
+
+Criterios de aceptación:
+- Cada entidad tiene listado, formulario de creación, edición y desactivación (soft-delete via `activo=false`, no DELETE físico salvo en Usuario sin sesiones).
+- Validación con Zod en Server Actions.
+- Patrón obligatorio: `requireRole([...])` → validar Zod → op Prisma dentro de `withAuditContext(userId, ...)` → `revalidatePath()` → retorno tipado.
+- UI con shadcn components ya instalados (Button, Input, Label, Card). Si necesitas Dialog, Select, Table, etc., crearlos manualmente en `src/components/ui/` copiando del repo oficial shadcn (no usar CLI).
+- Empleado.jornalDiario: input numérico con nota "dejar vacío si es voluntario".
+
+Tareas previas al commit de Fase 1:
+- `npm run build` debe pasar sin errores ni warnings (aparte de los de `ignore pg deprecations` ya conocidos).
+- Smoke test: crear 1 Edición, 2 Casetas, 3 Empleados (1 voluntario), 1 Proveedor desde la UI. Verificar entradas en `AuditLog`.
 
 ## Ficheros afectados
 

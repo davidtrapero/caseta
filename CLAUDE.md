@@ -82,3 +82,28 @@ Autorización: llamar a `requireRole([...roles])` al inicio de cada Server Actio
 - Scope tight — app privada, no enterprise. No feature flags, no SSO, no roles dinámicos.
 - Comentarios y UI copy en **español**. Identificadores de código en inglés salvo términos de dominio (`caseta`, `turno`, `factura`, `jornalDiario`).
 - No añadir error handling para casos que no pueden pasar. Validar en bordes (Zod en Server Actions, entrada de usuario).
+
+## Frontend aesthetics
+
+Existe skill de proyecto en [`.claude/skills/frontend-design/SKILL.md`](.claude/skills/frontend-design/SKILL.md) — se activa automáticamente al generar UI. Complementar con las reglas siguientes, adaptadas al contexto **back-office interno** (no landing, no marketing):
+
+<frontend_aesthetics>
+Claude tiende a converger hacia outputs genéricos ("AI slop"): Inter, gradientes púrpura sobre blanco, layouts predecibles. Evítalo. Para Caseta — app privada usada a diario por 2-5 personas para gestionar una feria andaluza — busca una estética **distintiva pero funcional**:
+
+**Tipografía**: NO usar Inter, Roboto, Arial ni system fonts. Elegir una combinación con carácter pero legible en datos densos. Sugerencias (variar entre sesiones): Fraunces/Instrument Serif para headings + IBM Plex Sans o Geist para UI + Geist Mono/JetBrains Mono para números en tablas. Las tablas de back-office viven o mueren por la legibilidad tipográfica.
+
+**Color**: una paleta dominante con acento agudo, NO tímida equidistribuida. El dominio es "feria andaluza" → inspirarse en tierras cálidas, albero, rojo oscuro, amarillo tostado, verde oliva — NO caer en el cliché rosa/flamenco ni en el purple gradient. Definir en variables CSS en [`globals.css`](app/src/app/globals.css) y usar vía Tailwind. Un único acento fuerte (ej. rojo albero) + neutros cálidos.
+
+**Motion**: reservada. Un page-load orquestado con `animation-delay` escalonado > micro-interacciones dispersas. PROHIBIDO: animación en hover de filas de tabla, spinners genéricos, transiciones en cambios de ruta. Permitido: fade-in al montar formularios, slide en sidebars, feedback sutil en botones de acción.
+
+**Fondos**: textura o profundidad sutil > blanco plano. Gradiente muy suave, grano sutil, o líneas finas de fondo — nada ruidoso que compita con los datos.
+
+**Anti-patterns (prohibidos)**:
+- Inter/Roboto/Arial/system-ui
+- Gradientes púrpura sobre blanco
+- Cards con sombras genéricas y border-radius 8px por defecto
+- Animaciones en hovers de data tables
+- Iconos Lucide por defecto sin adaptarlos al tono visual
+
+**Match al contexto**: el usuario gestiona una caseta de feria desde casa — la estética puede ser cálida y con carácter, no fría corporativa. Pero la densidad de información (tablas, forms, listados) exige precisión y legibilidad por encima de espectáculo.
+</frontend_aesthetics>

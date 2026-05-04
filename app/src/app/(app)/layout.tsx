@@ -8,17 +8,15 @@ import {
   Home,
   Package,
   Receipt,
-  Store,
-  Users,
+  Settings,
 } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Inicio", icon: Home },
-  { href: "/casetas", label: "Casetas", icon: Store },
-  { href: "/empleados", label: "Empleados", icon: Users },
   { href: "/turnos", label: "Turnos", icon: Calendar },
   { href: "/inventario", label: "Inventario", icon: Package },
   { href: "/caja", label: "Caja", icon: Receipt },
+  { href: "/admin", label: "Administración", icon: Settings },
 ];
 
 export default async function AppLayout({
