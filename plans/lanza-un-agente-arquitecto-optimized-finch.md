@@ -226,6 +226,132 @@ AuditLog       (id, entidad, entidadId, accion, usuarioId, cambios JSON, fecha)
 - **Testeadores de módulo**: reportan bugs como lista priorizada; no corrigen, solo detectan.
 - **Testeadores E2E**: autorizados a crear fixtures de datos; prohibido modificar lógica de negocio.
 
+## Fase 3.5 — Perfiles de empleado en turnos
+
+### Contexto
+
+Tras cerrar la fase 3 (vista día + semana + diálogos), el usuario pide distinguir **categorías operativas** dentro de un turno. Hoy un `Empleado` solo diferencia cobra/no-cobra (`jornalDiario?`), pero la feria necesita modelar el rol funcional: un vigilante no es lo mismo que un ayudante de barra aunque ambos sean "trabajadores". Además, al planificar un turno el usuario quiere **reservar plazas por perfil** sin tener aún a las personas asignadas ("el sábado a las 22h necesito 1 vigilante + 2 coordinadores + 4 trabajadores + 3 voluntarios, ya veré a quién pongo").
+
+### Requisitos funcionales (del usuario)
+
+1. Perfil del empleado elegible al alta: `trabajador`, `voluntario`, `coordinador`, `vigilante`, `ayudante`.
+2. Al crear un turno, poder indicar nº de plazas esperadas por perfil (asignación diferida).
+3. Cada perfil con color identificativo consistente en toda la UI.
+4. Orden de agrupación al listar personas de un turno: **vigilantes → coordinadores → trabajadores → voluntarios → ayudantes**.
+5. Vista semanal: cada día muestra un resumen con turnos y nº de personas por perfil.
+
+### Cambios de schema ([app/prisma/schema.prisma](../app/prisma/schema.prisma))
+
+```prisma
+enum PerfilEmpleado {
+  vigilante
+  coordinador
+  trabajador
+  voluntario
+  ayudante
+}
+
+model Empleado {
+  // ... campos existentes ...
+  perfil       PerfilEmpleado @default(trabajador)
+}
+
+// Nueva entidad: plazas esperadas por perfil en un turno (asignación diferida)
+model TurnoPlaza {
+  id        String         @id @default(cuid())
+  turnoId   String
+  perfil    PerfilEmpleado
+  cantidad  Int
+  turno     Turno @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  @@unique([turnoId, perfil])
+}
+
+model Turno {
+  // ... relaciones existentes ...
+  plazas    TurnoPlaza[]
+}
+```
+
+**Regla de acoplamiento voluntario ⇔ jornalDiario** (decidido con el usuario): `perfil=voluntario` ⇔ `jornalDiario IS NULL`. Se valida en dos sitios:
+- **Zod** en formulario Empleado: `.refine(d => (d.perfil === 'voluntario') === (d.jornalDiario == null), 'Voluntario y jornal son excluyentes')`.
+- **SQL check constraint** añadida en la migración como SQL raw (Prisma no soporta CHECK nativo): `ALTER TABLE "Empleado" ADD CONSTRAINT voluntario_sin_jornal CHECK ((perfil = 'voluntario') = (jornalDiario IS NULL));`.
+
+**Migración**: `npx prisma migrate dev --name perfiles_empleado`. Pasos dentro de la misma migración:
+1. Añadir enum y columna `perfil` con default `trabajador`.
+2. Backfill: `UPDATE "Empleado" SET perfil='voluntario' WHERE "jornalDiario" IS NULL;`
+3. Añadir CHECK constraint (después del backfill para que no falle).
+4. Crear tabla `TurnoPlaza`.
+
+### Cambios de Server Actions ([app/src/app/(app)/turnos/actions.ts](../app/src/app/(app)/turnos/actions.ts))
+
+- **`crearTurnoAction`**: extender `crearTurnoSchema` con campo opcional `plazasJson: { perfil, cantidad }[]`. Tras crear el `Turno`, crear `TurnoPlaza` en batch dentro de la misma transacción + `withAuditContext`.
+- **`actualizarTurnoAction`**: nueva sub-acción `actualizarPlazasAction(turnoId, plazas[])` — upsert por `(turnoId, perfil)`, borra perfiles con cantidad 0.
+- **`asignarEmpleadoAction`**: sin cambio de contrato, pero cuando se asigna un empleado descontar visualmente del contador de plazas (lógica en UI, no en DB: comparar `plazas` vs `asignaciones` agrupadas por perfil).
+
+CRUD Empleado ([app/src/app/(app)/empleados/actions.ts](../app/src/app/(app)/empleados/actions.ts)): extender schemas Zod con `perfil: z.nativeEnum(PerfilEmpleado)`.
+
+### Cambios de UI
+
+**Paleta de perfiles** — añadir en [app/src/app/globals.css](../app/src/app/globals.css) variables CSS y en `_lib/colores.ts` un mapa estático que **sustituye** el hash por empleadoId:
+
+```ts
+export const PERFIL_COLORES: Record<PerfilEmpleado, { bg, border, text, label }> = {
+  vigilante:   { /* granate #5c1a17 — autoridad */ },
+  coordinador: { /* latón oscuro #8a5a1f — mando */ },
+  trabajador:  { /* albero #c68a3a — base */ },
+  voluntario:  { /* oliva #6b7a3a — apoyo */ },
+  ayudante:    { /* arena #d4b88a — complemento */ },
+};
+```
+
+Mantener la paleta cálida del proyecto (no azules/violetas). El hash dinámico por empleadoId queda deprecado.
+
+**Componentes a tocar**:
+
+| Componente | Cambio |
+|---|---|
+| [`ChipEmpleado.tsx`](../app/src/app/(app)/turnos/_components/ChipEmpleado.tsx) | Color según `empleado.perfil` (no hash de id). Mantener ❤️ si voluntario. |
+| [`BloqueTurno.tsx`](../app/src/app/(app)/turnos/_components/BloqueTurno.tsx) | Ordenar `asignaciones` por `PERFIL_ORDEN = [vigilante, coordinador, trabajador, voluntario, ayudante]` antes de renderizar. Mostrar chips agrupados con mini-separador por perfil. |
+| [`DialogoNuevoTurno.tsx`](../app/src/app/(app)/turnos/_components/DialogoNuevoTurno.tsx) | Nueva sección "Plazas esperadas": 5 inputs numéricos (uno por perfil) con su color. Enviar como JSON en `plazasJson`. |
+| [`AsignarEmpleado.tsx`](../app/src/app/(app)/turnos/_components/AsignarEmpleado.tsx) | Agrupar lista desplegable por perfil. Mostrar "faltan X" por cada perfil con plazas pendientes. |
+| [Empleados] formulario alta/edición | `Select` con los 5 perfiles. |
+| `semana/page.tsx` (ResumenDiaSemana) | Para cada día: además de `numTurnos` y `numPersonas`, mostrar desglose `1V · 2C · 4T · 3Vol · 1A` con los colores del perfil. Considerar también "plazas sin cubrir" (rojo) si `sum(plazas) > sum(asignaciones)`. |
+
+**Constante compartida** nueva en `_lib/perfiles.ts`:
+```ts
+export const PERFIL_ORDEN: PerfilEmpleado[] = ['vigilante','coordinador','trabajador','voluntario','ayudante'];
+export const PERFIL_LABEL: Record<PerfilEmpleado, string> = { ... };
+```
+
+### Ficheros críticos a modificar
+
+- [app/prisma/schema.prisma](../app/prisma/schema.prisma) — enum + campo + entidad `TurnoPlaza`.
+- [app/src/app/(app)/turnos/actions.ts](../app/src/app/(app)/turnos/actions.ts) — Zod + crear plazas + nueva acción.
+- [app/src/app/(app)/turnos/_lib/colores.ts](../app/src/app/(app)/turnos/_lib/colores.ts) — deprecar hash, exportar `PERFIL_COLORES`.
+- [app/src/app/(app)/turnos/_lib/perfiles.ts](../app/src/app/(app)/turnos/_lib/perfiles.ts) — **nuevo**: orden + labels + helpers.
+- [app/src/app/(app)/turnos/_components/](../app/src/app/(app)/turnos/_components/) — `ChipEmpleado`, `BloqueTurno`, `DialogoNuevoTurno`, `AsignarEmpleado`.
+- [app/src/app/(app)/turnos/semana/page.tsx](../app/src/app/(app)/turnos/semana/page.tsx) — resumen diario por perfil.
+- [app/src/app/(app)/empleados/](../app/src/app/(app)/empleados/) — formulario + listado.
+- [app/prisma/seed.ts](../app/prisma/seed.ts) — actualizar seed para poblar perfiles variados.
+
+### Reutilización
+
+- `withAuditContext` + `requireRole` ya existen — seguir patrón.
+- `detectarSolape` en [app/src/lib/turnos-solape.ts](../app/src/lib/turnos-solape.ts) no cambia: la validación de solape es por persona, no por perfil.
+- `ChipEmpleado` y el tipo `EmpleadoMin` ya centralizados — solo añadir campo `perfil`.
+
+### Verificación end-to-end
+
+1. `npx prisma migrate dev --name perfiles_empleado` aplica sin errores y backfill deja voluntarios con `perfil=voluntario`.
+2. `npm run build` pasa sin warnings nuevos.
+3. Smoke test manual:
+   - Crear 5 empleados, uno de cada perfil.
+   - Crear un turno indicando `{vigilante:1, coordinador:2, trabajador:3, voluntario:1, ayudante:1}`. Comprobar que el diálogo guarda las plazas y `AuditLog` registra create sobre `TurnoPlaza`.
+   - Asignar sólo 2 personas al turno. Verificar en vista día que los chips se ordenan `vigilante → coordinador → trabajador → voluntario → ayudante` con sus colores.
+   - Vista semana: el día del turno muestra resumen con conteos por perfil y un indicador de plazas sin cubrir.
+4. Regresión: turnos creados en fase 3 sin plazas siguen funcionando (plazas vacías ⇒ panel sin requisitos).
+5. Nóminas: el cálculo sigue apoyándose en `jornalDiario`, no en `perfil` — verificar que un `voluntario` con `jornalDiario=null` sigue excluido del total.
+
 ## Siguientes pasos inmediatos
 
 1. ✅ Descubrimiento cerrado.

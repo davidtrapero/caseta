@@ -6,9 +6,11 @@ import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
+import type { PerfilEmpleado as PrismaPerfilEmpleado } from "@prisma/client";
 import {
   crearTurnoSchema,
   actualizarTurnoSchema,
+  actualizarPlazasSchema,
   asignarEmpleadoSchema,
   desasignarEmpleadoSchema,
   toggleAsistenciaSchema,
@@ -140,6 +142,8 @@ export async function crearTurnoAction(
       }
     }
 
+    const plazasFiltradas = data.plazasJson.filter((p) => p.cantidad > 0);
+
     const turno = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         const t = await tx.turno.create({
@@ -155,6 +159,15 @@ export async function crearTurnoAction(
             data: data.empleadoIdsJson.map((empleadoId) => ({
               turnoId: t.id,
               empleadoId,
+            })),
+          });
+        }
+        if (plazasFiltradas.length > 0) {
+          await tx.turnoPlaza.createMany({
+            data: plazasFiltradas.map((p) => ({
+              turnoId: t.id,
+              perfil: p.perfil as PrismaPerfilEmpleado,
+              cantidad: p.cantidad,
             })),
           });
         }
@@ -514,6 +527,54 @@ export async function duplicarSemanaAction(
 
     revalidatePath("/turnos");
     return { ok: true, data: { copiados: resultado.copiados } };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+// ---------- actualizar plazas esperadas ----------
+
+export async function actualizarPlazasAction(
+  _prev: ActionResult<undefined> | null,
+  formData: FormData
+): Promise<ActionResult<undefined>> {
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const data = parseForm(actualizarPlazasSchema, formData);
+
+    const turno = await prisma.turno.findUnique({
+      where: { id: data.turnoId },
+      select: { id: true },
+    });
+    if (!turno) return { ok: false, error: "Turno no encontrado." };
+
+    const plazas = data.plazasJson;
+
+    await withAuditContext(user.id, () =>
+      prisma.$transaction(async (tx) => {
+        // Eliminar plazas con cantidad 0 o ausentes en el nuevo payload.
+        const perfilesActivos = plazas
+          .filter((p) => p.cantidad > 0)
+          .map((p) => p.perfil as PrismaPerfilEmpleado);
+        await tx.turnoPlaza.deleteMany({
+          where: {
+            turnoId: data.turnoId,
+            perfil: { notIn: perfilesActivos },
+          },
+        });
+        // Upsert para perfiles con cantidad > 0.
+        for (const p of plazas.filter((p) => p.cantidad > 0)) {
+          await tx.turnoPlaza.upsert({
+            where: { turnoId_perfil: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado } },
+            update: { cantidad: p.cantidad },
+            create: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado, cantidad: p.cantidad },
+          });
+        }
+      })
+    );
+
+    revalidatePath("/turnos");
+    return { ok: true, data: undefined };
   } catch (err) {
     return toActionError(err);
   }

@@ -4,12 +4,15 @@ import type {
   DiaTurnos,
   SemanaTurnos,
   TurnoSerializable,
+  TurnoPlazaSerializable,
   AsignacionSerializable,
   ResumenDiaSemana,
+  DesglosePerfil,
   CasetaMin,
   EmpleadoMin,
   EdicionMin,
 } from "../types";
+import { PERFIL_ORDEN, type PerfilEmpleado } from "./perfiles";
 import { addDays, fromYmd, hoyIso, lunesDe, toYmd } from "./fechas";
 
 // Multi-caseta: necesitamos una edición activa para filtrar. Si no hay
@@ -48,12 +51,14 @@ function empleadoMin(e: {
   nombre: string;
   activo: boolean;
   jornalDiario: { toString(): string } | null;
+  perfil: PerfilEmpleado;
 }): EmpleadoMin {
   return {
     id: e.id,
     nombre: e.nombre,
     activo: e.activo,
     esVoluntario: e.jornalDiario === null,
+    perfil: e.perfil,
   };
 }
 
@@ -66,8 +71,13 @@ type TurnoRaw = {
   asignaciones: {
     empleadoId: string;
     asistio: boolean;
-    empleado: { nombre: string; jornalDiario: { toString(): string } | null };
+    empleado: {
+      nombre: string;
+      jornalDiario: { toString(): string } | null;
+      perfil: PerfilEmpleado;
+    };
   }[];
+  plazas: { perfil: PerfilEmpleado; cantidad: number }[];
 };
 
 function turnoSerializable(t: TurnoRaw): TurnoSerializable {
@@ -75,7 +85,12 @@ function turnoSerializable(t: TurnoRaw): TurnoSerializable {
     empleadoId: a.empleadoId,
     empleadoNombre: a.empleado.nombre,
     esVoluntario: a.empleado.jornalDiario === null,
+    perfil: a.empleado.perfil,
     asistio: a.asistio,
+  }));
+  const plazas: TurnoPlazaSerializable[] = t.plazas.map((p) => ({
+    perfil: p.perfil,
+    cantidad: p.cantidad,
   }));
   return {
     id: t.id,
@@ -84,6 +99,7 @@ function turnoSerializable(t: TurnoRaw): TurnoSerializable {
     fechaInicio: t.fechaInicio.toISOString(),
     fechaFin: t.fechaFin.toISOString(),
     asignaciones,
+    plazas,
   };
 }
 
@@ -155,6 +171,7 @@ export async function loadDiaTurnos(params: {
         include: { empleado: true },
         orderBy: { createdAt: "asc" },
       },
+      plazas: true,
     },
   });
 
@@ -194,6 +211,7 @@ export async function loadSemanaTurnos(params: {
         include: { empleado: true },
         orderBy: { createdAt: "asc" },
       },
+      plazas: true,
     },
   });
   const turnos = turnosRaw.map(turnoSerializable);
@@ -211,7 +229,37 @@ export async function loadSemanaTurnos(params: {
     });
     const empleadosSet = new Set<string>();
     for (const t of delDia) for (const a of t.asignaciones) empleadosSet.add(a.empleadoId);
-    dias.push({ fecha: ymd, numTurnos: delDia.length, numPersonas: empleadosSet.size });
+
+    // Desglose por perfil: sumar asignados y plazas esperadas en todos los turnos del día.
+    const asignadosPorPerfil = new Map<PerfilEmpleado, Set<string>>();
+    const plazasPorPerfil = new Map<PerfilEmpleado, number>();
+    for (const t of delDia) {
+      for (const a of t.asignaciones) {
+        if (!asignadosPorPerfil.has(a.perfil)) asignadosPorPerfil.set(a.perfil, new Set());
+        asignadosPorPerfil.get(a.perfil)!.add(a.empleadoId);
+      }
+      for (const p of t.plazas) {
+        plazasPorPerfil.set(p.perfil, (plazasPorPerfil.get(p.perfil) ?? 0) + p.cantidad);
+      }
+    }
+    const perfilesConDatos = new Set<PerfilEmpleado>([
+      ...asignadosPorPerfil.keys(),
+      ...plazasPorPerfil.keys(),
+    ]);
+    const desglose: DesglosePerfil[] = PERFIL_ORDEN.filter((p) =>
+      perfilesConDatos.has(p)
+    ).map((p) => ({
+      perfil: p,
+      asignados: asignadosPorPerfil.get(p)?.size ?? 0,
+      plazas: plazasPorPerfil.get(p) ?? 0,
+    }));
+
+    dias.push({
+      fecha: ymd,
+      numTurnos: delDia.length,
+      numPersonas: empleadosSet.size,
+      desglose,
+    });
   }
 
   return {

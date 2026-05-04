@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PERFIL_ORDEN } from "./_lib/perfiles";
 
 // Turno = tramo horario en una caseta, con 0..N empleados asignados (Fase 3).
 // fechaInicio y fechaFin son timestamps ISO (DateTime completos).
@@ -53,6 +54,32 @@ const baseTurnoRango = z
     { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
   );
 
+const perfilEnum = z.enum(
+  PERFIL_ORDEN as [string, ...string[]]
+);
+
+// Plazas esperadas por perfil: serializado como JSON en un campo hidden.
+const plazasJson = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v) return [] as { perfil: string; cantidad: number }[];
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })
+  .pipe(
+    z.array(
+      z.object({
+        perfil: perfilEnum,
+        cantidad: z.coerce.number().int().min(0).max(99),
+      })
+    )
+  );
+
 // Crear: rango + lista opcional de empleados (0..N).
 export const crearTurnoSchema = z
   .object({
@@ -61,6 +88,7 @@ export const crearTurnoSchema = z
     fechaInicio: isoDateTime,
     fechaFin: isoDateTime,
     empleadoIdsJson,
+    plazasJson,
   })
   .refine(
     (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
@@ -120,6 +148,11 @@ export const duplicarSemanaSchema = z
     path: ["lunesDestino"],
   });
 
+export const actualizarPlazasSchema = z.object({
+  turnoId: z.string().cuid(),
+  plazasJson,
+});
+
 export type CrearTurnoInput = z.infer<typeof crearTurnoSchema>;
 export type ActualizarTurnoInput = z.infer<typeof actualizarTurnoSchema>;
 export type AsignarEmpleadoInput = z.infer<typeof asignarEmpleadoSchema>;
@@ -127,3 +160,4 @@ export type DesasignarEmpleadoInput = z.infer<typeof desasignarEmpleadoSchema>;
 export type ToggleAsistenciaInput = z.infer<typeof toggleAsistenciaSchema>;
 export type DuplicarDiaInput = z.infer<typeof duplicarDiaSchema>;
 export type DuplicarSemanaInput = z.infer<typeof duplicarSemanaSchema>;
+export type ActualizarPlazasInput = z.infer<typeof actualizarPlazasSchema>;

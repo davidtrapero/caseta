@@ -23,6 +23,7 @@ export async function crearEmpleadoAction(
           dni: data.dni ?? null,
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
+          perfil: data.perfil as import("@prisma/client").PerfilEmpleado,
           activo: data.activo,
         },
       })
@@ -56,6 +57,7 @@ export async function actualizarEmpleadoAction(
           dni: data.dni ?? null,
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
+          perfil: data.perfil as import("@prisma/client").PerfilEmpleado,
           activo: data.activo,
         },
       })

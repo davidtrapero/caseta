@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,12 @@ import {
   crearEmpleadoAction,
   actualizarEmpleadoAction,
 } from "../actions";
+import {
+  PERFIL_ORDEN,
+  PERFIL_LABEL,
+  PERFIL_COLORES,
+  type PerfilEmpleado,
+} from "../../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
 
@@ -22,6 +28,7 @@ type EmpleadoFormProps = {
     dni: string | null;
     telefono: string | null;
     jornalDiario: string | null; // Decimal serializado como string
+    perfil: string;
     activo: boolean;
   };
 };
@@ -33,7 +40,20 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
     FormData
   >(action, null);
 
+  const [perfil, setPerfil] = useState<PerfilEmpleado>(
+    (initial?.perfil as PerfilEmpleado) ?? "trabajador"
+  );
+  const [jornalDiario, setJornalDiario] = useState(initial?.jornalDiario ?? "");
+
+  // Al cambiar perfil a voluntario, vaciar jornal; al cambiar a otro, si estaba vacío no forzar.
+  useEffect(() => {
+    if (perfil === "voluntario") {
+      setJornalDiario("");
+    }
+  }, [perfil]);
+
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const esVoluntario = perfil === "voluntario";
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -79,6 +99,33 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
       </div>
 
       <div>
+        <Label htmlFor="perfil">Perfil</Label>
+        <input type="hidden" name="perfil" value={perfil} />
+        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 mt-1">
+          {PERFIL_ORDEN.map((p) => {
+            const colores = PERFIL_COLORES[p];
+            const sel = perfil === p;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPerfil(p)}
+                className="rounded-sm border px-2 py-1.5 text-xs font-medium transition-all"
+                style={
+                  sel
+                    ? { background: colores.border, borderColor: colores.border, color: "hsl(40 48% 97%)" }
+                    : { background: colores.bg, borderColor: colores.border, color: colores.text }
+                }
+              >
+                {PERFIL_LABEL[p]}
+              </button>
+            );
+          })}
+        </div>
+        <FieldError messages={errors.perfil} />
+      </div>
+
+      <div>
         <Label htmlFor="jornalDiario">Jornal diario (€)</Label>
         <Input
           id="jornalDiario"
@@ -86,11 +133,15 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
           type="number"
           step="0.01"
           min="0"
-          defaultValue={initial?.jornalDiario ?? ""}
-          placeholder="80.00"
+          value={jornalDiario}
+          onChange={(e) => setJornalDiario(e.target.value)}
+          disabled={esVoluntario}
+          placeholder={esVoluntario ? "No aplica (voluntario)" : "80.00"}
         />
         <p className="text-xs text-muted-foreground mt-1">
-          Dejar vacío si es voluntario (no cobra).
+          {esVoluntario
+            ? "Los voluntarios no cobran jornal."
+            : "Dejar vacío si es voluntario (usa el perfil Voluntario)."}
         </p>
         <FieldError messages={errors.jornalDiario} />
       </div>

@@ -10,6 +10,7 @@ import {
   lunesToSemanaIso,
   semanaIsoToLunes,
 } from "../_lib/fechas";
+import { PERFIL_COLORES, PERFIL_LABEL_CORTO } from "../_lib/perfiles";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "../../admin/_components/page-header";
@@ -121,10 +122,32 @@ export default async function SemanaTurnosPage({
                   {d.numTurnos === 1 ? "turno" : "turnos"}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground mb-2">
                 {d.numPersonas}{" "}
                 {d.numPersonas === 1 ? "persona" : "personas"}
               </div>
+              {d.desglose.length > 0 ? (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {d.desglose.map((dp) => {
+                    const colores = PERFIL_COLORES[dp.perfil];
+                    const sinCubrir = dp.plazas > 0 && dp.asignados < dp.plazas;
+                    return (
+                      <span
+                        key={dp.perfil}
+                        className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                        style={{ background: colores.bg, color: colores.text, border: `1px solid ${colores.border}` }}
+                        title={`${PERFIL_LABEL_CORTO[dp.perfil]}: ${dp.asignados}${dp.plazas > 0 ? `/${dp.plazas}` : ""}`}
+                      >
+                        {PERFIL_LABEL_CORTO[dp.perfil]}
+                        <span className={sinCubrir ? "text-destructive font-bold" : ""}>
+                          {dp.asignados}
+                          {dp.plazas > 0 ? `/${dp.plazas}` : ""}
+                        </span>
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : null}
             </Link>
           );
         })}

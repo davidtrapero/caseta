@@ -6,16 +6,29 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { asignarEmpleadoAction } from "../actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useToast } from "@/components/ui/toaster";
-import type { EmpleadoMin } from "../types";
+import type { EmpleadoMin, TurnoPlazaSerializable } from "../types";
+import {
+  PERFIL_ORDEN,
+  PERFIL_LABEL,
+  PERFIL_COLORES,
+} from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
 
 type Props = {
   turnoId: string;
   empleados: EmpleadoMin[];
   yaAsignados: Set<string>;
+  plazas?: TurnoPlazaSerializable[];
+  asignadosPorPerfil?: Record<string, number>;
 };
 
-export function AsignarEmpleado({ turnoId, empleados, yaAsignados }: Props) {
+export function AsignarEmpleado({
+  turnoId,
+  empleados,
+  yaAsignados,
+  plazas = [],
+  asignadosPorPerfil = {},
+}: Props) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<
     ActionResult<{ turnoId: string; empleadoId: string }> | null,
@@ -36,8 +49,17 @@ export function AsignarEmpleado({ turnoId, empleados, yaAsignados }: Props) {
   }, [state, show]);
 
   const disponibles = empleados.filter((e) => !yaAsignados.has(e.id));
-
   if (disponibles.length === 0) return null;
+
+  const plazasMap = new Map(plazas.map((p) => [p.perfil, p.cantidad]));
+
+  // Agrupar disponibles por perfil en PERFIL_ORDEN.
+  const grupos = PERFIL_ORDEN.map((perfil) => ({
+    perfil,
+    empleados: disponibles.filter((e) => e.perfil === perfil),
+    plazas: plazasMap.get(perfil) ?? 0,
+    asignados: asignadosPorPerfil[perfil] ?? 0,
+  })).filter((g) => g.empleados.length > 0);
 
   return (
     <div className="relative">
@@ -54,27 +76,51 @@ export function AsignarEmpleado({ turnoId, empleados, yaAsignados }: Props) {
       </button>
       {open ? (
         <div
-          className="absolute z-30 top-full left-0 mt-1 w-56 max-h-64 overflow-auto rounded-md border border-border bg-popover shadow-xl p-1"
+          className="absolute z-30 top-full left-0 mt-1 w-64 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-xl p-1"
           onMouseLeave={() => setOpen(false)}
         >
-          {disponibles.map((e) => (
-            <form key={e.id} action={action}>
-              <input type="hidden" name="turnoId" value={turnoId} />
-              <input type="hidden" name="empleadoId" value={e.id} />
-              <button
-                type="submit"
-                disabled={pending}
-                className="w-full text-left text-sm px-2 py-1.5 rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 flex items-center justify-between"
-              >
-                <span>{e.nombre}</span>
-                {e.esVoluntario ? (
-                  <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                    vol.
-                  </span>
-                ) : null}
-              </button>
-            </form>
-          ))}
+          {grupos.map((g) => {
+            const colores = PERFIL_COLORES[g.perfil];
+            const pendientes = Math.max(0, g.plazas - g.asignados);
+            return (
+              <div key={g.perfil} className="mb-1 last:mb-0">
+                <div
+                  className="flex items-center justify-between px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider"
+                  style={{ background: colores.bg, color: colores.text }}
+                >
+                  <span>{PERFIL_LABEL[g.perfil]}</span>
+                  {g.plazas > 0 ? (
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        pendientes > 0 ? "text-destructive" : "opacity-60"
+                      )}
+                    >
+                      {g.asignados}/{g.plazas}
+                    </span>
+                  ) : null}
+                </div>
+                {g.empleados.map((e) => (
+                  <form key={e.id} action={action}>
+                    <input type="hidden" name="turnoId" value={turnoId} />
+                    <input type="hidden" name="empleadoId" value={e.id} />
+                    <button
+                      type="submit"
+                      disabled={pending}
+                      className="w-full text-left text-sm px-2 py-1 rounded-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-50 flex items-center justify-between"
+                    >
+                      <span>{e.nombre}</span>
+                      {e.esVoluntario ? (
+                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          vol.
+                        </span>
+                      ) : null}
+                    </button>
+                  </form>
+                ))}
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>

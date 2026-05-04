@@ -19,6 +19,14 @@ enum Rol {
   cajero
 }
 
+enum PerfilEmpleado {
+  vigilante
+  coordinador
+  trabajador
+  voluntario
+  ayudante
+}
+
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
@@ -124,16 +132,18 @@ model Caseta {
   gastos       Gasto[]
 }
 
-// Empleado — recurso laboral. jornalDiario null ⇒ voluntario (no cobra).
+// Empleado — recurso laboral.
+// perfil=voluntario ⇔ jornalDiario IS NULL (validado en Zod + CHECK constraint en migración).
 model Empleado {
-  id                 String   @id @default(cuid())
+  id                 String         @id @default(cuid())
   nombre             String
-  dni                String?  @unique
+  dni                String?        @unique
   telefono           String?
-  jornalDiario       Decimal? @db.Decimal(10, 2)
-  activo             Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  jornalDiario       Decimal?       @db.Decimal(10, 2)
+  perfil             PerfilEmpleado @default(trabajador)
+  activo             Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   asignaciones TurnoEmpleado[]
   nominas      Nomina[]
@@ -157,9 +167,23 @@ model Turno {
   edicion      Edicion         @relation(fields: [edicionId], references: [id], onDelete: Cascade)
   caseta       Caseta          @relation(fields: [casetaId], references: [id], onDelete: Restrict)
   asignaciones TurnoEmpleado[]
+  plazas       TurnoPlaza[]
 
   @@index([casetaId, fechaInicio])
   @@index([edicionId, fechaInicio])
+}
+
+// Plazas esperadas por perfil en un turno (asignación diferida).
+// Permite planificar "necesito 1 vigilante + 4 trabajadores" antes de saber quién.
+model TurnoPlaza {
+  id       String         @id @default(cuid())
+  turnoId  String
+  perfil   PerfilEmpleado
+  cantidad Int
+
+  turno Turno @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+
+  @@unique([turnoId, perfil])
 }
 
 // Asignación N:M Turno ↔ Empleado. asistio es por-empleado.

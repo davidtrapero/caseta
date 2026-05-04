@@ -4,7 +4,8 @@ import * as React from "react";
 import { useActionState, useEffect, useRef } from "react";
 import { Heart, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { colorEmpleado } from "../_lib/colores";
+import { PERFIL_COLORES } from "../_lib/perfiles";
+import type { PerfilEmpleado } from "../types";
 import {
   desasignarEmpleadoAction,
   toggleAsistenciaAction,
@@ -17,6 +18,7 @@ type Props = {
   empleadoId: string;
   nombre: string;
   esVoluntario: boolean;
+  perfil: PerfilEmpleado;
   asistio: boolean;
   /** Si true, muestra checkbox de asistencia editable. */
   permiteAsistencia: boolean;
@@ -28,11 +30,12 @@ export function ChipEmpleado({
   empleadoId,
   nombre,
   esVoluntario,
+  perfil,
   asistio,
   permiteAsistencia,
   readonly,
 }: Props) {
-  const colores = colorEmpleado(empleadoId);
+  const colores = PERFIL_COLORES[perfil];
   const { show } = useToast();
 
   const [asistState, asistAction, asistPending] = useActionState<

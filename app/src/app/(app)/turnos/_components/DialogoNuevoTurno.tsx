@@ -8,7 +8,12 @@ import { Label } from "@/components/ui/label";
 import { crearTurnoAction } from "../actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useToast } from "@/components/ui/toaster";
-import type { EmpleadoMin } from "../types";
+import type { EmpleadoMin, PerfilEmpleado } from "../types";
+import {
+  PERFIL_ORDEN,
+  PERFIL_LABEL,
+  PERFIL_COLORES,
+} from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
 import { FieldError, FormError } from "../../admin/_components/page-header";
 
@@ -41,6 +46,13 @@ export function DialogoNuevoTurno({
   const [horaFin, setHoraFin] = useState(18);
   const [cruzaMedianoche, setCruzaMedianoche] = useState(false);
   const [seleccionados, setSeleccionados] = useState<string[]>([]);
+  const [plazas, setPlazas] = useState<Record<PerfilEmpleado, number>>({
+    vigilante: 0,
+    coordinador: 0,
+    trabajador: 0,
+    voluntario: 0,
+    ayudante: 0,
+  });
 
   const [state, action, pending] = useActionState<
     ActionResult<{ id: string }> | null,
@@ -55,6 +67,7 @@ export function DialogoNuevoTurno({
       if (state.ok) {
         show("Turno creado", "success");
         setSeleccionados([]);
+        setPlazas({ vigilante: 0, coordinador: 0, trabajador: 0, voluntario: 0, ayudante: 0 });
         onClose();
       } else {
         show(state.error, "error");
@@ -99,6 +112,16 @@ export function DialogoNuevoTurno({
           type="hidden"
           name="empleadoIdsJson"
           value={JSON.stringify(seleccionados)}
+        />
+        <input
+          type="hidden"
+          name="plazasJson"
+          value={JSON.stringify(
+            PERFIL_ORDEN.filter((p) => plazas[p] > 0).map((p) => ({
+              perfil: p,
+              cantidad: plazas[p],
+            }))
+          )}
         />
 
         <div className="grid grid-cols-2 gap-4">
@@ -182,6 +205,41 @@ export function DialogoNuevoTurno({
           <p className="text-xs text-muted-foreground mt-1">
             Puedes crear el turno sin empleados y asignarlos después.
           </p>
+        </div>
+
+        <div>
+          <Label>Plazas esperadas por perfil (opcional)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Reserva plazas para asignar después. Deja a 0 si no aplica.
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {PERFIL_ORDEN.map((p) => {
+              const colores = PERFIL_COLORES[p];
+              return (
+                <label
+                  key={p}
+                  className="flex items-center gap-1.5 rounded-sm border px-2 py-1.5 text-xs"
+                  style={{ borderColor: colores.border, background: colores.bg, color: colores.text }}
+                >
+                  <span className="flex-1 font-medium">{PERFIL_LABEL[p]}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    value={plazas[p]}
+                    onChange={(e) =>
+                      setPlazas((prev) => ({
+                        ...prev,
+                        [p]: Math.max(0, Math.min(99, Number(e.target.value) || 0)),
+                      }))
+                    }
+                    className="w-10 rounded border border-current bg-transparent text-center text-xs [appearance:textfield]"
+                    style={{ color: colores.text }}
+                  />
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 pt-2">

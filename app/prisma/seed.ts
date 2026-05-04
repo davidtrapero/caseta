@@ -65,23 +65,24 @@ async function main() {
 
   // ---- Empleados ----
   const empleados = [
-    { nombre: "María López", dni: "00000001A", jornalDiario: 70 },
-    { nombre: "Carlos Ruiz", dni: "00000002B", jornalDiario: 75 },
-    { nombre: "Ana García", dni: "00000003C", jornalDiario: 65 },
-    { nombre: "Javier Moreno", dni: "00000004D", jornalDiario: 80 },
-    { nombre: "Lucía Hernández", dni: "00000005E", jornalDiario: 60 },
-    { nombre: "Pablo Jiménez", dni: "00000006F", jornalDiario: null },
-    { nombre: "Elena Torres", dni: "00000007G", jornalDiario: null },
+    { nombre: "María López", dni: "00000001A", jornalDiario: 70, perfil: "coordinador" as const },
+    { nombre: "Carlos Ruiz", dni: "00000002B", jornalDiario: 75, perfil: "trabajador" as const },
+    { nombre: "Ana García", dni: "00000003C", jornalDiario: 65, perfil: "trabajador" as const },
+    { nombre: "Javier Moreno", dni: "00000004D", jornalDiario: 80, perfil: "vigilante" as const },
+    { nombre: "Lucía Hernández", dni: "00000005E", jornalDiario: 60, perfil: "ayudante" as const },
+    { nombre: "Pablo Jiménez", dni: "00000006F", jornalDiario: null, perfil: "voluntario" as const },
+    { nombre: "Elena Torres", dni: "00000007G", jornalDiario: null, perfil: "voluntario" as const },
   ];
 
   for (const e of empleados) {
     await prisma.empleado.upsert({
       where: { dni: e.dni },
-      update: {},
+      update: { perfil: e.perfil },
       create: {
         nombre: e.nombre,
         dni: e.dni,
         jornalDiario: e.jornalDiario,
+        perfil: e.perfil,
         activo: true,
       },
     });

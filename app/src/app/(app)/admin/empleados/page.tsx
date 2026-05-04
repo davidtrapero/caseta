@@ -13,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeader, EmptyState } from "../_components/page-header";
 import { ToggleActivoEmpleadoForm } from "./_components/toggle-activo";
+import {
+  PERFIL_LABEL,
+  PERFIL_COLORES,
+  type PerfilEmpleado,
+} from "../../turnos/_lib/perfiles";
 
 const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -49,6 +54,7 @@ export default async function EmpleadosPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
+              <TableHead className="w-28">Perfil</TableHead>
               <TableHead className="w-32">DNI/NIE</TableHead>
               <TableHead className="w-40">Teléfono</TableHead>
               <TableHead className="w-40">Jornal</TableHead>
@@ -62,6 +68,20 @@ export default async function EmpleadosPage() {
               return (
                 <TableRow key={e.id}>
                   <TableCell className="font-medium">{e.nombre}</TableCell>
+                  <TableCell>
+                    {(() => {
+                      const p = e.perfil as PerfilEmpleado;
+                      const colores = PERFIL_COLORES[p];
+                      return (
+                        <span
+                          className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+                          style={{ background: colores.bg, color: colores.text, border: `1px solid ${colores.border}` }}
+                        >
+                          {PERFIL_LABEL[p]}
+                        </span>
+                      );
+                    })()}
+                  </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {e.dni ?? "—"}
                   </TableCell>

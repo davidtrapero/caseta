@@ -30,6 +30,7 @@ export default async function EditarEmpleadoPage({
           jornalDiario: empleado.jornalDiario
             ? empleado.jornalDiario.toString()
             : null,
+          perfil: empleado.perfil,
           activo: empleado.activo,
         }}
       />
