@@ -86,3 +86,21 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* Animaciones reservadas. No usar en hover de tablas. */
+@keyframes caseta-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes caseta-stagger {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: caseta-fade-in 180ms ease-out both;
+}
+.animate-stagger {
+  animation: caseta-stagger 260ms ease-out both;
+}
+
