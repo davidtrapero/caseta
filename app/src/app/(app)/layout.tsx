@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { LogOutButton } from "./_components/logout-button";
+import { ToastProvider } from "@/components/ui/toaster";
 import {
   Calendar,
   Home,
@@ -31,6 +32,7 @@ export default async function AppLayout({
   const user = session.user as typeof session.user & { rol: string };
 
   return (
+    <ToastProvider>
     <div className="flex min-h-screen bg-background">
       <aside className="w-60 border-r bg-card flex flex-col">
         <div className="px-6 py-5 border-b">
@@ -60,5 +62,6 @@ export default async function AppLayout({
       </aside>
       <main className="flex-1 p-8 overflow-auto">{children}</main>
     </div>
+    </ToastProvider>
   );
 }
