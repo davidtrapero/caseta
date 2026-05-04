@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/authz";
 import { FormShell } from "../../../admin/_components/page-header";
 import { EmptyState } from "../../../admin/_components/page-header";
 import { CierreForm } from "../_components/cierre-form";
-import { obtenerEdicionActiva } from "../../_lib/edicion-activa";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 
 export default async function NuevoCierrePage() {
   await requireRole(["admin", "gerente", "cajero"]);

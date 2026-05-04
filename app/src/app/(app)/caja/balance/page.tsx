@@ -13,7 +13,7 @@ import {
   SectionHeader,
   EmptyState,
 } from "../../admin/_components/page-header";
-import { obtenerEdicionActiva } from "../_lib/edicion-activa";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 import {
   CATEGORIA_LABEL,
   type CategoriaGasto,

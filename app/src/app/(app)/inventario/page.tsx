@@ -1,5 +1,5 @@
-import { ModulePlaceholder } from "../_components/placeholder";
+import { redirect } from "next/navigation";
 
 export default function InventarioPage() {
-  return <ModulePlaceholder title="Inventario" phase="Fase 3 — Inventario" />;
+  redirect("/inventario/productos");
 }

@@ -5,7 +5,7 @@ import {
   EmptyState,
 } from "../../../admin/_components/page-header";
 import { GastoForm } from "../_components/gasto-form";
-import { obtenerEdicionActiva } from "../../_lib/edicion-activa";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 
 export default async function NuevoGastoPage() {
   await requireRole(["admin", "gerente", "cajero"]);

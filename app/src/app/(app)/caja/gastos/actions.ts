@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
-import { obtenerEdicionActiva } from "../_lib/edicion-activa";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 import { crearGastoSchema, actualizarGastoSchema } from "./schema";
 
 function ymdToUtcDate(ymd: string): Date {

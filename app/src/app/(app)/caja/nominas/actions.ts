@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { toActionError, type ActionResult } from "@/lib/action-result";
-import { obtenerEdicionActiva } from "../_lib/edicion-activa";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 
 export type ResultadoCalculo = {
   creadas: number;
