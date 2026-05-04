@@ -9,10 +9,15 @@ import { seedMinimal } from "@/test/fixtures";
 const SECRET = process.env.BETTER_AUTH_SECRET ?? "";
 
 export async function POST(req: Request) {
-  // Doble guard: NODE_ENV=test Y flag explícito ENABLE_TEST_ENDPOINTS=true.
-  // El segundo guard sobrevive a errores de configuración de entorno.
+  // Doble guard: el endpoint SOLO responde si NODE_ENV != production Y
+  // la variable explícita ENABLE_TEST_ENDPOINTS=true está presente.
+  //
+  // Notas:
+  // - `next dev` fuerza NODE_ENV=development (no permite "test"), así que
+  //   no podemos exigir NODE_ENV="test". Sí prohibimos "production".
+  // - El flag explícito es el guard real. Sólo .env.test lo define.
   if (
-    process.env.NODE_ENV !== "test" ||
+    process.env.NODE_ENV === "production" ||
     process.env.ENABLE_TEST_ENDPOINTS !== "true"
   ) {
     return new NextResponse("Not found", { status: 404 });

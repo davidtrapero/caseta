@@ -4,9 +4,14 @@ node_modules/
 .pnp.js
 
 # Next.js
+.next/
 app/.next/
 app/out/
 app/build/
+
+# Playwright
+app/test-results/
+app/playwright-report/
 
 # Variables de entorno (nunca commitear secretos)
 .env

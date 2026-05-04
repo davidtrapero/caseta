@@ -227,6 +227,49 @@ Modificar:
 
 ---
 
+## Estado tras la sesión (2026-05-04)
+
+- **6A completado** (commit infra+fixtures contra branch Neon test). Validado: `resetDb()`, `seedMinimal()`, `signInAs()`.
+- **6B completado** (commit vitest). 47 tests en 7 archivos, todos verdes en ~58s.
+- **6C en standby** por fricción con Playwright. Ver sección "Diagnóstico 6C".
+- **6D sin empezar**.
+
+## Diagnóstico 6C (para retomar en sesión futura)
+
+Playwright falla antes de tocar el DOM porque `resetServerDb()` en el
+helper recibe HTML en lugar de JSON. Investigación realizada:
+
+1. **Causa falsa descartada**: el endpoint estaba siendo redirigido a
+   `/login` por el proxy middleware. Fix aplicado en [app/src/proxy.ts](../app/src/proxy.ts)
+   añadiendo `/api/test-reset` al matcher de exclusión.
+2. **Causa falsa descartada**: `NODE_ENV='test'`. Next dev sobrescribe a
+   `development` y no lo podemos forzar. Guard cambiado a
+   `NODE_ENV !== 'production'` + `ENABLE_TEST_ENDPOINTS==='true'`. Ver
+   [app/src/app/api/test-reset/route.ts](../app/src/app/api/test-reset/route.ts).
+3. **Causa falsa descartada**: `DATABASE_URL` / `BETTER_AUTH_SECRET` no
+   propagados al webServer. Fix: [app/playwright.config.ts](../app/playwright.config.ts)
+   carga `.env.test` vía `dotenv` al inicio y reenvía en `webServer.env`.
+4. **Causa real identificada al final de la sesión**: `reuseExistingServer: !process.env.CI`
+   hace que Playwright reuse un `next dev` huérfano de un run anterior
+   que NO tiene las env vars de test. El endpoint devuelve HTML (404
+   legítimo al no tener el flag `ENABLE_TEST_ENDPOINTS`).
+5. **Validación manual del endpoint**: arrancando `next dev` desde
+   `app/` con las env vars correctas, `POST /api/test-reset` devuelve
+   `200 OK` + JSON correcto. El código del endpoint es correcto.
+
+**Plan de ataque cuando retomemos 6C**:
+- Cambiar `reuseExistingServer: false` (o sólo `true` bajo `CI=true`).
+- Añadir un pre-test hook que mate cualquier proceso en puerto 3100
+  antes de arrancar el webServer.
+- Correr los 5 specs con la config limpia y observar qué tests de DOM
+  fallan (si los hay) para ajustar selectores.
+
+**Alternativa de riesgo menor**: escribir un único spec smoke (login +
+crear edición) y dejar el resto en backlog. El dominio ya está protegido
+por Vitest.
+
+---
+
 ## Riesgos y decisiones ambiguas
 
 - **Mock de `next/navigation.redirect`**: las server actions usan `redirect()` tras el `try/catch`; al mockearlo hay que simular que lanza, porque el código real también lo hace. Si no se simula, el test continúa y el assert posterior puede pasar por las razones equivocadas.
