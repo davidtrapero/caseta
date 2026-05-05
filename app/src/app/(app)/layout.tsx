@@ -6,6 +6,7 @@ import { LogOutButton } from "./_components/logout-button";
 import { ToastProvider } from "@/components/ui/toaster";
 import {
   Calendar,
+  ClipboardCheck,
   ClipboardList,
   Home,
   Package,
@@ -25,6 +26,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/turnos", label: "Turnos", icon: Calendar },
+  { href: "/turnos/asistencias", label: "Asistencias", icon: ClipboardCheck, roles: ["admin", "gerente"] },
   { href: "/admin/solicitudes", label: "Solicitudes", icon: ClipboardList, roles: ["admin", "gerente"] },
   { href: "/inventario", label: "Inventario", icon: Package },
   { href: "/caja", label: "Caja", icon: Receipt },
