@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "npm run test:back",
     "test:back": "vitest run",
     "test:back:watch": "vitest",
     "test:front": "playwright test --grep-invert @e2e",

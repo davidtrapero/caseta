@@ -161,6 +161,8 @@ Commit: `test(front): playwright flujos auth, ediciones, caja, inventario`.
 
 ### 6D — E2E flujo completo + CI
 
+**Stand-by**: la parte E2E Playwright queda aparcada indefinidamente; sólo el workflow CI (Vitest + lint + build) se aplica. El spec `flujo-completo.spec.ts` queda en backlog.
+
 Archivo nuevo:
 - `app/tests-e2e/flujo-completo.spec.ts` (tag `@e2e`):
   login admin → `/admin/ediciones/nueva` (crear + activar)
@@ -277,6 +279,13 @@ crear edición) y dejar el resto en backlog. El dominio ya está protegido
 por Vitest.
 
 > Nota 2026-05-05: este diagnóstico se conserva como referencia para cuando se retomen los specs del backlog, pero la "Alternativa de riesgo menor" ya es la decisión vigente.
+
+### 2026-05-05 — 6D parcial (CI sin E2E)
+
+- **6D parcial completado**: workflow CI `.github/workflows/test.yml` (lint + build + Vitest contra branch Neon `test`).
+- Spec E2E `flujo-completo.spec.ts` NO se implementa (Playwright en stand-by indefinido).
+- Añadido script `"test": "npm run test:back"` en [app/package.json](../app/package.json).
+- Secrets requeridos en GitHub: `DATABASE_URL_TEST` y `BETTER_AUTH_SECRET`.
 
 ---
 
