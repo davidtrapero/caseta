@@ -16,10 +16,12 @@ const FECHA_TURNO = new Intl.DateTimeFormat("es-ES", {
   weekday: "short",
   day: "2-digit",
   month: "short",
+  timeZone: "UTC",
 });
 const HORA = new Intl.DateTimeFormat("es-ES", {
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: "UTC",
 });
 
 export type FilaEmpleado = {

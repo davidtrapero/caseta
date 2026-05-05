@@ -70,11 +70,11 @@ export function lunesToSemanaIso(lunesYmd: string): string {
   return `${temp.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }
 
-/** Formato "HH:MM" a partir de un ISO timestamp (zona local). */
+/** Formato "HH:MM" a partir de un ISO timestamp (UTC). */
 export function horaDe(iso: string): string {
   const d = new Date(iso);
-  const hh = String(d.getHours()).padStart(2, "0");
-  const mm = String(d.getMinutes()).padStart(2, "0");
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
