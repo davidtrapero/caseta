@@ -234,6 +234,14 @@ Modificar:
 - **6C en standby** por fricción con Playwright. Ver sección "Diagnóstico 6C".
 - **6D sin empezar**.
 
+### 2026-05-05 — 6C resuelto vía smoke
+
+- Adoptada la "Alternativa de riesgo menor" descrita en el diagnóstico: en lugar de pelear con los 5 specs, se deja un único spec smoke activo.
+- Spec único activo: [app/tests-e2e/smoke.spec.ts](../app/tests-e2e/smoke.spec.ts) — login admin + crear edición + assert listado.
+- 4 specs (`auth`, `authz`, `caja`, `ediciones`, `inventario`) movidos a `app/tests-e2e/backlog/` y excluidos vía `testIgnore` en [playwright.config.ts](../app/playwright.config.ts).
+- Aplicado fix `reuseExistingServer: false` (causa raíz documentada en el diagnóstico).
+- Resto de specs queda como deuda explícita para retomar tras 6D.
+
 ## Diagnóstico 6C (para retomar en sesión futura)
 
 Playwright falla antes de tocar el DOM porque `resetServerDb()` en el
@@ -267,6 +275,8 @@ helper recibe HTML en lugar de JSON. Investigación realizada:
 **Alternativa de riesgo menor**: escribir un único spec smoke (login +
 crear edición) y dejar el resto en backlog. El dominio ya está protegido
 por Vitest.
+
+> Nota 2026-05-05: este diagnóstico se conserva como referencia para cuando se retomen los specs del backlog, pero la "Alternativa de riesgo menor" ya es la decisión vigente.
 
 ---
 

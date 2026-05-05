@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { loginUI, resetServerDb } from "./_helpers";
+import { loginUI, resetServerDb } from "../_helpers";
 
 test.describe("Caja: cierres y balance", () => {
   test.beforeEach(async ({ request, baseURL }) => {

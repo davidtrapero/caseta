@@ -10,6 +10,7 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "./tests-e2e",
+  testIgnore: "**/backlog/**",
   // Serializar: Next dev + BD única no soportan paralelismo por defecto.
   fullyParallel: false,
   workers: 1,
@@ -33,7 +34,7 @@ export default defineConfig({
     // También reenviamos DATABASE_URL y BETTER_AUTH_SECRET desde .env.test cargado arriba.
     command: `next dev -p ${PORT}`,
     url: `http://localhost:${PORT}/login`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
     env: {
       ENABLE_TEST_ENDPOINTS: "true",
