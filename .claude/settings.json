@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "D=\"$CLAUDE_PROJECT_DIR\"; [ -f \"$D/MANUAL_USUARIO.md\" ] || exit 0; SINCE=$(git -C \"$D\" log -1 --format=%cI -- MANUAL_USUARIO.md 2>/dev/null); [ -z \"$SINCE\" ] && exit 0; DRIFT=$(git -C \"$D\" log --since=\"$SINCE\" --name-only --pretty=format: -- app/src/ 2>/dev/null | sort -u | grep -v '^$' | head -5); if [ -n \"$DRIFT\" ]; then echo '⚠️  Hay cambios en app/src/ desde la última actualización de MANUAL_USUARIO.md:' >&2; echo \"$DRIFT\" >&2; echo 'Considera actualizar el manual de usuario.' >&2; fi; exit 0"
+          }
+        ]
+      }
+    ]
+  }
+}
