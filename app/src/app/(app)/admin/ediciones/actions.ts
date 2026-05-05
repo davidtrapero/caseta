@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +8,10 @@ import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { crearEdicionSchema, actualizarEdicionSchema } from "./schema";
+
+function generarToken() {
+  return randomBytes(18).toString("base64url");
+}
 
 export async function crearEdicionAction(
   _prev: ActionResult<{ id: string }> | null,
@@ -59,6 +64,58 @@ export async function toggleActivaAction(formData: FormData): Promise<void> {
 
   await withAuditContext(user.id, () =>
     prisma.edicion.update({ where: { id }, data: { activa: !actual.activa } })
+  );
+  revalidatePath("/admin/ediciones");
+}
+
+export async function publicarFormularioAction(formData: FormData): Promise<void> {
+  const id = formData.get("_id");
+  if (typeof id !== "string" || !id) return;
+
+  const { user } = await requireRole(["admin", "gerente"]);
+  const actual = await prisma.edicion.findUnique({
+    where: { id },
+    select: { formularioToken: true },
+  });
+  if (!actual) return;
+  if (actual.formularioToken) {
+    revalidatePath("/admin/ediciones");
+    return;
+  }
+
+  await withAuditContext(user.id, () =>
+    prisma.edicion.update({
+      where: { id },
+      data: { formularioToken: generarToken() },
+    })
+  );
+  revalidatePath("/admin/ediciones");
+}
+
+export async function rotarFormularioAction(formData: FormData): Promise<void> {
+  const id = formData.get("_id");
+  if (typeof id !== "string" || !id) return;
+
+  const { user } = await requireRole(["admin", "gerente"]);
+  await withAuditContext(user.id, () =>
+    prisma.edicion.update({
+      where: { id },
+      data: { formularioToken: generarToken() },
+    })
+  );
+  revalidatePath("/admin/ediciones");
+}
+
+export async function despublicarFormularioAction(formData: FormData): Promise<void> {
+  const id = formData.get("_id");
+  if (typeof id !== "string" || !id) return;
+
+  const { user } = await requireRole(["admin", "gerente"]);
+  await withAuditContext(user.id, () =>
+    prisma.edicion.update({
+      where: { id },
+      data: { formularioToken: null },
+    })
   );
   revalidatePath("/admin/ediciones");
 }
