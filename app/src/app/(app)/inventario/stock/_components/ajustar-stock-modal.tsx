@@ -43,7 +43,8 @@ export function AjustarStockModal({
       last.current = state;
       if (state.ok) {
         show("Stock ajustado", "success");
-        setOpen(false);
+        // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
+        queueMicrotask(() => setOpen(false));
       } else {
         show(state.error, "error");
       }

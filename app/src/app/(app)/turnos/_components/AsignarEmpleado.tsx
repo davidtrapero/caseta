@@ -41,7 +41,8 @@ export function AsignarEmpleado({
     if (state && state !== last.current) {
       last.current = state;
       if (state.ok) {
-        setOpen(false);
+        // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
+        queueMicrotask(() => setOpen(false));
       } else {
         show(state.error, "error");
       }

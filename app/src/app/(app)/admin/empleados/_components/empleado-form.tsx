@@ -51,7 +51,8 @@ export function EmpleadoForm({ modo, entidades, initial }: EmpleadoFormProps) {
 
   useEffect(() => {
     if (perfil === "voluntario") {
-      setJornalDiario("");
+      // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
+      queueMicrotask(() => setJornalDiario(""));
     }
   }, [perfil]);
 

@@ -35,7 +35,8 @@ export function BotonDuplicarSemana({ casetaId, edicionId, lunesActual }: Props)
       last.current = state;
       if (state.ok) {
         show(`${state.data.copiados} turnos copiados`, "success");
-        setOpen(false);
+        // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
+        queueMicrotask(() => setOpen(false));
       } else show(state.error, "error");
     }
   }, [state, show]);

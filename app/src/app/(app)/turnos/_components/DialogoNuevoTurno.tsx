@@ -66,9 +66,12 @@ export function DialogoNuevoTurno({
       last.current = state;
       if (state.ok) {
         show("Turno creado", "success");
-        setSeleccionados([]);
-        setPlazas({ vigilante: 0, coordinador: 0, trabajador: 0, voluntario: 0, ayudante: 0 });
-        onClose();
+        // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
+        queueMicrotask(() => {
+          setSeleccionados([]);
+          setPlazas({ vigilante: 0, coordinador: 0, trabajador: 0, voluntario: 0, ayudante: 0 });
+          onClose();
+        });
       } else {
         show(state.error, "error");
       }
