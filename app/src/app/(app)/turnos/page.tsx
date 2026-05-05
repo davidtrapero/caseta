@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/authz";
+import { prisma } from "@/lib/prisma";
 import { loadDiaTurnos } from "./_lib/loader";
 import { CalendarioDia } from "./_components/CalendarioDia";
 import { SelectorCaseta } from "./_components/SelectorCaseta";
 import { NavegadorFecha } from "./_components/NavegadorFecha";
 import { EmptyState } from "../admin/_components/page-header";
+import { Badge } from "@/components/ui/badge";
 
 type SP = Promise<{ fecha?: string; casetaId?: string }>;
 
@@ -21,6 +24,12 @@ export default async function TurnosPage({
     casetaId: sp.casetaId,
     readonly: !puedeEditar,
   });
+
+  const pendientes = puedeEditar && dia
+    ? await prisma.solicitudVoluntario.count({
+        where: { edicionId: dia.edicion.id, estado: "pendiente" },
+      })
+    : 0;
 
   if (!dia) {
     return (
@@ -48,10 +57,23 @@ export default async function TurnosPage({
               {dia.casetaSeleccionada.nombre}
             </h1>
           </div>
-          <SelectorCaseta
-            casetas={dia.casetas}
-            casetaId={dia.casetaSeleccionada.id}
-          />
+          <div className="flex items-center gap-3">
+            {pendientes > 0 ? (
+              <Link
+                href="/admin/solicitudes?estado=pendiente"
+                className="inline-flex items-center gap-2 hover:opacity-80"
+                title="Solicitudes de voluntarios pendientes de revisar"
+              >
+                <Badge variant="default">
+                  {pendientes} pendiente{pendientes === 1 ? "" : "s"}
+                </Badge>
+              </Link>
+            ) : null}
+            <SelectorCaseta
+              casetas={dia.casetas}
+              casetaId={dia.casetaSeleccionada.id}
+            />
+          </div>
         </div>
         <NavegadorFecha fecha={dia.fecha} />
       </header>
