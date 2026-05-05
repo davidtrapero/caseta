@@ -6,17 +6,29 @@ import { LogOutButton } from "./_components/logout-button";
 import { ToastProvider } from "@/components/ui/toaster";
 import {
   Calendar,
+  ClipboardList,
   Home,
   Package,
   Receipt,
   Settings,
+  Users,
 } from "lucide-react";
+import type { Rol } from "@prisma/client";
 
-const NAV = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  roles?: Rol[];
+};
+
+const NAV: NavItem[] = [
   { href: "/", label: "Inicio", icon: Home },
   { href: "/turnos", label: "Turnos", icon: Calendar },
+  { href: "/admin/solicitudes", label: "Solicitudes", icon: ClipboardList, roles: ["admin", "gerente"] },
   { href: "/inventario", label: "Inventario", icon: Package },
   { href: "/caja", label: "Caja", icon: Receipt },
+  { href: "/admin/entidades", label: "Entidades", icon: Users, roles: ["admin", "gerente"] },
   { href: "/admin", label: "Administración", icon: Settings },
 ];
 
@@ -29,7 +41,11 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/login");
   }
-  const user = session.user as typeof session.user & { rol: string };
+  const user = session.user as typeof session.user & { rol: Rol };
+
+  const navItems = NAV.filter(
+    ({ roles }) => !roles || roles.includes(user.rol)
+  );
 
   return (
     <ToastProvider>
@@ -40,7 +56,7 @@ export default async function AppLayout({
           <p className="text-xs text-muted-foreground">Gestión de feria</p>
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1">
-          {NAV.map(({ href, label, icon: Icon }) => (
+          {navItems.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

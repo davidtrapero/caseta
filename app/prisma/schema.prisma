@@ -38,11 +38,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  sessions      Session[]
-  accounts      Account[]
-  movimientos   MovimientoStock[]
-  gastos        Gasto[]
-  auditLogs     AuditLog[]
+  sessions               Session[]
+  accounts               Account[]
+  movimientos            MovimientoStock[]
+  gastos                 Gasto[]
+  auditLogs              AuditLog[]
+  solicitudesDecididas   SolicitudVoluntario[]
 
   @@map("user")
 }
@@ -97,21 +98,23 @@ model Verification {
 
 // Edición de la feria (cada año). Raíz temporal — todo lo operativo cuelga de aquí.
 model Edicion {
-  id           String    @id @default(cuid())
-  anio         Int       @unique
-  nombre       String
-  fechaInicio  DateTime  @db.Date
-  fechaFin     DateTime  @db.Date
-  activa       Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  anio            Int       @unique
+  nombre          String
+  fechaInicio     DateTime  @db.Date
+  fechaFin        DateTime  @db.Date
+  activa          Boolean   @default(false)
+  formularioToken String?   @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  turnos           Turno[]
-  cierres          CierreDiario[]
-  gastos           Gasto[]
-  pedidos          Pedido[]
-  movimientos      MovimientoStock[]
-  nominas          Nomina[]
+  turnos                Turno[]
+  cierres               CierreDiario[]
+  gastos                Gasto[]
+  pedidos               Pedido[]
+  movimientos           MovimientoStock[]
+  nominas               Nomina[]
+  solicitudesVoluntario SolicitudVoluntario[]
 }
 
 // Caseta — transversal entre ediciones.
@@ -134,6 +137,7 @@ model Caseta {
 
 // Empleado — recurso laboral.
 // perfil=voluntario ⇔ jornalDiario IS NULL (validado en Zod + CHECK constraint en migración).
+// perfil=voluntario ⇔ entidadId NOT NULL (backfill en migración, refine en crearEmpleadoSchema).
 model Empleado {
   id                 String         @id @default(cuid())
   nombre             String
@@ -141,10 +145,12 @@ model Empleado {
   telefono           String?
   jornalDiario       Decimal?       @db.Decimal(10, 2)
   perfil             PerfilEmpleado @default(trabajador)
+  entidadId          String?
   activo             Boolean        @default(true)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
+  entidad      EntidadVoluntario? @relation(fields: [entidadId], references: [id], onDelete: Restrict)
   asignaciones TurnoEmpleado[]
   nominas      Nomina[]
 }
@@ -164,10 +170,11 @@ model Turno {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  edicion      Edicion         @relation(fields: [edicionId], references: [id], onDelete: Cascade)
-  caseta       Caseta          @relation(fields: [casetaId], references: [id], onDelete: Restrict)
-  asignaciones TurnoEmpleado[]
-  plazas       TurnoPlaza[]
+  edicion               Edicion                   @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  caseta                Caseta                    @relation(fields: [casetaId], references: [id], onDelete: Restrict)
+  asignaciones          TurnoEmpleado[]
+  plazas                TurnoPlaza[]
+  solicitudesVoluntario SolicitudVoluntarioTurno[]
 
   @@index([casetaId, fechaInicio])
   @@index([edicionId, fechaInicio])
@@ -363,6 +370,62 @@ model Nomina {
   empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
 
   @@unique([empleadoId, edicionId])
+}
+
+// Catálogo de entidades de voluntarios (hermandades, asociaciones, etc.).
+// Borrado = soft-delete (activa=false). onDelete: Restrict en relaciones.
+model EntidadVoluntario {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  activa    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  empleados   Empleado[]
+  solicitudes SolicitudVoluntario[]
+
+  @@index([activa, nombre])
+}
+
+enum EstadoSolicitud {
+  pendiente
+  aprobada
+  rechazada
+  cancelada
+}
+
+model SolicitudVoluntario {
+  id                String          @id @default(cuid())
+  edicionId         String
+  nombre            String
+  telefono          String
+  entidadId         String
+  observaciones     String?         @db.Text
+  estado            EstadoSolicitud @default(pendiente)
+  createdAt         DateTime        @default(now())
+  decididaAt        DateTime?
+  decididaPorUserId String?
+
+  edicion     Edicion                    @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  entidad     EntidadVoluntario          @relation(fields: [entidadId], references: [id], onDelete: Restrict)
+  decididaPor User?                      @relation(fields: [decididaPorUserId], references: [id], onDelete: SetNull)
+  turnos      SolicitudVoluntarioTurno[]
+
+  @@index([edicionId, estado])
+  @@index([telefono])
+  @@index([entidadId])
+}
+
+model SolicitudVoluntarioTurno {
+  id          String @id @default(cuid())
+  solicitudId String
+  turnoId     String
+
+  solicitud SolicitudVoluntario @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  turno     Turno               @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+
+  @@unique([solicitudId, turnoId])
+  @@index([turnoId])
 }
 
 // Auditoría universal — escrita automáticamente por extensión Prisma.

@@ -19,25 +19,36 @@ const jornalSchema = z.preprocess(
 
 const perfilEmpleado = z.enum(PERFIL_ORDEN as [string, ...string[]]);
 
-const baseEmpleado = z
-  .object({
-    nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
-    dni: dniNieOpcionalSchema,
-    telefono: opcionalString(40),
-    jornalDiario: jornalSchema,
-    perfil: perfilEmpleado.default("trabajador"),
-    activo: z.preprocess((v) => v === "on" || v === true, z.boolean()),
-  })
+const baseEmpleado = z.object({
+  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
+  dni: dniNieOpcionalSchema,
+  telefono: opcionalString(40),
+  jornalDiario: jornalSchema,
+  entidadId: opcionalString(40),
+  perfil: perfilEmpleado.default("trabajador"),
+  activo: z.preprocess((v) => v === "on" || v === true, z.boolean()),
+}).refine(
+  (d) => (d.perfil === "voluntario") === (d.jornalDiario === undefined),
+  {
+    message:
+      "El perfil 'Voluntario' requiere jornal vacío, y el resto requiere jornal indicado.",
+    path: ["perfil"],
+  }
+);
+
+// Al crear: teléfono y entidad obligatorios para voluntarios.
+export const crearEmpleadoSchema = baseEmpleado
   .refine(
-    (d) => (d.perfil === "voluntario") === (d.jornalDiario === undefined),
-    {
-      message:
-        "El perfil 'Voluntario' requiere jornal vacío, y el resto requiere jornal indicado.",
-      path: ["perfil"],
-    }
+    (d) => d.perfil !== "voluntario" || !!d.telefono,
+    { message: "Teléfono obligatorio para voluntarios.", path: ["telefono"] }
+  )
+  .refine(
+    (d) => d.perfil !== "voluntario" || !!d.entidadId,
+    { message: "Entidad obligatoria para voluntarios.", path: ["entidadId"] }
   );
 
-export const crearEmpleadoSchema = baseEmpleado;
+// Al actualizar: no forzar teléfono/entidad para no romper voluntarios existentes
+// que llegaron sin esos campos. Solo exigir entidad si se cambia perfil a voluntario.
 export const actualizarEmpleadoSchema = baseEmpleado;
 
 export type CrearEmpleadoInput = z.infer<typeof crearEmpleadoSchema>;

@@ -20,20 +20,24 @@ import {
 
 type Modo = "crear" | "editar";
 
+type EntidadMin = { id: string; nombre: string };
+
 type EmpleadoFormProps = {
   modo: Modo;
+  entidades: EntidadMin[];
   initial?: {
     id: string;
     nombre: string;
     dni: string | null;
     telefono: string | null;
-    jornalDiario: string | null; // Decimal serializado como string
+    jornalDiario: string | null;
+    entidadId: string | null;
     perfil: string;
     activo: boolean;
   };
 };
 
-export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
+export function EmpleadoForm({ modo, entidades, initial }: EmpleadoFormProps) {
   const action = modo === "crear" ? crearEmpleadoAction : actualizarEmpleadoAction;
   const [state, formAction, pending] = useActionState<
     ActionResult<{ id: string }> | null,
@@ -45,7 +49,6 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
   );
   const [jornalDiario, setJornalDiario] = useState(initial?.jornalDiario ?? "");
 
-  // Al cambiar perfil a voluntario, vaciar jornal; al cambiar a otro, si estaba vacío no forzar.
   useEffect(() => {
     if (perfil === "voluntario") {
       setJornalDiario("");
@@ -87,7 +90,9 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
           <FieldError messages={errors.dni} />
         </div>
         <div>
-          <Label htmlFor="telefono">Teléfono</Label>
+          <Label htmlFor="telefono">
+            Teléfono{esVoluntario ? " *" : ""}
+          </Label>
           <Input
             id="telefono"
             name="telefono"
@@ -124,6 +129,26 @@ export function EmpleadoForm({ modo, initial }: EmpleadoFormProps) {
         </div>
         <FieldError messages={errors.perfil} />
       </div>
+
+      {esVoluntario && (
+        <div>
+          <Label htmlFor="entidadId">Entidad *</Label>
+          <select
+            id="entidadId"
+            name="entidadId"
+            defaultValue={initial?.entidadId ?? ""}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">— Selecciona una entidad —</option>
+            {entidades.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+          <FieldError messages={errors.entidadId} />
+        </div>
+      )}
 
       <div>
         <Label htmlFor="jornalDiario">Jornal diario (€)</Label>

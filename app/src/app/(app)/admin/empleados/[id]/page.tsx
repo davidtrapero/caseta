@@ -15,6 +15,18 @@ export default async function EditarEmpleadoPage({
   const empleado = await prisma.empleado.findUnique({ where: { id } });
   if (!empleado) notFound();
 
+  // Carga entidades activas + la del empleado si está inactiva (no desaparece el valor guardado).
+  const entidadesConActual = await prisma.entidadVoluntario.findMany({
+    where: {
+      OR: [
+        { activa: true },
+        ...(empleado.entidadId ? [{ id: empleado.entidadId }] : []),
+      ],
+    },
+    orderBy: { nombre: "asc" },
+    select: { id: true, nombre: true },
+  });
+
   return (
     <FormShell
       title={`Editar: ${empleado.nombre}`}
@@ -22,6 +34,7 @@ export default async function EditarEmpleadoPage({
     >
       <EmpleadoForm
         modo="editar"
+        entidades={entidadesConActual}
         initial={{
           id: empleado.id,
           nombre: empleado.nombre,
@@ -30,6 +43,7 @@ export default async function EditarEmpleadoPage({
           jornalDiario: empleado.jornalDiario
             ? empleado.jornalDiario.toString()
             : null,
+          entidadId: empleado.entidadId,
           perfil: empleado.perfil,
           activo: empleado.activo,
         }}

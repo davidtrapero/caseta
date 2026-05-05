@@ -91,6 +91,18 @@ async function main() {
   }
   console.log(`✓ ${empleados.length} empleados listos`);
 
+  // ---- Entidades de voluntarios ----
+  const entidadesIniciales = ["Hermandad del Rocío", "Particular"];
+  const existenEntidades = await prisma.entidadVoluntario.count();
+  if (existenEntidades === 0) {
+    for (const nombre of entidadesIniciales) {
+      await prisma.entidadVoluntario.create({ data: { nombre } });
+    }
+    console.log(`✓ ${entidadesIniciales.length} entidades de voluntarios creadas`);
+  } else {
+    console.log(`✓ Entidades de voluntarios ya existían (${existenEntidades})`);
+  }
+
   await prisma.$disconnect();
 }
 
