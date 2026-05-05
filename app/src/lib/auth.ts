@@ -7,7 +7,10 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
-    autoSignIn: true,
+    // autoSignIn debe quedar en false: el único uso de signUpEmail es desde
+    // la action de admin que crea usuarios; con autoSignIn=true el admin
+    // que ejecuta la action acaba con la sesión del usuario recién creado.
+    autoSignIn: false,
   },
   // Registro deshabilitado: las cuentas las crea un admin manualmente.
   advanced: {
