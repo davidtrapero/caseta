@@ -1,7 +1,7 @@
 import "server-only";
-import type { Prisma } from "@prisma/client";
+import type { prisma } from "@/lib/prisma";
 
-type Tx = Prisma.TransactionClient;
+type Tx = Parameters<Parameters<(typeof prisma)["$transaction"]>[0]>[0];
 
 /**
  * Devuelve un Map<turnoId, huecosLibres> para voluntarios en una edición.
