@@ -33,9 +33,17 @@ export function toActionError(err: unknown): ActionResult<never> {
     return { ok: false, error: "Revisa los campos marcados.", fieldErrors };
   }
   const msg = err instanceof Error ? err.message : "Error inesperado";
-  // Prisma unique constraint
   if (msg.includes("Unique constraint") || msg.includes("P2002")) {
     return { ok: false, error: "Ya existe un registro con esos datos únicos." };
+  }
+  if (msg.includes("Foreign key") || msg.includes("P2003")) {
+    return { ok: false, error: "Referencia inválida: el recurso relacionado no existe." };
+  }
+  if (msg.includes("P2025") || msg.includes("Record to update not found")) {
+    return { ok: false, error: "El registro no existe o ya fue eliminado." };
+  }
+  if (process.env.NODE_ENV === "production") {
+    return { ok: false, error: "Error inesperado. Inténtalo de nuevo." };
   }
   return { ok: false, error: msg };
 }

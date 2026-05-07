@@ -127,15 +127,9 @@ export async function aprobarSolicitudAction(
           }
         }
 
-        await tx.turnoEmpleado.createMany({
-          data: turnoIds.map((turnoId) => ({
-            turnoId,
-            empleadoId: empleado.id,
-            asistio: false,
-          })),
-        });
-
-        return tx.solicitudVoluntario.update({
+        // Marcar como aprobada ANTES de crear asignaciones: así una segunda
+        // transacción concurrente falla en el check de estado al inicio.
+        const actualizada = await tx.solicitudVoluntario.update({
           where: { id: solicitud.id },
           data: {
             estado: "aprobada",
@@ -144,6 +138,16 @@ export async function aprobarSolicitudAction(
           },
           select: { id: true },
         });
+
+        await tx.turnoEmpleado.createMany({
+          data: turnoIds.map((turnoId) => ({
+            turnoId,
+            empleadoId: empleado.id,
+            asistio: false,
+          })),
+        });
+
+        return actualizada;
       })
     );
 
@@ -170,18 +174,9 @@ export async function rechazarSolicitudAction(
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(decidirSolicitudSchema, formData);
 
-    const actual = await prisma.solicitudVoluntario.findUnique({
-      where: { id: data.solicitudId },
-      select: { estado: true },
-    });
-    if (!actual) return { ok: false, error: "Solicitud no encontrada." };
-    if (actual.estado !== "pendiente") {
-      return { ok: false, error: "La solicitud ya fue resuelta." };
-    }
-
-    await withAuditContext(user.id, () =>
-      prisma.solicitudVoluntario.update({
-        where: { id: data.solicitudId },
+    const resultado = await withAuditContext(user.id, () =>
+      prisma.solicitudVoluntario.updateMany({
+        where: { id: data.solicitudId, estado: "pendiente" },
         data: {
           estado: "rechazada",
           decididaAt: new Date(),
@@ -189,6 +184,18 @@ export async function rechazarSolicitudAction(
         },
       })
     );
+    if (resultado.count === 0) {
+      const existe = await prisma.solicitudVoluntario.findUnique({
+        where: { id: data.solicitudId },
+        select: { id: true },
+      });
+      return {
+        ok: false,
+        error: existe
+          ? "La solicitud ya fue resuelta."
+          : "Solicitud no encontrada.",
+      };
+    }
 
     revalidatePath("/admin/solicitudes");
     return { ok: true, data: { id: data.solicitudId } };

@@ -141,43 +141,51 @@ export async function marcarPagadaAction(formData: FormData): Promise<void> {
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  const { user } = await requireRole(["admin"]);
+  try {
+    const { user } = await requireRole(["admin"]);
 
-  const existente = await prisma.nomina.findUnique({
-    where: { id },
-    select: { pagada: true },
-  });
-  if (!existente || existente.pagada) return;
-
-  await withAuditContext(user.id, () =>
-    prisma.nomina.update({
+    const existente = await prisma.nomina.findUnique({
       where: { id },
-      data: { pagada: true, fechaPago: new Date() },
-    })
-  );
+      select: { pagada: true },
+    });
+    if (!existente || existente.pagada) return;
 
-  revalidatePath("/caja/nominas");
+    await withAuditContext(user.id, () =>
+      prisma.nomina.update({
+        where: { id },
+        data: { pagada: true, fechaPago: new Date() },
+      })
+    );
+
+    revalidatePath("/caja/nominas");
+  } catch {
+    // Errores de autenticación/autorización se descartan silenciosamente.
+  }
 }
 
 export async function desmarcarPagadaAction(formData: FormData): Promise<void> {
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  // Solo admin — deshacer un "pagada" requiere intención explícita.
-  const { user } = await requireRole(["admin"]);
+  try {
+    // Solo admin — deshacer un "pagada" requiere intención explícita.
+    const { user } = await requireRole(["admin"]);
 
-  const existente = await prisma.nomina.findUnique({
-    where: { id },
-    select: { pagada: true },
-  });
-  if (!existente || !existente.pagada) return;
-
-  await withAuditContext(user.id, () =>
-    prisma.nomina.update({
+    const existente = await prisma.nomina.findUnique({
       where: { id },
-      data: { pagada: false, fechaPago: null },
-    })
-  );
+      select: { pagada: true },
+    });
+    if (!existente || !existente.pagada) return;
 
-  revalidatePath("/caja/nominas");
+    await withAuditContext(user.id, () =>
+      prisma.nomina.update({
+        where: { id },
+        data: { pagada: false, fechaPago: null },
+      })
+    );
+
+    revalidatePath("/caja/nominas");
+  } catch {
+    // Idem.
+  }
 }

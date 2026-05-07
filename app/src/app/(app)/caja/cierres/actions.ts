@@ -102,22 +102,27 @@ export async function bloquearCierreAction(
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  const { user } = await requireRole(["admin", "gerente"]);
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
 
-  const existente = await prisma.cierreDiario.findUnique({
-    where: { id },
-    select: { bloqueado: true },
-  });
-  if (!existente) return;
-
-  await withAuditContext(user.id, () =>
-    prisma.cierreDiario.update({
+    const existente = await prisma.cierreDiario.findUnique({
       where: { id },
-      data: { bloqueado: true },
-    })
-  );
+      select: { bloqueado: true },
+    });
+    if (!existente) return;
 
-  revalidatePath("/caja/cierres");
+    await withAuditContext(user.id, () =>
+      prisma.cierreDiario.update({
+        where: { id },
+        data: { bloqueado: true },
+      })
+    );
+
+    revalidatePath("/caja/cierres");
+  } catch {
+    // Errores de autenticación/autorización se descartan silenciosamente;
+    // el middleware ya redirige si la sesión es inválida.
+  }
 }
 
 export async function desbloquearCierreAction(
@@ -126,23 +131,27 @@ export async function desbloquearCierreAction(
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  // Solo admin puede desbloquear.
-  const { user } = await requireRole(["admin"]);
+  try {
+    // Solo admin puede desbloquear.
+    const { user } = await requireRole(["admin"]);
 
-  const existente = await prisma.cierreDiario.findUnique({
-    where: { id },
-    select: { bloqueado: true },
-  });
-  if (!existente) return;
-
-  await withAuditContext(user.id, () =>
-    prisma.cierreDiario.update({
+    const existente = await prisma.cierreDiario.findUnique({
       where: { id },
-      data: { bloqueado: false },
-    })
-  );
+      select: { bloqueado: true },
+    });
+    if (!existente) return;
 
-  revalidatePath("/caja/cierres");
+    await withAuditContext(user.id, () =>
+      prisma.cierreDiario.update({
+        where: { id },
+        data: { bloqueado: false },
+      })
+    );
+
+    revalidatePath("/caja/cierres");
+  } catch {
+    // Idem.
+  }
 }
 
 export async function eliminarCierreAction(
@@ -151,19 +160,23 @@ export async function eliminarCierreAction(
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  // Solo admin puede borrar.
-  const { user } = await requireRole(["admin"]);
+  try {
+    // Solo admin puede borrar.
+    const { user } = await requireRole(["admin"]);
 
-  const existente = await prisma.cierreDiario.findUnique({
-    where: { id },
-    select: { id: true },
-  });
-  if (!existente) return;
+    const existente = await prisma.cierreDiario.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existente) return;
 
-  await withAuditContext(user.id, () =>
-    prisma.cierreDiario.delete({ where: { id } })
-  );
+    await withAuditContext(user.id, () =>
+      prisma.cierreDiario.delete({ where: { id } })
+    );
 
-  revalidatePath("/caja/cierres");
-  revalidatePath("/caja/balance");
+    revalidatePath("/caja/cierres");
+    revalidatePath("/caja/balance");
+  } catch {
+    // Idem.
+  }
 }

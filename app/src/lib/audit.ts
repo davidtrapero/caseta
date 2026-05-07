@@ -20,6 +20,8 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 const auditContext = new AsyncLocalStorage<{ usuarioId: string | null }>();
 
+// AsyncLocalStorage.run() limpia el store automáticamente al finalizar fn().
+// Asumimos entorno sin Worker Threads ni request pooling (Next.js serverless).
 export function withAuditContext<T>(
   usuarioId: string | null,
   fn: () => Promise<T>
