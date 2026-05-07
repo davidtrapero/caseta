@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/authz";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import type { Rol } from "@prisma/client";
 import { loadDashboard } from "./_lib/dashboard";
 import { KpiCard } from "./_components/kpi-card";
@@ -55,7 +56,7 @@ export default async function InicioPage() {
     );
   }
 
-  const { kpis, turnosHoy, alertas, actividad } = data;
+  const { kpis, operativo, turnosHoy, alertas, actividad } = data;
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -104,6 +105,102 @@ export default async function InicioPage() {
                 tono="positivo"
               />
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Cards operativas */}
+      {operativo && esAdminOGerente && (
+        <section>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {/* Cobertura de turnos */}
+            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Cobertura turnos
+              </p>
+              <p className="font-mono text-2xl font-semibold tabular-nums leading-none">
+                {operativo.plazasOcupadas}
+                <span className="text-muted-foreground text-base font-normal">
+                  {" "}/ {operativo.plazasEsperadas}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">plazas asignadas</p>
+              {operativo.plazasEsperadas > 0 && (
+                <div
+                  className="h-1.5 w-full rounded-full overflow-hidden mt-1"
+                  style={{ backgroundColor: "hsl(var(--border))" }}
+                >
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.min(100, Math.round((operativo.plazasOcupadas / operativo.plazasEsperadas) * 100))}%`,
+                      backgroundColor:
+                        operativo.plazasOcupadas >= operativo.plazasEsperadas
+                          ? "hsl(var(--accent))"
+                          : "hsl(var(--primary))",
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Voluntarios */}
+            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  Voluntarios
+                </p>
+                {operativo.voluntariosPendientes > 0 && (
+                  <Link
+                    href="/admin/solicitudes"
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                    style={{
+                      backgroundColor: "hsl(var(--destructive) / 0.15)",
+                      color: "hsl(var(--destructive))",
+                    }}
+                  >
+                    {operativo.voluntariosPendientes} pendiente{operativo.voluntariosPendientes !== 1 ? "s" : ""}
+                  </Link>
+                )}
+              </div>
+              <p className="font-mono text-2xl font-semibold tabular-nums leading-none">
+                {operativo.voluntariosAprobados}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                aprobado{operativo.voluntariosAprobados !== 1 ? "s" : ""}
+                {operativo.voluntariosPendientes > 0 && (
+                  <> · {operativo.voluntariosPendientes} por revisar</>
+                )}
+              </p>
+            </div>
+
+            {/* Pedidos pendientes */}
+            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
+              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Pedidos pendientes
+              </p>
+              <p
+                className="font-mono text-2xl font-semibold tabular-nums leading-none"
+                style={{
+                  color:
+                    operativo.pedidosPendientes > 0
+                      ? "hsl(var(--destructive))"
+                      : undefined,
+                }}
+              >
+                {operativo.pedidosPendientes}
+              </p>
+              {operativo.pedidosPendientes > 0 ? (
+                <Link
+                  href="/inventario/pedidos"
+                  className="text-xs underline underline-offset-2 text-muted-foreground hover:text-foreground"
+                >
+                  Ver pedidos
+                </Link>
+              ) : (
+                <p className="text-xs text-muted-foreground">Sin pedidos activos</p>
+              )}
+            </div>
           </div>
         </section>
       )}

@@ -3,9 +3,18 @@ import { prisma } from "@/lib/prisma";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { hoyIso, fromYmd } from "@/app/(app)/turnos/_lib/fechas";
 
+export type OperativoData = {
+  plazasEsperadas: number;
+  plazasOcupadas: number;
+  voluntariosPendientes: number;
+  voluntariosAprobados: number;
+  pedidosPendientes: number;
+};
+
 export type DashboardData = {
   edicion: { id: string; nombre: string; fechaInicio: string; fechaFin: string } | null;
   kpis: KpiData | null;
+  operativo: OperativoData | null;
   turnosHoy: TurnoHoyData[];
   alertas: AlertaData[];
   actividad: ActividadData[];
@@ -80,7 +89,7 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
   const edicion = await obtenerEdicionActiva();
 
   if (!edicion) {
-    return { edicion: null, kpis: null, turnosHoy: [], alertas: [], actividad: [] };
+    return { edicion: null, kpis: null, operativo: null, turnosHoy: [], alertas: [], actividad: [] };
   }
 
   const hoy = hoyIso();
@@ -116,6 +125,11 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     cierresExistentes,
     pedidosPendientes,
     actividadRaw,
+    plazasEsperadasAgg,
+    plazasOcupadasCount,
+    voluntariosPendientesCount,
+    voluntariosAprobadosCount,
+    pedidosPendientesCount,
   ] = await Promise.all([
     // KPI: ingresos del día
     prisma.cierreDiario.aggregate({
@@ -191,6 +205,27 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
           include: { usuario: { select: { name: true } } },
         })
       : Promise.resolve([]),
+    // Operativo: plazas esperadas
+    prisma.turnoPlaza.aggregate({
+      _sum: { cantidad: true },
+      where: { turno: { edicionId: edicion.id } },
+    }),
+    // Operativo: plazas ocupadas
+    prisma.turnoEmpleado.count({
+      where: { turno: { edicionId: edicion.id } },
+    }),
+    // Operativo: voluntarios pendientes
+    prisma.solicitudVoluntario.count({
+      where: { edicionId: edicion.id, estado: "pendiente" },
+    }),
+    // Operativo: voluntarios aprobados
+    prisma.solicitudVoluntario.count({
+      where: { edicionId: edicion.id, estado: "aprobada" },
+    }),
+    // Operativo: pedidos pendientes (excluye recibido y cancelado)
+    prisma.pedido.count({
+      where: { edicionId: edicion.id, estado: { notIn: ["recibido", "cancelado"] } },
+    }),
   ]);
 
   // KPIs
@@ -279,6 +314,15 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     fecha: a.fecha.toISOString(),
   }));
 
+  // Datos operativos
+  const operativo: OperativoData = {
+    plazasEsperadas: Number(plazasEsperadasAgg._sum.cantidad ?? 0),
+    plazasOcupadas: plazasOcupadasCount,
+    voluntariosPendientes: voluntariosPendientesCount,
+    voluntariosAprobados: voluntariosAprobadosCount,
+    pedidosPendientes: pedidosPendientesCount,
+  };
+
   return {
     edicion: {
       id: edicion.id,
@@ -287,6 +331,7 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
       fechaFin: edicion.fechaFin.toISOString(),
     },
     kpis,
+    operativo,
     turnosHoy,
     alertas,
     actividad,

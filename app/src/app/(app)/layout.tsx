@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { LogOutButton } from "./_components/logout-button";
 import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
 import { ToastProvider } from "@/components/ui/toaster";
+import { EdicionBanner } from "@/components/edicion-banner";
 import type { Rol } from "@prisma/client";
 
 const NAV: (NavItem & { roles?: Rol[] })[] = [
@@ -41,7 +42,12 @@ export default async function AppLayout({
           userRol={user.rol}
           logoutButton={<LogOutButton />}
         />
-        <main className="flex-1 p-6 md:p-8 overflow-auto pt-16 md:pt-8">{children}</main>
+        <div className="flex-1 flex flex-col overflow-auto">
+          <div className="pt-16 md:pt-0">
+            <EdicionBanner />
+          </div>
+          <main className="flex-1 p-6 md:p-8">{children}</main>
+        </div>
       </div>
     </ToastProvider>
   );
