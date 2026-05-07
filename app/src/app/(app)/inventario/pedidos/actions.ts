@@ -214,7 +214,7 @@ export async function recibirPedidoAction(
         });
 
         for (const d of pedido.detalles) {
-          const cantidad = Number(d.cantidad);
+          const cantidad = d.cantidad;
           await tx.movimientoStock.create({
             data: {
               edicionId: edicion.id,
