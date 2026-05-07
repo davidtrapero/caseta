@@ -137,9 +137,14 @@ export async function calcularNominasAction(): Promise<
   }
 }
 
-export async function marcarPagadaAction(formData: FormData): Promise<void> {
+export async function marcarPagadaAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
   try {
     const { user } = await requireRole(["admin"]);
@@ -148,7 +153,8 @@ export async function marcarPagadaAction(formData: FormData): Promise<void> {
       where: { id },
       select: { pagada: true },
     });
-    if (!existente || existente.pagada) return;
+    if (!existente) return { ok: false, error: "Nómina no encontrada." };
+    if (existente.pagada) return { ok: true, data: undefined };
 
     await withAuditContext(user.id, () =>
       prisma.nomina.update({
@@ -156,16 +162,22 @@ export async function marcarPagadaAction(formData: FormData): Promise<void> {
         data: { pagada: true, fechaPago: new Date() },
       })
     );
-
-    revalidatePath("/caja/nominas");
-  } catch {
-    // Errores de autenticación/autorización se descartan silenciosamente.
+  } catch (err) {
+    return toActionError(err);
   }
+
+  revalidatePath("/caja/nominas");
+  return { ok: true, data: undefined };
 }
 
-export async function desmarcarPagadaAction(formData: FormData): Promise<void> {
+export async function desmarcarPagadaAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
   try {
     // Solo admin — deshacer un "pagada" requiere intención explícita.
@@ -175,7 +187,8 @@ export async function desmarcarPagadaAction(formData: FormData): Promise<void> {
       where: { id },
       select: { pagada: true },
     });
-    if (!existente || !existente.pagada) return;
+    if (!existente) return { ok: false, error: "Nómina no encontrada." };
+    if (!existente.pagada) return { ok: true, data: undefined };
 
     await withAuditContext(user.id, () =>
       prisma.nomina.update({
@@ -183,9 +196,10 @@ export async function desmarcarPagadaAction(formData: FormData): Promise<void> {
         data: { pagada: false, fechaPago: null },
       })
     );
-
-    revalidatePath("/caja/nominas");
-  } catch {
-    // Idem.
+  } catch (err) {
+    return toActionError(err);
   }
+
+  revalidatePath("/caja/nominas");
+  return { ok: true, data: undefined };
 }

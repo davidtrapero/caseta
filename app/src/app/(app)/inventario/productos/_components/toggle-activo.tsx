@@ -1,5 +1,9 @@
-import { toggleActivoProductoAction } from "../actions";
+"use client";
+
+import { useActionState } from "react";
 import { Badge } from "@/components/ui/badge";
+import type { ActionResult } from "@/lib/action-result";
+import { toggleActivoProductoAction } from "../actions";
 
 export function ToggleActivoProductoForm({
   id,
@@ -10,12 +14,19 @@ export function ToggleActivoProductoForm({
   activo: boolean;
   disabled?: boolean;
 }) {
+  const [state, formAction, pending] = useActionState<
+    ActionResult<{ activo: boolean }> | null,
+    FormData
+  >(toggleActivoProductoAction, null);
+
+  const errorMsg = state && !state.ok ? state.error : null;
+
   return (
-    <form action={toggleActivoProductoAction}>
+    <form action={formAction} className="flex flex-col items-start gap-1">
       <input type="hidden" name="_id" value={id} />
       <button
         type="submit"
-        disabled={disabled}
+        disabled={disabled || pending}
         className="group inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
         title={
           disabled
@@ -29,6 +40,9 @@ export function ToggleActivoProductoForm({
           {activo ? "Activo" : "Inactivo"}
         </Badge>
       </button>
+      {errorMsg ? (
+        <span className="text-xs text-destructive">{errorMsg}</span>
+      ) : null}
     </form>
   );
 }

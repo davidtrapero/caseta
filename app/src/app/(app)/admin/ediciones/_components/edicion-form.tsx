@@ -66,7 +66,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
             id="nombre"
             name="nombre"
             defaultValue={initial?.nombre ?? ""}
-            placeholder="Feria 2026"
+            placeholder="San Isidro 2026"
             required
           />
           <FieldError messages={errors.nombre} />

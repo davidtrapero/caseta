@@ -93,23 +93,31 @@ export async function actualizarGastoAction(
 }
 
 export async function eliminarGastoAction(
+  _prev: ActionResult | null,
   formData: FormData
-): Promise<void> {
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin"]);
+  try {
+    const { user } = await requireRole(["admin"]);
 
-  const existente = await prisma.gasto.findUnique({
-    where: { id },
-    select: { id: true },
-  });
-  if (!existente) return;
+    const existente = await prisma.gasto.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existente) return { ok: false, error: "Gasto no encontrado." };
 
-  await withAuditContext(user.id, () =>
-    prisma.gasto.delete({ where: { id } })
-  );
+    await withAuditContext(user.id, () =>
+      prisma.gasto.delete({ where: { id } })
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
 
   revalidatePath("/caja/gastos");
   revalidatePath("/caja/balance");
+  return { ok: true, data: undefined };
 }

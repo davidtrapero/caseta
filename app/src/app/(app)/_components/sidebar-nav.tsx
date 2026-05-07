@@ -13,7 +13,6 @@ import {
   Package,
   Receipt,
   Settings,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet } from "@/components/ui/sheet";
@@ -30,7 +29,6 @@ const ICON_MAP: Record<string, React.ElementType> = {
   "/admin/solicitudes": ClipboardList,
   "/inventario": Package,
   "/caja": Receipt,
-  "/admin/entidades": Users,
   "/admin": Settings,
 };
 
@@ -48,7 +46,7 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
     <>
       {items.map(({ href, label }) => {
         const Icon = ICON_MAP[href];
-        const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
+        const isActive = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
             key={href}
@@ -77,7 +75,7 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton }
     <>
       <div className="px-6 py-5 border-b">
         <h1 className="text-lg font-semibold">Caseta</h1>
-        <p className="text-xs text-muted-foreground">Gestión de feria</p>
+        <p className="text-xs text-muted-foreground">San Isidro de Madrid</p>
       </div>
       <nav className="flex-1 p-3 flex flex-col gap-1">
         <NavLinks items={items} onNavClick={() => setOpen(false)} />

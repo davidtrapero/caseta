@@ -34,7 +34,7 @@ export function CrearEntidadForm() {
         <Input
           id="nombre"
           name="nombre"
-          placeholder="Hermandad del Rocío"
+          placeholder="Peña Los Madriles"
           required
           maxLength={80}
         />

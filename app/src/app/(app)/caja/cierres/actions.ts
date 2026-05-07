@@ -97,10 +97,13 @@ export async function actualizarCierreAction(
 }
 
 export async function bloquearCierreAction(
+  _prev: ActionResult | null,
   formData: FormData
-): Promise<void> {
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
   try {
     const { user } = await requireRole(["admin", "gerente"]);
@@ -109,7 +112,7 @@ export async function bloquearCierreAction(
       where: { id },
       select: { bloqueado: true },
     });
-    if (!existente) return;
+    if (!existente) return { ok: false, error: "Cierre no encontrado." };
 
     await withAuditContext(user.id, () =>
       prisma.cierreDiario.update({
@@ -117,19 +120,22 @@ export async function bloquearCierreAction(
         data: { bloqueado: true },
       })
     );
-
-    revalidatePath("/caja/cierres");
-  } catch {
-    // Errores de autenticación/autorización se descartan silenciosamente;
-    // el middleware ya redirige si la sesión es inválida.
+  } catch (err) {
+    return toActionError(err);
   }
+
+  revalidatePath("/caja/cierres");
+  return { ok: true, data: undefined };
 }
 
 export async function desbloquearCierreAction(
+  _prev: ActionResult | null,
   formData: FormData
-): Promise<void> {
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
   try {
     // Solo admin puede desbloquear.
@@ -139,7 +145,7 @@ export async function desbloquearCierreAction(
       where: { id },
       select: { bloqueado: true },
     });
-    if (!existente) return;
+    if (!existente) return { ok: false, error: "Cierre no encontrado." };
 
     await withAuditContext(user.id, () =>
       prisma.cierreDiario.update({
@@ -147,18 +153,22 @@ export async function desbloquearCierreAction(
         data: { bloqueado: false },
       })
     );
-
-    revalidatePath("/caja/cierres");
-  } catch {
-    // Idem.
+  } catch (err) {
+    return toActionError(err);
   }
+
+  revalidatePath("/caja/cierres");
+  return { ok: true, data: undefined };
 }
 
 export async function eliminarCierreAction(
+  _prev: ActionResult | null,
   formData: FormData
-): Promise<void> {
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
   try {
     // Solo admin puede borrar.
@@ -168,15 +178,16 @@ export async function eliminarCierreAction(
       where: { id },
       select: { id: true },
     });
-    if (!existente) return;
+    if (!existente) return { ok: false, error: "Cierre no encontrado." };
 
     await withAuditContext(user.id, () =>
       prisma.cierreDiario.delete({ where: { id } })
     );
-
-    revalidatePath("/caja/cierres");
-    revalidatePath("/caja/balance");
-  } catch {
-    // Idem.
+  } catch (err) {
+    return toActionError(err);
   }
+
+  revalidatePath("/caja/cierres");
+  revalidatePath("/caja/balance");
+  return { ok: true, data: undefined };
 }

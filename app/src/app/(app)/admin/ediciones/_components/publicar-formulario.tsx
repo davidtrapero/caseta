@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
   publicarFormularioAction,
@@ -20,6 +20,8 @@ export function PublicarFormulario({
   disabled?: boolean;
 }) {
   const [copiado, setCopiado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const url = token ? `${baseUrl}/apuntarse/${token}` : null;
 
   async function copiar() {
@@ -33,60 +35,93 @@ export function PublicarFormulario({
     }
   }
 
+  function handlePublicar() {
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("_id", edicionId);
+      const result = await publicarFormularioAction(null, fd);
+      if (!result.ok) setError(result.error);
+      else setError(null);
+    });
+  }
+
+  function handleRotar() {
+    if (!confirm("Rotar el token invalidará la URL anterior. ¿Continuar?")) return;
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("_id", edicionId);
+      const result = await rotarFormularioAction(null, fd);
+      if (!result.ok) setError(result.error);
+      else setError(null);
+    });
+  }
+
+  function handleDespublicar() {
+    if (!confirm("Despublicar cerrará el formulario público. ¿Continuar?")) return;
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("_id", edicionId);
+      const result = await despublicarFormularioAction(null, fd);
+      if (!result.ok) setError(result.error);
+      else setError(null);
+    });
+  }
+
   if (!token) {
     return (
-      <form action={publicarFormularioAction}>
-        <input type="hidden" name="_id" value={edicionId} />
-        <Button type="submit" size="sm" variant="outline" disabled={disabled}>
+      <div className="flex flex-col items-start gap-1">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={disabled || pending}
+          onClick={handlePublicar}
+        >
           Publicar formulario
         </Button>
-      </form>
+        {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+      </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <code
-        className="text-xs bg-muted px-2 py-1 rounded max-w-[18rem] truncate"
-        title={url ?? ""}
-      >
-        {url}
-      </code>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={copiar}
-        disabled={disabled}
-      >
-        {copiado ? "Copiado ✓" : "Copiar"}
-      </Button>
-      <form
-        action={rotarFormularioAction}
-        onSubmit={(e) => {
-          if (!confirm("Rotar el token invalidará la URL anterior. ¿Continuar?")) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <input type="hidden" name="_id" value={edicionId} />
-        <Button type="submit" size="sm" variant="ghost" disabled={disabled}>
+    <div className="flex flex-col items-start gap-1">
+      <div className="flex items-center gap-2 flex-wrap">
+        <code
+          className="text-xs bg-muted px-2 py-1 rounded max-w-[18rem] truncate"
+          title={url ?? ""}
+        >
+          {url}
+        </code>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={copiar}
+          disabled={disabled}
+        >
+          {copiado ? "Copiado ✓" : "Copiar"}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={disabled || pending}
+          onClick={handleRotar}
+        >
           Rotar
         </Button>
-      </form>
-      <form
-        action={despublicarFormularioAction}
-        onSubmit={(e) => {
-          if (!confirm("Despublicar cerrará el formulario público. ¿Continuar?")) {
-            e.preventDefault();
-          }
-        }}
-      >
-        <input type="hidden" name="_id" value={edicionId} />
-        <Button type="submit" size="sm" variant="ghost" disabled={disabled}>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          disabled={disabled || pending}
+          onClick={handleDespublicar}
+        >
           Despublicar
         </Button>
-      </form>
+      </div>
+      {error && <p className="text-xs text-destructive mt-2">{error}</p>}
     </div>
   );
 }

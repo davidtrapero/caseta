@@ -82,25 +82,35 @@ export async function actualizarProductoAction(
 }
 
 export async function toggleActivoProductoAction(
+  _prev: ActionResult<{ activo: boolean }> | null,
   formData: FormData
-): Promise<void> {
+): Promise<ActionResult<{ activo: boolean }>> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  const actual = await prisma.producto.findUnique({
-    where: { id },
-    select: { activo: true },
-  });
-  if (!actual) return;
-
-  await withAuditContext(user.id, () =>
-    prisma.producto.update({
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const actual = await prisma.producto.findUnique({
       where: { id },
-      data: { activo: !actual.activo },
-    })
-  );
+      select: { activo: true },
+    });
+    if (!actual) {
+      return { ok: false, error: "Producto no encontrado." };
+    }
 
-  revalidatePath("/inventario/productos");
-  revalidatePath("/inventario/stock");
+    const actualizado = await withAuditContext(user.id, () =>
+      prisma.producto.update({
+        where: { id },
+        data: { activo: !actual.activo },
+      })
+    );
+
+    revalidatePath("/inventario/productos");
+    revalidatePath("/inventario/stock");
+    return { ok: true, data: { activo: actualizado.activo } };
+  } catch (err) {
+    return toActionError(err);
+  }
 }

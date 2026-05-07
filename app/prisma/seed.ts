@@ -46,7 +46,7 @@ async function main() {
     update: {},
     create: {
       anio: 2026,
-      nombre: "Feria 2026",
+      nombre: "San Isidro 2026",
       fechaInicio: new Date("2026-05-01"),
       fechaFin: new Date("2026-05-10"),
       activa: true,

@@ -38,7 +38,7 @@ export default async function EdicionesPage() {
   return (
     <div>
       <SectionHeader
-        title="Ediciones de la feria"
+        title="Ediciones de San Isidro"
         subtitle="Cada año es una edición. Pueden coexistir varias marcadas como activas."
         actionHref="/admin/ediciones/nueva"
         actionLabel="Nueva edición"

@@ -22,7 +22,7 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Caseta — Gestión",
-  description: "App privada de gestión de casetas de feria.",
+  description: "App privada de gestión de casetas de San Isidro de Madrid.",
 };
 
 export default function RootLayout({

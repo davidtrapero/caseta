@@ -6,6 +6,7 @@ const TABS = [
   { href: "/admin/casetas", label: "Casetas" },
   { href: "/admin/empleados", label: "Empleados" },
   { href: "/admin/proveedores", label: "Proveedores" },
+  { href: "/admin/entidades", label: "Entidades" },
   { href: "/admin/usuarios", label: "Usuarios" },
 ];
 
@@ -22,7 +23,7 @@ export default async function AdminLayout({
         <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
           Administración
         </p>
-        <h1 className="text-3xl">Datos maestros de la feria</h1>
+        <h1 className="text-3xl">Datos maestros de San Isidro</h1>
       </header>
 
       <nav

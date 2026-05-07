@@ -7,7 +7,7 @@ export default async function NuevaCasetaPage() {
   return (
     <FormShell
       title="Nueva caseta"
-      subtitle="Un punto de venta físico de la feria."
+      subtitle="Un punto de venta físico de San Isidro."
     >
       <CasetaForm modo="crear" />
     </FormShell>

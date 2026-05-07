@@ -53,7 +53,7 @@ export async function crearEdicion(params?: {
   return prisma.edicion.create({
     data: {
       anio,
-      nombre: params?.nombre ?? `Feria ${anio}`,
+      nombre: params?.nombre ?? `San Isidro ${anio}`,
       fechaInicio: params?.fechaInicio ?? new Date(`${anio}-05-01`),
       fechaFin: params?.fechaFin ?? new Date(`${anio}-05-10`),
       activa: params?.activa ?? true,

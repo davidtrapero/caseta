@@ -13,7 +13,6 @@ const NAV: (NavItem & { roles?: Rol[] })[] = [
   { href: "/admin/solicitudes", label: "Solicitudes", roles: ["admin", "gerente"] },
   { href: "/inventario", label: "Inventario" },
   { href: "/caja", label: "Caja" },
-  { href: "/admin/entidades", label: "Entidades", roles: ["admin", "gerente"] },
   { href: "/admin", label: "Administración" },
 ];
 

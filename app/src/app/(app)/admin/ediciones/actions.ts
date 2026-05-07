@@ -68,54 +68,87 @@ export async function toggleActivaAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/ediciones");
 }
 
-export async function publicarFormularioAction(formData: FormData): Promise<void> {
+export async function publicarFormularioAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
-
-  const { user } = await requireRole(["admin", "gerente"]);
-  const actual = await prisma.edicion.findUnique({
-    where: { id },
-    select: { formularioToken: true },
-  });
-  if (!actual) return;
-  if (actual.formularioToken) {
-    revalidatePath("/admin/ediciones");
-    return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
   }
 
-  await withAuditContext(user.id, () =>
-    prisma.edicion.update({
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const actual = await prisma.edicion.findUnique({
       where: { id },
-      data: { formularioToken: generarToken() },
-    })
-  );
+      select: { formularioToken: true },
+    });
+    if (!actual) return { ok: false, error: "Edición no encontrada." };
+    if (actual.formularioToken) {
+      revalidatePath("/admin/ediciones");
+      return { ok: true, data: undefined };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.edicion.update({
+        where: { id },
+        data: { formularioToken: generarToken() },
+      })
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
+
   revalidatePath("/admin/ediciones");
+  return { ok: true, data: undefined };
 }
 
-export async function rotarFormularioAction(formData: FormData): Promise<void> {
+export async function rotarFormularioAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  await withAuditContext(user.id, () =>
-    prisma.edicion.update({
-      where: { id },
-      data: { formularioToken: generarToken() },
-    })
-  );
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    await withAuditContext(user.id, () =>
+      prisma.edicion.update({
+        where: { id },
+        data: { formularioToken: generarToken() },
+      })
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
+
   revalidatePath("/admin/ediciones");
+  return { ok: true, data: undefined };
 }
 
-export async function despublicarFormularioAction(formData: FormData): Promise<void> {
+export async function despublicarFormularioAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  await withAuditContext(user.id, () =>
-    prisma.edicion.update({
-      where: { id },
-      data: { formularioToken: null },
-    })
-  );
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    await withAuditContext(user.id, () =>
+      prisma.edicion.update({
+        where: { id },
+        data: { formularioToken: null },
+      })
+    );
+  } catch (err) {
+    return toActionError(err);
+  }
+
   revalidatePath("/admin/ediciones");
+  return { ok: true, data: undefined };
 }

@@ -47,7 +47,7 @@ export function CasetaForm({ modo, initial }: CasetaFormProps) {
           id="nombre"
           name="nombre"
           defaultValue={initial?.nombre ?? ""}
-          placeholder="Caseta El Rocío"
+          placeholder="Caseta La Pradera"
           required
         />
         <FieldError messages={errors.nombre} />

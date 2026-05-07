@@ -55,30 +55,50 @@ export async function renombrarEntidadAction(
   }
 }
 
-export async function desactivarEntidadAction(formData: FormData): Promise<void> {
+export async function desactivarEntidadAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  await withAuditContext(user.id, () =>
-    prisma.entidadVoluntario.update({
-      where: { id },
-      data: { activa: false },
-    })
-  );
-  revalidatePath("/admin/entidades");
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    await withAuditContext(user.id, () =>
+      prisma.entidadVoluntario.update({
+        where: { id },
+        data: { activa: false },
+      })
+    );
+    revalidatePath("/admin/entidades");
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return toActionError(err);
+  }
 }
 
-export async function reactivarEntidadAction(formData: FormData): Promise<void> {
+export async function reactivarEntidadAction(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  await withAuditContext(user.id, () =>
-    prisma.entidadVoluntario.update({
-      where: { id },
-      data: { activa: true },
-    })
-  );
-  revalidatePath("/admin/entidades");
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    await withAuditContext(user.id, () =>
+      prisma.entidadVoluntario.update({
+        where: { id },
+        data: { activa: true },
+      })
+    );
+    revalidatePath("/admin/entidades");
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return toActionError(err);
+  }
 }

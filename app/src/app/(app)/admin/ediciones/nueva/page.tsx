@@ -7,7 +7,7 @@ export default async function NuevaEdicionPage() {
   return (
     <FormShell
       title="Nueva edición"
-      subtitle="Define el año, nombre y fechas de la feria."
+      subtitle="Define el año, nombre y fechas de San Isidro."
     >
       <EdicionForm modo="crear" />
     </FormShell>

@@ -72,19 +72,32 @@ export async function actualizarEmpleadoAction(
   redirect("/admin/empleados");
 }
 
-export async function toggleActivoEmpleadoAction(formData: FormData): Promise<void> {
+export async function toggleActivoEmpleadoAction(
+  _prev: ActionResult<{ activo: boolean }> | null,
+  formData: FormData
+): Promise<ActionResult<{ activo: boolean }>> {
   const id = formData.get("_id");
-  if (typeof id !== "string" || !id) return;
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
 
-  const { user } = await requireRole(["admin", "gerente"]);
-  const actual = await prisma.empleado.findUnique({
-    where: { id },
-    select: { activo: true },
-  });
-  if (!actual) return;
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const actual = await prisma.empleado.findUnique({
+      where: { id },
+      select: { activo: true },
+    });
+    if (!actual) {
+      return { ok: false, error: "Empleado no encontrado." };
+    }
 
-  await withAuditContext(user.id, () =>
-    prisma.empleado.update({ where: { id }, data: { activo: !actual.activo } })
-  );
-  revalidatePath("/admin/empleados");
+    const actualizado = await withAuditContext(user.id, () =>
+      prisma.empleado.update({ where: { id }, data: { activo: !actual.activo } })
+    );
+
+    revalidatePath("/admin/empleados");
+    return { ok: true, data: { activo: actualizado.activo } };
+  } catch (err) {
+    return toActionError(err);
+  }
 }
