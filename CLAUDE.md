@@ -1,109 +1,95 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Repository layout
 
-- [`arquitectura-feria.md`](arquitectura-feria.md) — documento de decisión de stack (histórico).
-- [`plans/`](plans/) — análisis previo al desarrollo; referencia de decisiones de producto.
-- [`app/`](app/) — código real de la aplicación Next.js.
-
-Todo el trabajo de desarrollo ocurre dentro de `app/`. Los comandos de la sección de abajo se ejecutan desde esa carpeta.
+- [`arquitectura-feria.md`](arquitectura-feria.md) — decisión de stack (histórico).
+- [`plans/`](plans/) — análisis previo al desarrollo.
+- [`app/`](app/) — código real Next.js. Todo el desarrollo ocurre aquí.
 
 ## Project purpose
 
-Private (non-commercial) web app to digitize the operation of food & drink stalls at a Spanish fair (*casetas de feria*). Three functional areas:
+App privada para digitalizar la operación de casetas de feria (comida y bebida). Tres áreas:
 
-- **Shifts** (`turnos`): employee assignment per caseta, schedules.
-- **Inventory** (`inventario`): products, stock, ins/outs.
-- **Cash & bookkeeping** (`caja`): daily close per caseta, expenses, payroll.
+- **Turnos**: asignación de empleados por caseta, calendarios, asistencias.
+- **Inventario**: productos, stock, pedidos, movimientos.
+- **Caja**: cierres diarios, gastos, nóminas, balance.
 
-Expected load: **2–5 concurrent users**. This is a **back-office / office app**, not a POS. Do not assume in-barra flows, offline mode or real-time shift check-in.
+Carga esperada: **2–5 usuarios concurrentes**. Back-office, no POS. Sin offline ni check-in en tiempo real.
 
-## Stack (instalado, no re-litigar)
-
-Versiones reales tras bootstrap:
+## Stack
 
 - **Next.js 16** (App Router) + **React 19** + **Tailwind 4**.
 - **Prisma 7** con `@prisma/adapter-pg` (driver JS, sin engine nativo en runtime).
-- **Better Auth 1.6** (reemplaza a la decisión original de Lucia, que fue deprecada).
-- **PostgreSQL** en Neon (branch `dev`) — la BD de producción es un branch distinto en el mismo proyecto Neon.
-- **shadcn/ui** instalado manualmente (componentes en [`app/src/components/ui/`](app/src/components/ui/)).
-- **Zod 4** para validación.
-- **TypeScript 5** strict.
+- **Better Auth 1.6** — autenticación (reemplazó a Lucia, que fue deprecada).
+- **PostgreSQL** en Neon (branch `dev` para desarrollo, branch principal para prod).
+- **shadcn/ui** en [`app/src/components/ui/`](app/src/components/ui/).
+- **Zod 4** + **TypeScript 5** strict.
 
 ## Comandos (desde `app/`)
 
-> En entornos con proxy TLS corporativo, prepender `NODE_EXTRA_CA_CERTS='C:\Users\<user>\all_certs_full.pem'` a cualquier comando que haga fetch externo (Prisma, npm, Next telemetry).
+> Proxy TLS corporativo: prepender `NODE_EXTRA_CA_CERTS='C:\Users\<user>\all_certs_full.pem'` a comandos con fetch externo.
 
 | Comando | Qué hace |
 |---|---|
-| `npm run dev` | Dev server en http://localhost:3000 (Turbopack). |
-| `npm run build` | Build de producción. Verifica TS + prerender. |
+| `npm run dev` | Dev server http://localhost:3000 (Turbopack). |
+| `npm run build` | Build producción. Verifica TS + prerender. |
 | `npm run lint` | ESLint. |
-| `npx prisma migrate dev --name <nombre>` | Crea/aplica migración a la BD del `.env.local`. |
-| `npx prisma generate` | Regenera el cliente a `node_modules/@prisma/client`. Necesario tras cambios en el schema. |
-| `npx tsx prisma/seed.ts` | Ejecuta seed inicial (crea admin si no existe). |
+| `npx prisma migrate dev --name <nombre>` | Crea/aplica migración al branch dev. |
+| `npx prisma generate` | Regenera cliente tras cambios en schema. |
+| `npx tsx prisma/seed.ts` | Seed inicial (crea admin si no existe). |
 
-## Decisiones arquitectónicas clave
+## Decisiones arquitectónicas
 
-- **Prisma schema ([`app/prisma/schema.prisma`](app/prisma/schema.prisma)) es la fuente de verdad.** Cualquier cambio de modelo empieza ahí, seguido de `migrate dev` + `generate`.
-- **Server Actions sobre REST**. Sólo se crea una ruta API explícita para webhooks externos.
-  - Patrón obligatorio: `"use server"` → `requireRole()` → validación Zod → operación Prisma → `revalidatePath()` → retorno tipado `{ ok: true, data } | { ok: false, error }`.
-  - Helpers: [`app/src/lib/authz.ts`](app/src/lib/authz.ts) (`requireRole`, `getSession`).
-- **AuditLog automático**: la extensión Prisma en [`app/src/lib/audit.ts`](app/src/lib/audit.ts) escribe una fila en `AuditLog` por cada create/update/delete de entidades de dominio. El `usuarioId` se lee de un `AsyncLocalStorage` que se setea con `withAuditContext(userId, fn)` al inicio de cada Server Action.
-- **Multi-caseta desde el día 1**: casi todas las entidades operativas tienen `casetaId`. `Edicion` (el año de la feria) es raíz temporal — cuelgan de ella turnos, cierres, gastos, pedidos, movimientos de stock y nóminas.
-- **Empleados no son usuarios**: `Empleado` y `User` son entidades distintas. Empleados no tienen login. Los usuarios con cuenta son `admin`, `gerente` o `cajero`.
+- **Schema Prisma** ([`app/prisma/schema.prisma`](app/prisma/schema.prisma)) es fuente de verdad. Cambios: schema → `migrate dev` → `generate`.
+- **Server Actions sobre REST.** Patrón obligatorio: `"use server"` → `requireRole()` → Zod → Prisma → `revalidatePath()` → `{ ok: true, data } | { ok: false, error }`. Helpers en [`app/src/lib/authz.ts`](app/src/lib/authz.ts).
+- **AuditLog automático** ([`app/src/lib/audit.ts`](app/src/lib/audit.ts)): escribe en `AuditLog` por cada mutación. `usuarioId` vía `AsyncLocalStorage` + `withAuditContext(userId, fn)`.
+- **Multi-caseta desde el día 1**: entidades operativas tienen `casetaId`. `Edicion` (año de feria) es raíz temporal — turnos, cierres, gastos, pedidos, movimientos y nóminas cuelgan de ella.
+- **Empleados ≠ Usuarios**: `Empleado` no tiene login. Usuarios tienen rol `admin`, `gerente` o `cajero`.
+- **Middleware**: `src/proxy.ts` (Next 16 renombró `middleware`) — redirige a `/login` sin cookie. Sin validación de rol (Edge runtime no tiene BD).
 
-## Roles y autorización
+## Roles
 
-3 roles (enum `Rol` en schema):
+- `admin` — CRUD total, gestión de usuarios, nóminas y cierres bloqueados.
+- `gerente` — operativa diaria completa. Sin nóminas ni usuarios.
+- `cajero` — introduce cierres y gastos. Solo lectura del resto.
 
-- `admin` — CRUD total, gestiona usuarios, edita nóminas y cierres cerrados.
-- `gerente` — operativa diaria completa. No toca nóminas ni usuarios.
-- `cajero` — introduce cierres y gastos del día. Solo lectura del resto.
+## Estado de implementación (mayo 2026)
 
-Autorización: llamar a `requireRole([...roles])` al inicio de cada Server Action. El middleware de Next (`src/proxy.ts`, sí, `proxy` no `middleware` — Next 16 lo renombró) redirige a `/login` si no hay cookie de sesión, pero NO hace validación de rol (Edge runtime no tiene BD).
+Aplicación en producción (Vercel + Neon). Todos los módulos operativos:
 
-## Aislamiento de datos
+| Módulo | Rutas principales | Estado |
+|---|---|---|
+| Dashboard | `/` | KPIs, turnos de hoy, alertas, actividad reciente |
+| Turnos | `/turnos/semana`, `/turnos/asistencias`, `/turnos/imprimir` | Calendario, duplicación día/semana, solapamientos, exportación CSV |
+| Voluntarios | `/apuntarse/[token]`, `/admin/solicitudes` | Formulario público con token + aprobación/rechazo con validación de solapamientos |
+| Caja | `/caja/cierres`, `/caja/gastos`, `/caja/nominas`, `/caja/balance` | Cierres bloqueables, nóminas calculadas, balance de edición |
+| Inventario | `/inventario/productos`, `/inventario/pedidos`, `/inventario/movimientos`, `/inventario/stock` | CRUD completo, pedidos con stock atómico |
+| Admin | `/admin/ediciones`, `/admin/casetas`, `/admin/empleados`, `/admin/usuarios`, `/admin/proveedores`, `/admin/entidades` | CRUD completo |
 
-- **BD de desarrollo**: branch `dev` en Neon (URL en `app/.env.local`).
-- **BD de producción**: branch principal de Neon (no usar desde desarrollo).
-- Crear nuevos branches desde la consola de Neon antes de experimentar con migraciones destructivas.
+## Deuda declarada
 
-## Pendientes y deuda declarada
+- **Rotar credenciales Neon** (compartidas en chat durante bootstrap inicial).
+- Tests E2E: Playwright instalado, sin suites reales todavía.
 
-- **Rotar credenciales de Neon** tras compartirlas en chat durante el bootstrap inicial.
-- **Monorepo vs. flat**: actualmente el código vive en `app/` y la doc en la raíz. Si en el futuro aparece un segundo paquete (CLI, worker), valorar Turborepo o workspaces.
+## Working style
 
-## Working style expectations
+- **Vibe coding**: descripciones funcionales por módulo. Preguntar dudas de dominio antes de asumir.
+- Scope tight — sin feature flags, sin SSO, sin roles dinámicos.
+- Comentarios y UI copy en **español**. Identificadores en inglés salvo términos de dominio (`caseta`, `turno`, `jornalDiario`…).
+- Sin error handling para casos imposibles. Validar solo en bordes (Zod en Server Actions, entrada de usuario).
 
-- Development es **vibe coding**: descripciones funcionales por módulo ("calendario semanal de turnos"). Preguntar dudas de dominio antes de asumir.
-- Scope tight — app privada, no enterprise. No feature flags, no SSO, no roles dinámicos.
-- Comentarios y UI copy en **español**. Identificadores de código en inglés salvo términos de dominio (`caseta`, `turno`, `factura`, `jornalDiario`).
-- No añadir error handling para casos que no pueden pasar. Validar en bordes (Zod en Server Actions, entrada de usuario).
+## Skills de proyecto
+
+- **deploy-produccion** — [`app/.claude/skills/deploy-produccion/SKILL.md`](app/.claude/skills/deploy-produccion/SKILL.md)
+  Disparar con: "subir a producción", "deploy", "hacer el deploy", "subida a prod", "publicar", "lanzar a prod".
+  Valida (lint + build), sube versión semver, hace commit `chore(release): vX.Y.Z` y push. Pide confirmación antes del commit.
 
 ## Frontend aesthetics
 
-Existe skill de proyecto en [`.claude/skills/frontend-design/SKILL.md`](.claude/skills/frontend-design/SKILL.md) — se activa automáticamente al generar UI. Complementar con las reglas siguientes, adaptadas al contexto **back-office interno** (no landing, no marketing):
+Skill activa en [`.claude/skills/frontend-design/SKILL.md`](.claude/skills/frontend-design/SKILL.md). Reglas para back-office de feria andaluza:
 
-<frontend_aesthetics>
-Claude tiende a converger hacia outputs genéricos ("AI slop"): Inter, gradientes púrpura sobre blanco, layouts predecibles. Evítalo. Para Caseta — app privada usada a diario por 2-5 personas para gestionar una feria andaluza — busca una estética **distintiva pero funcional**:
-
-**Tipografía**: NO usar Inter, Roboto, Arial ni system fonts. Elegir una combinación con carácter pero legible en datos densos. Sugerencias (variar entre sesiones): Fraunces/Instrument Serif para headings + IBM Plex Sans o Geist para UI + Geist Mono/JetBrains Mono para números en tablas. Las tablas de back-office viven o mueren por la legibilidad tipográfica.
-
-**Color**: una paleta dominante con acento agudo, NO tímida equidistribuida. El dominio es "feria andaluza" → inspirarse en tierras cálidas, albero, rojo oscuro, amarillo tostado, verde oliva — NO caer en el cliché rosa/flamenco ni en el purple gradient. Definir en variables CSS en [`globals.css`](app/src/app/globals.css) y usar vía Tailwind. Un único acento fuerte (ej. rojo albero) + neutros cálidos.
-
-**Motion**: reservada. Un page-load orquestado con `animation-delay` escalonado > micro-interacciones dispersas. PROHIBIDO: animación en hover de filas de tabla, spinners genéricos, transiciones en cambios de ruta. Permitido: fade-in al montar formularios, slide en sidebars, feedback sutil en botones de acción.
-
-**Fondos**: textura o profundidad sutil > blanco plano. Gradiente muy suave, grano sutil, o líneas finas de fondo — nada ruidoso que compita con los datos.
-
-**Anti-patterns (prohibidos)**:
-- Inter/Roboto/Arial/system-ui
-- Gradientes púrpura sobre blanco
-- Cards con sombras genéricas y border-radius 8px por defecto
-- Animaciones en hovers de data tables
-- Iconos Lucide por defecto sin adaptarlos al tono visual
-
-**Match al contexto**: el usuario gestiona una caseta de feria desde casa — la estética puede ser cálida y con carácter, no fría corporativa. Pero la densidad de información (tablas, forms, listados) exige precisión y legibilidad por encima de espectáculo.
-</frontend_aesthetics>
+- **Tipografía**: NO Inter/Roboto/Arial/system-ui. Combinar serif con carácter (Fraunces, Instrument Serif) para headings + IBM Plex Sans o Geist para UI + Geist Mono/JetBrains Mono para números en tablas.
+- **Color**: paleta dominante con acento agudo. Inspiración: albero, rojo oscuro, amarillo tostado, verde oliva — no cliché flamenco ni purple gradient. Variables CSS en [`globals.css`](app/src/app/globals.css); un acento fuerte + neutros cálidos.
+- **Motion**: reservada. Fade-in al montar formularios, slide en sidebars. PROHIBIDO: hover en filas de tabla, spinners genéricos, transiciones de ruta.
+- **Fondos**: textura o profundidad sutil > blanco plano.
+- **Anti-patterns prohibidos**: gradientes púrpura, cards con sombras genéricas y `border-radius 8px` por defecto, iconos Lucide sin adaptar al tono visual.

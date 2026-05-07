@@ -4,27 +4,17 @@ import { auth } from "@/lib/auth";
 import { LogOutButton } from "./_components/logout-button";
 import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
 import { ToastProvider } from "@/components/ui/toaster";
-import {
-  Calendar,
-  ClipboardCheck,
-  ClipboardList,
-  Home,
-  Package,
-  Receipt,
-  Settings,
-  Users,
-} from "lucide-react";
 import type { Rol } from "@prisma/client";
 
 const NAV: (NavItem & { roles?: Rol[] })[] = [
-  { href: "/", label: "Inicio", icon: Home },
-  { href: "/turnos", label: "Turnos", icon: Calendar },
-  { href: "/turnos/asistencias", label: "Asistencias", icon: ClipboardCheck, roles: ["admin", "gerente"] },
-  { href: "/admin/solicitudes", label: "Solicitudes", icon: ClipboardList, roles: ["admin", "gerente"] },
-  { href: "/inventario", label: "Inventario", icon: Package },
-  { href: "/caja", label: "Caja", icon: Receipt },
-  { href: "/admin/entidades", label: "Entidades", icon: Users, roles: ["admin", "gerente"] },
-  { href: "/admin", label: "Administración", icon: Settings },
+  { href: "/", label: "Inicio" },
+  { href: "/turnos", label: "Turnos" },
+  { href: "/turnos/asistencias", label: "Asistencias", roles: ["admin", "gerente"] },
+  { href: "/admin/solicitudes", label: "Solicitudes", roles: ["admin", "gerente"] },
+  { href: "/inventario", label: "Inventario" },
+  { href: "/caja", label: "Caja" },
+  { href: "/admin/entidades", label: "Entidades", roles: ["admin", "gerente"] },
+  { href: "/admin", label: "Administración" },
 ];
 
 export default async function AppLayout({
@@ -40,7 +30,7 @@ export default async function AppLayout({
 
   const navItems: NavItem[] = NAV
     .filter(({ roles }) => !roles || roles.includes(user.rol))
-    .map(({ href, label, icon }) => ({ href, label, icon }));
+    .map(({ href, label }) => ({ href, label }));
 
   return (
     <ToastProvider>

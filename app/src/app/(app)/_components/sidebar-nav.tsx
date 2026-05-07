@@ -3,14 +3,35 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import {
+  Menu,
+  X,
+  Calendar,
+  ClipboardCheck,
+  ClipboardList,
+  Home,
+  Package,
+  Receipt,
+  Settings,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet } from "@/components/ui/sheet";
 
 export type NavItem = {
   href: string;
   label: string;
-  icon: React.ElementType;
+};
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  "/": Home,
+  "/turnos": Calendar,
+  "/turnos/asistencias": ClipboardCheck,
+  "/admin/solicitudes": ClipboardList,
+  "/inventario": Package,
+  "/caja": Receipt,
+  "/admin/entidades": Users,
+  "/admin": Settings,
 };
 
 interface SidebarNavProps {
@@ -25,7 +46,8 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
   const pathname = usePathname();
   return (
     <>
-      {items.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label }) => {
+        const Icon = ICON_MAP[href];
         const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <Link
