@@ -22,9 +22,17 @@ type Modo = "crear" | "editar";
 
 type EntidadMin = { id: string; nombre: string };
 
+type CasetaDefault = {
+  id: string;
+  nombre: string;
+  jornalDiarioDefault: string | null;
+  perfilDefecto: string | null;
+};
+
 type EmpleadoFormProps = {
   modo: Modo;
   entidades: EntidadMin[];
+  casetasDefaults?: CasetaDefault[];
   initial?: {
     id: string;
     nombre: string;
@@ -37,7 +45,7 @@ type EmpleadoFormProps = {
   };
 };
 
-export function EmpleadoForm({ modo, entidades, initial }: EmpleadoFormProps) {
+export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: EmpleadoFormProps) {
   const action = modo === "crear" ? crearEmpleadoAction : actualizarEmpleadoAction;
   const [state, formAction, pending] = useActionState<
     ActionResult<{ id: string }> | null,
@@ -59,12 +67,45 @@ export function EmpleadoForm({ modo, entidades, initial }: EmpleadoFormProps) {
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
   const esVoluntario = perfil === "voluntario";
 
+  function precargarCaseta(casetaId: string) {
+    const caseta = casetasDefaults?.find((c) => c.id === casetaId);
+    if (!caseta) return;
+    if (caseta.perfilDefecto) {
+      setPerfil(caseta.perfilDefecto as PerfilEmpleado);
+    }
+    if (caseta.jornalDiarioDefault) {
+      setJornalDiario(caseta.jornalDiarioDefault);
+    }
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state && !state.ok ? <FormError message={state.error} /> : null}
 
       {modo === "editar" && initial ? (
         <input type="hidden" name="_id" value={initial.id} />
+      ) : null}
+
+      {modo === "crear" && casetasDefaults && casetasDefaults.length > 0 ? (
+        <div>
+          <Label htmlFor="precargarCaseta">Precargar desde caseta</Label>
+          <select
+            id="precargarCaseta"
+            defaultValue=""
+            onChange={(e) => precargarCaseta(e.target.value)}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">— Sin precargar —</option>
+            {casetasDefaults.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Prerrellena jornal y perfil con los valores por defecto de la caseta.
+          </p>
+        </div>
       ) : null}
 
       <div>

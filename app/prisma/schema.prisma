@@ -119,12 +119,14 @@ model Edicion {
 
 // Caseta — transversal entre ediciones.
 model Caseta {
-  id        String  @id @default(cuid())
-  nombre    String  @unique
-  ubicacion String?
-  activa    Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                   String          @id @default(cuid())
+  nombre               String          @unique
+  ubicacion            String?
+  activa               Boolean         @default(true)
+  jornalDiarioDefault  Decimal?        @db.Decimal(10, 2)
+  perfilDefecto        PerfilEmpleado?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
   turnos       Turno[]
   productos    Producto[]
@@ -398,10 +400,12 @@ model SolicitudVoluntario {
   id                String          @id @default(cuid())
   edicionId         String
   nombre            String
-  telefono          String
+  telefono          String?
+  email             String?
   entidadId         String
   observaciones     String?         @db.Text
   estado            EstadoSolicitud @default(pendiente)
+  motivoRechazo     String?         @db.Text
   createdAt         DateTime        @default(now())
   decididaAt        DateTime?
   decididaPorUserId String?
@@ -412,7 +416,6 @@ model SolicitudVoluntario {
   turnos      SolicitudVoluntarioTurno[]
 
   @@index([edicionId, estado])
-  @@index([telefono])
   @@index([entidadId])
 }
 

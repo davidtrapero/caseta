@@ -27,6 +27,8 @@ export default async function EditarCasetaPage({
           nombre: caseta.nombre,
           ubicacion: caseta.ubicacion,
           activa: caseta.activa,
+          jornalDiarioDefault: caseta.jornalDiarioDefault?.toString() ?? null,
+          perfilDefecto: caseta.perfilDefecto ?? null,
         }}
       />
     </FormShell>

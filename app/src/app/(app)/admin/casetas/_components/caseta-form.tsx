@@ -11,6 +11,7 @@ import {
   crearCasetaAction,
   actualizarCasetaAction,
 } from "../actions";
+import { PERFIL_ORDEN, PERFIL_LABEL } from "../../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
 
@@ -21,6 +22,8 @@ type CasetaFormProps = {
     nombre: string;
     ubicacion: string | null;
     activa: boolean;
+    jornalDiarioDefault: string | null;
+    perfilDefecto: string | null;
   };
 };
 
@@ -73,6 +76,43 @@ export function CasetaForm({ modo, initial }: CasetaFormProps) {
         />
         <span>Caseta activa (disponible para turnos, cierres y pedidos).</span>
       </label>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="jornalDiarioDefault">Jornal diario por defecto (€)</Label>
+          <Input
+            id="jornalDiarioDefault"
+            name="jornalDiarioDefault"
+            type="number"
+            step="0.01"
+            min="0"
+            max="9999.99"
+            defaultValue={initial?.jornalDiarioDefault ?? ""}
+            placeholder="80.00"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Se precargará al crear un empleado desde esta caseta.
+          </p>
+          <FieldError messages={errors.jornalDiarioDefault} />
+        </div>
+        <div>
+          <Label htmlFor="perfilDefecto">Perfil por defecto</Label>
+          <select
+            id="perfilDefecto"
+            name="perfilDefecto"
+            defaultValue={initial?.perfilDefecto ?? ""}
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="">— Sin defecto —</option>
+            {PERFIL_ORDEN.map((p) => (
+              <option key={p} value={p}>
+                {PERFIL_LABEL[p]}
+              </option>
+            ))}
+          </select>
+          <FieldError messages={errors.perfilDefecto} />
+        </div>
+      </div>
 
       <div className="flex items-center gap-2 pt-2">
         <Button type="submit" disabled={pending}>
