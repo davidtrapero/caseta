@@ -74,7 +74,7 @@ export async function crearSolicitudAction(
           throw new Error("Alguno de los turnos elegidos ya no existe.");
         }
 
-        const telefonoSinte = `tel:${data.telefono}`;
+        const telefonoSinte = `tel:${data.telefono ?? data.email ?? data.nombre}`;
         const existentes: TurnoRango[] = turnos.map((t) => ({
           id: t.id,
           empleadoId: telefonoSinte,
@@ -119,7 +119,8 @@ export async function crearSolicitudAction(
           data: {
             edicionId: edicion.id,
             nombre: data.nombre,
-            telefono: data.telefono,
+            telefono: data.telefono ?? null,
+            email: data.email ?? null,
             entidadId: data.entidadId,
             observaciones: data.observaciones ?? null,
             turnos: {

@@ -131,7 +131,7 @@ export default async function SolicitudesPage({
                     <Badge variant={badgeVariantPara(s.estado)}>{s.estado}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {s.telefono} · {s.entidad.nombre} · {s.edicion.anio}
+                    {[s.telefono, s.email].filter(Boolean).join(" · ")} · {s.entidad.nombre} · {s.edicion.anio}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Recibida {FECHA.format(s.createdAt)}

@@ -7,7 +7,7 @@ import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
 import { calcularHuecosVoluntario } from "@/app/(app)/turnos/_lib/huecos";
-import { decidirSolicitudSchema } from "./schema";
+import { decidirSolicitudSchema, rechazarSolicitudSchema } from "./schema";
 
 export async function aprobarSolicitudAction(
   _prev: ActionResult<{ id: string }> | null,
@@ -31,10 +31,13 @@ export async function aprobarSolicitudAction(
           throw new Error("La solicitud ya fue resuelta.");
         }
 
-        let empleado = await tx.empleado.findFirst({
-          where: { telefono: solicitud.telefono, perfil: "voluntario" },
-          select: { id: true, entidadId: true, activo: true },
-        });
+        // Buscar empleado existente solo si hay teléfono (evitar match con null).
+        let empleado = solicitud.telefono
+          ? await tx.empleado.findFirst({
+              where: { telefono: solicitud.telefono, perfil: "voluntario" },
+              select: { id: true, entidadId: true, activo: true },
+            })
+          : null;
 
         if (!empleado) {
           const creado = await tx.empleado.create({
@@ -166,39 +169,57 @@ export async function aprobarSolicitudAction(
   }
 }
 
+type RechazarResult = {
+  solicitudId: string;
+  nombre: string;
+  email: string | null;
+  telefono: string | null;
+  motivo: string;
+};
+
 export async function rechazarSolicitudAction(
-  _prev: ActionResult<{ id: string }> | null,
+  _prev: ActionResult<RechazarResult> | null,
   formData: FormData
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<RechazarResult>> {
   try {
     const { user } = await requireRole(["admin", "gerente"]);
-    const data = parseForm(decidirSolicitudSchema, formData);
+    const data = parseForm(rechazarSolicitudSchema, formData);
 
-    const resultado = await withAuditContext(user.id, () =>
-      prisma.solicitudVoluntario.updateMany({
-        where: { id: data.solicitudId, estado: "pendiente" },
+    const solicitud = await prisma.solicitudVoluntario.findUnique({
+      where: { id: data.solicitudId },
+      select: { id: true, nombre: true, email: true, telefono: true, estado: true },
+    });
+
+    if (!solicitud) {
+      return { ok: false, error: "Solicitud no encontrada." };
+    }
+    if (solicitud.estado !== "pendiente") {
+      return { ok: false, error: "La solicitud ya fue resuelta." };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.solicitudVoluntario.update({
+        where: { id: data.solicitudId },
         data: {
           estado: "rechazada",
+          motivoRechazo: data.motivo,
           decididaAt: new Date(),
           decididaPorUserId: user.id,
         },
       })
     );
-    if (resultado.count === 0) {
-      const existe = await prisma.solicitudVoluntario.findUnique({
-        where: { id: data.solicitudId },
-        select: { id: true },
-      });
-      return {
-        ok: false,
-        error: existe
-          ? "La solicitud ya fue resuelta."
-          : "Solicitud no encontrada.",
-      };
-    }
 
     revalidatePath("/admin/solicitudes");
-    return { ok: true, data: { id: data.solicitudId } };
+    return {
+      ok: true,
+      data: {
+        solicitudId: data.solicitudId,
+        nombre: solicitud.nombre,
+        email: solicitud.email,
+        telefono: solicitud.telefono,
+        motivo: data.motivo,
+      },
+    };
   } catch (err) {
     return toActionError(err);
   }

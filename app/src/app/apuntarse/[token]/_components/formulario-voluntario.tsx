@@ -76,39 +76,54 @@ export function FormularioVoluntario({
           <FieldError messages={errors.nombre} />
         </div>
 
+        <p className="text-xs text-muted-foreground -mb-1">
+          Indica al menos un medio de contacto (email o teléfono).
+        </p>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="telefono">Teléfono</Label>
+            <Label htmlFor="telefono">Teléfono <span className="text-muted-foreground font-normal">(opcional)</span></Label>
             <Input
               id="telefono"
               name="telefono"
               type="tel"
-              required
               maxLength={20}
               placeholder="612 345 678"
             />
             <FieldError messages={errors.telefono} />
           </div>
           <div>
-            <Label htmlFor="entidadId">Entidad / hermandad</Label>
-            <select
-              id="entidadId"
-              name="entidadId"
-              required
-              defaultValue=""
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
-            >
-              <option value="" disabled>
-                Selecciona una entidad
-              </option>
-              {entidades.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.nombre}
-                </option>
-              ))}
-            </select>
-            <FieldError messages={errors.entidadId} />
+            <Label htmlFor="email">Email <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              maxLength={254}
+              placeholder="maria@ejemplo.com"
+            />
+            <FieldError messages={errors.email} />
           </div>
+        </div>
+
+        <div>
+          <Label htmlFor="entidadId">Entidad / hermandad</Label>
+          <select
+            id="entidadId"
+            name="entidadId"
+            required
+            defaultValue=""
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
+          >
+            <option value="" disabled>
+              Selecciona una entidad
+            </option>
+            {entidades.map((e) => (
+              <option key={e.id} value={e.id}>
+                {e.nombre}
+              </option>
+            ))}
+          </select>
+          <FieldError messages={errors.entidadId} />
         </div>
 
         <div>
