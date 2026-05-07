@@ -1,25 +1,15 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { calcularHuecosVoluntario } from "@/app/(app)/turnos/_lib/huecos";
+import {
+  claveDiaTurno,
+  formatDiaLargoTurno,
+  formatRangoTurno,
+} from "@/app/(app)/turnos/_lib/fechas";
 import { FormularioVoluntario } from "./_components/formulario-voluntario";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const FECHA_DIA = new Intl.DateTimeFormat("es-ES", {
-  weekday: "long",
-  day: "2-digit",
-  month: "long",
-});
-
-const HORA = new Intl.DateTimeFormat("es-ES", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function claveDia(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
 
 export default async function ApuntarsePage({
   params,
@@ -73,7 +63,7 @@ export default async function ApuntarsePage({
     }
   >();
   for (const t of turnosDisponibles) {
-    const k = claveDia(t.fechaInicio);
+    const k = claveDiaTurno(t.fechaInicio);
     if (!grupos.has(k)) grupos.set(k, { fecha: t.fechaInicio, casetas: new Map() });
     const grupo = grupos.get(k)!;
     if (!grupo.casetas.has(t.caseta.id)) {
@@ -114,12 +104,12 @@ export default async function ApuntarsePage({
             entidades={entidades}
             dias={dias.map((d) => ({
               clave: d.clave,
-              titulo: FECHA_DIA.format(d.fecha),
+              titulo: formatDiaLargoTurno(d.fecha),
               casetas: d.casetas.map((c) => ({
                 nombre: c.casetaNombre,
                 turnos: c.turnos.map((t) => ({
                   id: t.id,
-                  rango: `${HORA.format(t.fechaInicio)} – ${HORA.format(t.fechaFin)}`,
+                  rango: formatRangoTurno(t.fechaInicio, t.fechaFin),
                   huecos: huecos.get(t.id) ?? 0,
                 })),
               })),

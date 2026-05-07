@@ -7,31 +7,79 @@ import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
 import { calcularHuecosVoluntario } from "@/app/(app)/turnos/_lib/huecos";
-import { decidirSolicitudSchema, rechazarSolicitudSchema } from "./schema";
+import { aprobarTurnosSchema, rechazarTurnosSchema } from "./schema";
+// El cliente Prisma de este proyecto va extendido (extensión de auditoría),
+// así que `Prisma.TransactionClient` no encaja. Inferimos el tipo del callback
+// que realmente recibe `$transaction` para mantener typing correcto.
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
-export async function aprobarSolicitudAction(
-  _prev: ActionResult<{ id: string }> | null,
+/**
+ * Recalcula el estado padre de la solicitud a partir de sus turnos hijos.
+ * - Todos pendientes → `pendiente`
+ * - Todos aprobados  → `aprobada`
+ * - Todos rechazados → `rechazada`
+ * - Mezcla aprobado/rechazado (sin pendientes) → `parcial`
+ * - Si queda algún pendiente, mantiene `pendiente` (la solicitud sigue abierta).
+ */
+async function recalcularEstadoSolicitud(
+  tx: Tx,
+  solicitudId: string,
+  userId: string
+): Promise<void> {
+  const turnos = await tx.solicitudVoluntarioTurno.findMany({
+    where: { solicitudId },
+    select: { estado: true },
+  });
+  if (turnos.length === 0) return;
+
+  const pendientes = turnos.filter((t) => t.estado === "pendiente").length;
+  const aprobados = turnos.filter((t) => t.estado === "aprobado").length;
+  const rechazados = turnos.filter((t) => t.estado === "rechazado").length;
+
+  let estado: "pendiente" | "aprobada" | "rechazada" | "parcial";
+  if (pendientes > 0) estado = "pendiente";
+  else if (aprobados === turnos.length) estado = "aprobada";
+  else if (rechazados === turnos.length) estado = "rechazada";
+  else estado = "parcial";
+
+  const decidida = pendientes === 0;
+  await tx.solicitudVoluntario.update({
+    where: { id: solicitudId },
+    data: {
+      estado,
+      decididaAt: decidida ? new Date() : null,
+      decididaPorUserId: decidida ? userId : null,
+    },
+  });
+}
+
+export async function aprobarTurnosAction(
+  _prev: ActionResult<{ id: string; aprobados: number }> | null,
   formData: FormData
-): Promise<ActionResult<{ id: string }>> {
+): Promise<ActionResult<{ id: string; aprobados: number }>> {
   try {
     const { user } = await requireRole(["admin", "gerente"]);
-    const data = parseForm(decidirSolicitudSchema, formData);
+    const data = parseForm(aprobarTurnosSchema, formData);
 
     const result = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         const solicitud = await tx.solicitudVoluntario.findUnique({
           where: { id: data.solicitudId },
           include: {
-            turnos: { include: { turno: true } },
-            entidad: { select: { id: true, activa: true } },
+            turnos: {
+              where: { id: { in: data.turnoIds } },
+              include: { turno: true },
+            },
           },
         });
         if (!solicitud) throw new Error("Solicitud no encontrada.");
-        if (solicitud.estado !== "pendiente") {
-          throw new Error("La solicitud ya fue resuelta.");
+
+        const aResolver = solicitud.turnos.filter((t) => t.estado === "pendiente");
+        if (aResolver.length === 0) {
+          throw new Error("Los turnos seleccionados ya fueron resueltos.");
         }
 
-        // Buscar empleado existente solo si hay teléfono (evitar match con null).
+        // Empleado: reutiliza por teléfono+perfil voluntario; si no existe, lo crea.
         let empleado = solicitud.telefono
           ? await tx.empleado.findFirst({
               where: { telefono: solicitud.telefono, perfil: "voluntario" },
@@ -40,7 +88,7 @@ export async function aprobarSolicitudAction(
           : null;
 
         if (!empleado) {
-          const creado = await tx.empleado.create({
+          empleado = await tx.empleado.create({
             data: {
               nombre: solicitud.nombre,
               perfil: "voluntario",
@@ -51,7 +99,6 @@ export async function aprobarSolicitudAction(
             },
             select: { id: true, entidadId: true, activo: true },
           });
-          empleado = creado;
         } else if (empleado.entidadId !== solicitud.entidadId) {
           await tx.empleado.update({
             where: { id: empleado.id },
@@ -63,26 +110,26 @@ export async function aprobarSolicitudAction(
           throw new Error("El empleado asociado está desactivado.");
         }
 
-        const turnoIds = solicitud.turnos.map((t) => t.turnoId);
+        const turnoIds = aResolver.map((t) => t.turnoId);
 
+        // Validación de huecos por turno (excluye esta solicitud para no contarse a sí misma).
         const huecos = await calcularHuecosVoluntario(tx, solicitud.edicionId, {
           turnoIds,
           excluirSolicitudId: solicitud.id,
         });
         const sinHueco = turnoIds.filter((id) => (huecos.get(id) ?? 0) <= 0);
         if (sinHueco.length > 0) {
-          const err = new Error(
-            "Algunos turnos ya no tienen huecos disponibles."
-          );
+          const err = new Error("Algunos turnos ya no tienen huecos disponibles.");
           (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
             turnos: [`${sinHueco.length} turno(s) sin huecos`],
           };
           throw err;
         }
 
-        const fechasOrden = solicitud.turnos
+        // Validación de solapes contra asignaciones existentes y entre los nuevos.
+        const fechasOrden = aResolver
           .map((t) => t.turno.fechaInicio.getTime())
-          .concat(solicitud.turnos.map((t) => t.turno.fechaFin.getTime()));
+          .concat(aResolver.map((t) => t.turno.fechaFin.getTime()));
         const minIni = new Date(Math.min(...fechasOrden));
         const maxFin = new Date(Math.max(...fechasOrden));
         const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
@@ -97,27 +144,27 @@ export async function aprobarSolicitudAction(
         });
         const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
           id: a.turno.id,
-          empleadoId: empleado.id,
+          empleadoId: empleado!.id,
           casetaId: a.turno.casetaId,
           fechaInicio: a.turno.fechaInicio,
           fechaFin: a.turno.fechaFin,
         }));
 
-        const todosLosNuevos: TurnoRango[] = solicitud.turnos.map((t) => ({
+        const nuevos: TurnoRango[] = aResolver.map((t) => ({
           id: t.turno.id,
-          empleadoId: empleado.id,
+          empleadoId: empleado!.id,
           casetaId: t.turno.casetaId,
           fechaInicio: t.turno.fechaInicio,
           fechaFin: t.turno.fechaFin,
         }));
 
-        for (let i = 0; i < todosLosNuevos.length; i++) {
-          const nuevo = todosLosNuevos[i]!;
-          const otrosNuevos = todosLosNuevos.filter((_, j) => j !== i);
+        for (let i = 0; i < nuevos.length; i++) {
+          const candidato = nuevos[i]!;
+          const otrosNuevos = nuevos.filter((_, j) => j !== i);
           const r = detectarSolape([...existentes, ...otrosNuevos], {
-            empleadoId: empleado.id,
-            fechaInicio: nuevo.fechaInicio,
-            fechaFin: nuevo.fechaFin,
+            empleadoId: empleado!.id,
+            fechaInicio: candidato.fechaInicio,
+            fechaFin: candidato.fechaFin,
           });
           if (r.solapa) {
             const err = new Error(
@@ -130,33 +177,38 @@ export async function aprobarSolicitudAction(
           }
         }
 
-        // Marcar como aprobada ANTES de crear asignaciones: así una segunda
-        // transacción concurrente falla en el check de estado al inicio.
-        const actualizada = await tx.solicitudVoluntario.update({
-          where: { id: solicitud.id },
+        // Marca los turnos solicitados como aprobados.
+        await tx.solicitudVoluntarioTurno.updateMany({
+          where: {
+            id: { in: aResolver.map((t) => t.id) },
+            estado: "pendiente",
+          },
           data: {
-            estado: "aprobada",
+            estado: "aprobado",
             decididaAt: new Date(),
             decididaPorUserId: user.id,
           },
-          select: { id: true },
         });
 
+        // Crea las asignaciones reales en el calendario.
         await tx.turnoEmpleado.createMany({
           data: turnoIds.map((turnoId) => ({
             turnoId,
-            empleadoId: empleado.id,
+            empleadoId: empleado!.id,
             asistio: false,
           })),
+          skipDuplicates: true,
         });
 
-        return actualizada;
+        await recalcularEstadoSolicitud(tx, solicitud.id, user.id);
+
+        return { id: solicitud.id, aprobados: aResolver.length };
       })
     );
 
     revalidatePath("/admin/solicitudes");
     revalidatePath("/turnos");
-    return { ok: true, data: { id: result.id } };
+    return { ok: true, data: result };
   } catch (err) {
     const fieldErrors =
       err instanceof Error
@@ -175,51 +227,70 @@ type RechazarResult = {
   email: string | null;
   telefono: string | null;
   motivo: string;
+  rechazados: number;
 };
 
-export async function rechazarSolicitudAction(
+export async function rechazarTurnosAction(
   _prev: ActionResult<RechazarResult> | null,
   formData: FormData
 ): Promise<ActionResult<RechazarResult>> {
   try {
     const { user } = await requireRole(["admin", "gerente"]);
-    const data = parseForm(rechazarSolicitudSchema, formData);
+    const data = parseForm(rechazarTurnosSchema, formData);
 
-    const solicitud = await prisma.solicitudVoluntario.findUnique({
-      where: { id: data.solicitudId },
-      select: { id: true, nombre: true, email: true, telefono: true, estado: true },
-    });
+    const result = await withAuditContext(user.id, () =>
+      prisma.$transaction(async (tx) => {
+        const solicitud = await tx.solicitudVoluntario.findUnique({
+          where: { id: data.solicitudId },
+          select: {
+            id: true,
+            nombre: true,
+            email: true,
+            telefono: true,
+            turnos: {
+              where: { id: { in: data.turnoIds } },
+              select: { id: true, estado: true },
+            },
+          },
+        });
+        if (!solicitud) throw new Error("Solicitud no encontrada.");
 
-    if (!solicitud) {
-      return { ok: false, error: "Solicitud no encontrada." };
-    }
-    if (solicitud.estado !== "pendiente") {
-      return { ok: false, error: "La solicitud ya fue resuelta." };
-    }
+        const aRechazar = solicitud.turnos.filter((t) => t.estado === "pendiente");
+        if (aRechazar.length === 0) {
+          throw new Error("Los turnos seleccionados ya fueron resueltos.");
+        }
 
-    await withAuditContext(user.id, () =>
-      prisma.solicitudVoluntario.update({
-        where: { id: data.solicitudId },
-        data: {
-          estado: "rechazada",
-          motivoRechazo: data.motivo,
-          decididaAt: new Date(),
-          decididaPorUserId: user.id,
-        },
+        await tx.solicitudVoluntarioTurno.updateMany({
+          where: {
+            id: { in: aRechazar.map((t) => t.id) },
+            estado: "pendiente",
+          },
+          data: {
+            estado: "rechazado",
+            motivoRechazo: data.motivo,
+            decididaAt: new Date(),
+            decididaPorUserId: user.id,
+          },
+        });
+
+        await recalcularEstadoSolicitud(tx, solicitud.id, user.id);
+
+        return {
+          solicitudId: solicitud.id,
+          nombre: solicitud.nombre,
+          email: solicitud.email,
+          telefono: solicitud.telefono,
+          motivo: data.motivo,
+          rechazados: aRechazar.length,
+        };
       })
     );
 
-    revalidatePath("/admin/solicitudes");
-    return {
-      ok: true,
-      data: {
-        solicitudId: data.solicitudId,
-        nombre: solicitud.nombre,
-        email: solicitud.email,
-        telefono: solicitud.telefono,
-        motivo: data.motivo,
-      },
-    };
+    // Nota: NO revalidamos aquí. El cliente abre un aviso post-rechazo con
+    // botones de WhatsApp/email; si revalidamos, este componente se desmonta
+    // antes de que el aviso aparezca. La revalidación se dispara desde el
+    // cliente al cerrar el aviso (router.refresh()).
+    return { ok: true, data: result };
   } catch (err) {
     return toActionError(err);
   }

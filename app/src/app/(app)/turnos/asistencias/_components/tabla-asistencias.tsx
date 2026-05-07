@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -64,9 +64,8 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
           const abierta = expandidas.has(f.id);
           const colores = PERFIL_COLORES[f.perfil];
           return (
-            <>
+            <Fragment key={f.id}>
               <TableRow
-                key={f.id}
                 onClick={() => toggle(f.id)}
                 className="cursor-pointer"
               >
@@ -97,7 +96,7 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
                 </TableCell>
               </TableRow>
               {abierta ? (
-                <TableRow key={`${f.id}-detalle`} className="bg-muted/30">
+                <TableRow className="bg-muted/30">
                   <TableCell colSpan={4} className="py-3">
                     <ul className="text-sm flex flex-col gap-1 pl-6">
                       {f.asistencias.map((a) => (
@@ -115,7 +114,7 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
                   </TableCell>
                 </TableRow>
               ) : null}
-            </>
+            </Fragment>
           );
         })}
       </TableBody>

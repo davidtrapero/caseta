@@ -9,9 +9,13 @@ export type ActionResult<T = undefined> =
 
 export function parseForm<T>(schema: ZodType<T>, formData: FormData): T {
   const raw: Record<string, unknown> = {};
-  for (const [key, value] of formData.entries()) {
+  const seen = new Set<string>();
+  for (const [key] of formData.entries()) {
     if (key.startsWith("_")) continue; // descarta _action, _id, etc.
-    raw[key] = value === "" ? undefined : value;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const values = formData.getAll(key).map((v) => (v === "" ? undefined : v));
+    raw[key] = values.length === 1 ? values[0] : values;
   }
   return schema.parse(raw);
 }

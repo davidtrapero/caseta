@@ -44,6 +44,7 @@ model User {
   gastos                 Gasto[]
   auditLogs              AuditLog[]
   solicitudesDecididas   SolicitudVoluntario[]
+  turnosSolicitudDecididos SolicitudVoluntarioTurno[] @relation("DecididasTurno")
 
   @@map("user")
 }
@@ -393,7 +394,14 @@ enum EstadoSolicitud {
   pendiente
   aprobada
   rechazada
+  parcial
   cancelada
+}
+
+enum EstadoSolicitudTurno {
+  pendiente
+  aprobado
+  rechazado
 }
 
 model SolicitudVoluntario {
@@ -424,8 +432,14 @@ model SolicitudVoluntarioTurno {
   solicitudId String
   turnoId     String
 
-  solicitud SolicitudVoluntario @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
-  turno     Turno               @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  estado            EstadoSolicitudTurno @default(pendiente)
+  motivoRechazo     String?              @db.Text
+  decididaAt        DateTime?
+  decididaPorUserId String?
+
+  solicitud   SolicitudVoluntario @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  turno       Turno               @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  decididaPor User?               @relation("DecididasTurno", fields: [decididaPorUserId], references: [id], onDelete: SetNull)
 
   @@unique([solicitudId, turnoId])
   @@index([turnoId])

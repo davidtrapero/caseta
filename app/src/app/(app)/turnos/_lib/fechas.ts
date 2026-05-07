@@ -2,6 +2,14 @@
 // Trabajamos en zona local del servidor/cliente para los "días"; los timestamps
 // ISO de los turnos vienen del backend como UTC y se formatean con Intl.
 
+// Convención del proyecto: los turnos se guardan en UTC pero el reloj UTC se
+// trata como reloj de pared ("naive UTC"). Ej.: un turno 22:00–03:00 vive como
+// `..T22:00Z` → `..T03:00Z` y se muestra como 22:00–03:00 en cualquier TZ.
+// Por eso TODOS los formatters de Date deben fijar `timeZone: "UTC"`. Si no,
+// en Vercel (proceso UTC) se vería bien pero en local Windows (Madrid +2)
+// aparecerían +2h, y viceversa.
+export const TZ_TURNOS = "UTC";
+
 export const DIAS_SEMANA_CORTOS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
 export const DIAS_SEMANA_LARGOS = [
   "Lunes",
@@ -102,4 +110,54 @@ const FECHA_CORTA = new Intl.DateTimeFormat("es-ES", {
 
 export function formatFechaCorta(ymd: string): string {
   return FECHA_CORTA.format(fromYmd(ymd));
+}
+
+// --- Helpers TZ-safe para timestamps absolutos (Date) ---
+// Convención: los turnos se guardan como "naive UTC" (ver TZ_TURNOS). Estos
+// helpers fijan `timeZone: "UTC"` para que la hora de pared sea consistente
+// independientemente de dónde corra el proceso (Vercel UTC vs. local Madrid).
+
+const HORA_TURNO = new Intl.DateTimeFormat("es-ES", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: TZ_TURNOS,
+});
+
+const DIA_LARGO_TURNO = new Intl.DateTimeFormat("es-ES", {
+  weekday: "long",
+  day: "2-digit",
+  month: "long",
+  timeZone: TZ_TURNOS,
+});
+
+const CLAVE_DIA_TURNO = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  timeZone: TZ_TURNOS,
+});
+
+/** "HH:MM" del reloj de pared del turno. */
+export function formatHoraTurno(d: Date): string {
+  return HORA_TURNO.format(d);
+}
+
+/** "lunes, 09 de mayo" según el día del turno. */
+export function formatDiaLargoTurno(d: Date): string {
+  return DIA_LARGO_TURNO.format(d);
+}
+
+/** "YYYY-MM-DD" según el día del turno. Útil para agrupar por jornada. */
+export function claveDiaTurno(d: Date): string {
+  return CLAVE_DIA_TURNO.format(d);
+}
+
+/**
+ * Rango de un turno en su reloj de pared, marcando cruce de medianoche.
+ * Ej.: "22:00 – 03:00 (+1d)" para un turno que cruza al día siguiente.
+ */
+export function formatRangoTurno(inicio: Date, fin: Date): string {
+  const cruzaDia = claveDiaTurno(inicio) !== claveDiaTurno(fin);
+  const sufijo = cruzaDia ? " (+1d)" : "";
+  return `${formatHoraTurno(inicio)} – ${formatHoraTurno(fin)}${sufijo}`;
 }

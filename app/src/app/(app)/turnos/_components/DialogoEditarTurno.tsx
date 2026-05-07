@@ -101,7 +101,17 @@ export function DialogoEditarTurno({ open, onClose, turno }: Props) {
 
   return (
     <Modal open={open} onClose={onClose} title="Editar turno">
-      <form action={action} className="flex flex-col gap-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          // Submit manual con startTransition: evita el form.reset() automático
+          // de React 19 con <form action={...}>, preservando los selects de
+          // hora si la action devuelve error.
+          const fd = new FormData(e.currentTarget);
+          startTransition(() => action(fd));
+        }}
+        className="flex flex-col gap-4"
+      >
         {state && !state.ok ? <FormError message={state.error} /> : null}
         <input type="hidden" name="_id" value={turno.id} />
         <input type="hidden" name="id" value={turno.id} />

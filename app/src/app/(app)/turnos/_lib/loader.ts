@@ -13,15 +13,18 @@ import type {
   EdicionMin,
 } from "../types";
 import { PERFIL_ORDEN, type PerfilEmpleado } from "./perfiles";
-import { addDays, fromYmd, hoyIso, lunesDe, toYmd } from "./fechas";
+import { addDays, hoyIso, lunesDe } from "./fechas";
 
 // Multi-caseta: necesitamos una edición activa para filtrar. Si no hay
 // edición activa, devolvemos datos vacíos con una primera edición disponible.
 
-function startOfDayLocal(ymd: string): Date {
-  const d = fromYmd(ymd);
-  d.setHours(0, 0, 0, 0);
-  return d;
+// Los turnos se almacenan con timestamps UTC (minuto=0 UTC, ver schema.ts e
+// isoHora en los formularios). El día de un turno es el día UTC de fechaInicio,
+// no el día local del servidor (que en dev difiere y haría que un turno de
+// 22:00 apareciera en el día siguiente).
+function startOfDayUtc(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
 }
 
 function edicionMin(e: {
@@ -155,9 +158,9 @@ export async function loadDiaTurnos(params: {
   const ctx = await loadContexto(params);
   if (!ctx) return null;
 
-  const inicioDia = startOfDayLocal(fecha);
+  const inicioDia = startOfDayUtc(fecha);
   const finDia = new Date(inicioDia);
-  finDia.setDate(finDia.getDate() + 1);
+  finDia.setUTCDate(finDia.getUTCDate() + 1);
 
   const turnos = await prisma.turno.findMany({
     where: {
@@ -195,9 +198,9 @@ export async function loadSemanaTurnos(params: {
   const ctx = await loadContexto(params);
   if (!ctx) return null;
 
-  const inicio = startOfDayLocal(lunes);
+  const inicio = startOfDayUtc(lunes);
   const fin = new Date(inicio);
-  fin.setDate(fin.getDate() + 7);
+  fin.setUTCDate(fin.getUTCDate() + 7);
 
   const turnosRaw = await prisma.turno.findMany({
     where: {
@@ -219,8 +222,8 @@ export async function loadSemanaTurnos(params: {
   const dias: ResumenDiaSemana[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(inicio);
-    d.setDate(d.getDate() + i);
-    const ymd = toYmd(d);
+    d.setUTCDate(d.getUTCDate() + i);
+    const ymd = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
     const desde = d.getTime();
     const hasta = desde + 24 * 3600_000;
     const delDia = turnos.filter((t) => {

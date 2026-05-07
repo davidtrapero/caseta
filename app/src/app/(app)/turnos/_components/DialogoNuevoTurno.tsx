@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -105,7 +105,17 @@ export function DialogoNuevoTurno({
       title="Nuevo turno"
       description="Define el horario y los empleados asignados (0..N)."
     >
-      <form action={action} className="flex flex-col gap-4">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          // Submit manual con startTransition: evita el form.reset() automático
+          // que React 19 dispara con <form action={...}> tras cada resolución,
+          // de modo que tras un error se preservan los selects de hora.
+          const fd = new FormData(e.currentTarget);
+          startTransition(() => action(fd));
+        }}
+        className="flex flex-col gap-4"
+      >
         {state && !state.ok ? <FormError message={state.error} /> : null}
         <input type="hidden" name="edicionId" value={edicionId} />
         <input type="hidden" name="casetaId" value={casetaId} />

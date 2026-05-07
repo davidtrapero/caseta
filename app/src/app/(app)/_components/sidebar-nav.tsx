@@ -46,7 +46,17 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
     <>
       {items.map(({ href, label }) => {
         const Icon = ICON_MAP[href];
-        const isActive = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+        const isActive =
+          href === "/"
+            ? pathname === "/"
+            : pathname === href ||
+              (pathname.startsWith(href + "/") &&
+                !items.some(
+                  (other) =>
+                    other.href !== href &&
+                    other.href.startsWith(href + "/") &&
+                    (pathname === other.href || pathname.startsWith(other.href + "/"))
+                ));
         return (
           <Link
             key={href}
