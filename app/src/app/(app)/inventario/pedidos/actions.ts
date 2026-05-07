@@ -227,16 +227,6 @@ export async function recibirPedidoAction(
             },
           });
 
-          const stock = await tx.stock.findUnique({
-            where: {
-              casetaId_productoId: {
-                casetaId: pedido.casetaId,
-                productoId: d.productoId,
-              },
-            },
-            select: { cantidad: true },
-          });
-          const nueva = (stock ? Number(stock.cantidad) : 0) + cantidad;
           await tx.stock.upsert({
             where: {
               casetaId_productoId: {
@@ -247,9 +237,9 @@ export async function recibirPedidoAction(
             create: {
               casetaId: pedido.casetaId,
               productoId: d.productoId,
-              cantidad: nueva,
+              cantidad,
             },
-            update: { cantidad: nueva },
+            update: { cantidad: { increment: cantidad } },
           });
         }
       })

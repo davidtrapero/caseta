@@ -37,25 +37,25 @@ export async function ajustarStockAction(
       };
     }
 
-    const stockExistente = await prisma.stock.findUnique({
-      where: {
-        casetaId_productoId: {
-          casetaId: data.casetaId,
-          productoId: data.productoId,
-        },
-      },
-      select: { id: true, cantidad: true },
-    });
-
-    const anterior = stockExistente ? Number(stockExistente.cantidad) : 0;
-    const diferencia = data.nuevaCantidad - anterior;
-
-    if (diferencia === 0) {
-      return { ok: true, data: { id: stockExistente?.id ?? "" } };
-    }
-
     const resultado = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
+        const stockExistente = await tx.stock.findUnique({
+          where: {
+            casetaId_productoId: {
+              casetaId: data.casetaId,
+              productoId: data.productoId,
+            },
+          },
+          select: { id: true, cantidad: true },
+        });
+
+        const anterior = stockExistente ? Number(stockExistente.cantidad) : 0;
+        const diferencia = data.nuevaCantidad - anterior;
+
+        if (diferencia === 0) {
+          return stockExistente ?? { id: "", cantidad: 0 };
+        }
+
         const stock = await tx.stock.upsert({
           where: {
             casetaId_productoId: {
