@@ -42,14 +42,14 @@
   --primary: 33 57% 50%;              /* #c68a3a latón envejecido */
   --primary-foreground: 40 48% 97%;
 
-  --secondary: 39 22% 80%;
-  --secondary-foreground: 30 22% 12%;
+  --secondary: 35 40% 45%;             /* #9b6b33 ocre-cuero para badges y tags */
+  --secondary-foreground: 40 48% 97%;
 
   --muted: 38 22% 82%;
   --muted-foreground: 30 12% 32%;
 
-  --accent: 33 40% 82%;               /* latón muy desaturado para hovers */
-  --accent-foreground: 30 22% 6%;
+  --accent: 85 25% 40%;               /* #5e7040 verde oliva — hovers y estados activos */
+  --accent-foreground: 40 48% 97%;
 
   --destructive: 3 60% 23%;           /* #5c1a17 granate profundo */
   --destructive-foreground: 40 48% 95%;
