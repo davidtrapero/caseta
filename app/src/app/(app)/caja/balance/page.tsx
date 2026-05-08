@@ -79,7 +79,7 @@ export default async function BalancePage() {
     prisma.nomina.findMany({
       where: { edicionId: edicion.id },
       include: {
-        empleado: { select: { nombre: true, perfil: true } },
+        empleado: { select: { nombre: true } },
       },
       orderBy: { total: "desc" },
     }),

@@ -60,7 +60,7 @@ export default async function NominasPage() {
     where: { edicionId: edicion.id },
     include: {
       empleado: {
-        select: { id: true, nombre: true, perfil: true, activo: true },
+        select: { id: true, nombre: true, activo: true },
       },
     },
     orderBy: [{ pagada: "asc" }, { empleado: { nombre: "asc" } }],

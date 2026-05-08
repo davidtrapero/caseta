@@ -79,10 +79,22 @@ export async function aprobarTurnosAction(
           throw new Error("Los turnos seleccionados ya fueron resueltos.");
         }
 
-        // Empleado: reutiliza por teléfono+perfil voluntario; si no existe, lo crea.
+        // Resolver el tipo "voluntario" (asume un único tipo con esVoluntario=true).
+        const tipoVoluntario = await tx.tipoEmpleado.findFirst({
+          where: { esVoluntario: true, activo: true },
+          select: { id: true },
+        });
+        if (!tipoVoluntario) {
+          throw new Error("No hay un tipo de empleado marcado como voluntario.");
+        }
+
+        // Empleado: reutiliza por teléfono+tipo voluntario; si no existe, lo crea.
         let empleado = solicitud.telefono
           ? await tx.empleado.findFirst({
-              where: { telefono: solicitud.telefono, perfil: "voluntario" },
+              where: {
+                telefono: solicitud.telefono,
+                tipoEmpleadoId: tipoVoluntario.id,
+              },
               select: { id: true, entidadId: true, activo: true },
             })
           : null;
@@ -91,7 +103,7 @@ export async function aprobarTurnosAction(
           empleado = await tx.empleado.create({
             data: {
               nombre: solicitud.nombre,
-              perfil: "voluntario",
+              tipoEmpleadoId: tipoVoluntario.id,
               telefono: solicitud.telefono,
               entidadId: solicitud.entidadId,
               activo: true,

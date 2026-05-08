@@ -6,7 +6,7 @@ import { EmpleadoForm } from "../_components/empleado-form";
 export default async function NuevoEmpleadoPage() {
   await requireRole(["admin", "gerente"]);
 
-  const [entidades, casetasDefaults] = await Promise.all([
+  const [entidades, casetasDefaults, tiposEmpleado] = await Promise.all([
     prisma.entidadVoluntario.findMany({
       where: { activa: true },
       orderBy: { nombre: "asc" },
@@ -17,7 +17,7 @@ export default async function NuevoEmpleadoPage() {
         activa: true,
         OR: [
           { jornalDiarioDefault: { not: null } },
-          { perfilDefecto: { not: null } },
+          { tipoEmpleadoDefectoId: { not: null } },
         ],
       },
       orderBy: { nombre: "asc" },
@@ -25,8 +25,12 @@ export default async function NuevoEmpleadoPage() {
         id: true,
         nombre: true,
         jornalDiarioDefault: true,
-        perfilDefecto: true,
+        tipoEmpleadoDefectoId: true,
       },
+    }),
+    prisma.tipoEmpleado.findMany({
+      where: { activo: true },
+      orderBy: { orden: "asc" },
     }),
   ]);
 
@@ -38,11 +42,20 @@ export default async function NuevoEmpleadoPage() {
       <EmpleadoForm
         modo="crear"
         entidades={entidades}
+        tiposEmpleado={tiposEmpleado.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+          labelCorto: t.labelCorto,
+          colorHex: t.colorHex,
+          esVoluntario: t.esVoluntario,
+          orden: t.orden,
+        }))}
         casetasDefaults={casetasDefaults.map((c) => ({
           id: c.id,
           nombre: c.nombre,
           jornalDiarioDefault: c.jornalDiarioDefault?.toString() ?? null,
-          perfilDefecto: c.perfilDefecto ?? null,
+          tipoEmpleadoDefectoId: c.tipoEmpleadoDefectoId ?? null,
         }))}
       />
     </FormShell>

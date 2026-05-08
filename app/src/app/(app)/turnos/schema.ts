@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { PERFIL_ORDEN } from "./_lib/perfiles";
 
 // Turno = tramo horario en una caseta, con 0..N empleados asignados (Fase 3).
 // fechaInicio y fechaFin son timestamps ISO (DateTime completos).
@@ -54,16 +53,12 @@ const baseTurnoRango = z
     { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
   );
 
-const perfilEnum = z.enum(
-  PERFIL_ORDEN as [string, ...string[]]
-);
-
-// Plazas esperadas por perfil: serializado como JSON en un campo hidden.
+// Plazas esperadas por tipo: serializado como JSON en un campo hidden.
 const plazasJson = z
   .string()
   .optional()
   .transform((v) => {
-    if (!v) return [] as { perfil: string; cantidad: number }[];
+    if (!v) return [] as { tipoEmpleadoId: string; cantidad: number }[];
     try {
       const parsed = JSON.parse(v);
       return Array.isArray(parsed) ? parsed : [];
@@ -74,7 +69,7 @@ const plazasJson = z
   .pipe(
     z.array(
       z.object({
-        perfil: perfilEnum,
+        tipoEmpleadoId: z.string().cuid("Tipo de empleado inválido"),
         cantidad: z.coerce.number().int().min(0).max(99),
       })
     )

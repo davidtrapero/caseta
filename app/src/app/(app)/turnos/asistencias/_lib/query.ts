@@ -1,20 +1,22 @@
 import "server-only";
 import { prisma } from "@/lib/prisma";
-import type { PerfilEmpleado } from "@prisma/client";
 
 export type AsistenciasFiltros = {
   edicionId: string;
-  perfiles?: PerfilEmpleado[];
+  tipoEmpleadoIds?: string[];
   entidadId?: string;
   casetaId?: string;
 };
 
 export async function cargarAsistencias(filtros: AsistenciasFiltros) {
-  const { edicionId, perfiles, entidadId, casetaId } = filtros;
+  const { edicionId, tipoEmpleadoIds, entidadId, casetaId } = filtros;
 
   return prisma.empleado.findMany({
     where: {
-      perfil: perfiles && perfiles.length > 0 ? { in: perfiles } : undefined,
+      tipoEmpleadoId:
+        tipoEmpleadoIds && tipoEmpleadoIds.length > 0
+          ? { in: tipoEmpleadoIds }
+          : undefined,
       entidadId: entidadId || undefined,
       asignaciones: {
         some: {
@@ -27,6 +29,7 @@ export async function cargarAsistencias(filtros: AsistenciasFiltros) {
       },
     },
     include: {
+      tipoEmpleado: true,
       entidad: { select: { nombre: true } },
       asignaciones: {
         where: {

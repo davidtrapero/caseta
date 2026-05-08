@@ -12,10 +12,9 @@ import {
   actualizarEmpleadoAction,
 } from "../actions";
 import {
-  PERFIL_ORDEN,
-  PERFIL_LABEL,
-  PERFIL_COLORES,
-  type PerfilEmpleado,
+  colorFor,
+  ordenarTipos,
+  type TipoEmpleadoLite,
 } from "../../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
@@ -26,12 +25,13 @@ type CasetaDefault = {
   id: string;
   nombre: string;
   jornalDiarioDefault: string | null;
-  perfilDefecto: string | null;
+  tipoEmpleadoDefectoId: string | null;
 };
 
 type EmpleadoFormProps = {
   modo: Modo;
   entidades: EntidadMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   casetasDefaults?: CasetaDefault[];
   initial?: {
     id: string;
@@ -40,38 +40,52 @@ type EmpleadoFormProps = {
     telefono: string | null;
     jornalDiario: string | null;
     entidadId: string | null;
-    perfil: string;
+    tipoEmpleadoId: string;
     activo: boolean;
   };
 };
 
-export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: EmpleadoFormProps) {
+export function EmpleadoForm({
+  modo,
+  entidades,
+  tiposEmpleado,
+  casetasDefaults,
+  initial,
+}: EmpleadoFormProps) {
   const action = modo === "crear" ? crearEmpleadoAction : actualizarEmpleadoAction;
   const [state, formAction, pending] = useActionState<
     ActionResult<{ id: string }> | null,
     FormData
   >(action, null);
 
-  const [perfil, setPerfil] = useState<PerfilEmpleado>(
-    (initial?.perfil as PerfilEmpleado) ?? "trabajador"
-  );
+  const tiposOrdenados = ordenarTipos(tiposEmpleado);
+  // Tipo por defecto: el inicial, o el primer no-voluntario, o el primero.
+  const tipoInicial =
+    initial?.tipoEmpleadoId ??
+    tiposOrdenados.find((t) => !t.esVoluntario)?.id ??
+    tiposOrdenados[0]?.id ??
+    "";
+
+  const [tipoEmpleadoId, setTipoEmpleadoId] = useState<string>(tipoInicial);
   const [jornalDiario, setJornalDiario] = useState(initial?.jornalDiario ?? "");
 
+  const tipoSeleccionado = tiposOrdenados.find((t) => t.id === tipoEmpleadoId);
+  const esVoluntario = tipoSeleccionado?.esVoluntario ?? false;
+
   useEffect(() => {
-    if (perfil === "voluntario") {
+    if (esVoluntario) {
       // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
       queueMicrotask(() => setJornalDiario(""));
     }
-  }, [perfil]);
+  }, [esVoluntario]);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
-  const esVoluntario = perfil === "voluntario";
 
   function precargarCaseta(casetaId: string) {
     const caseta = casetasDefaults?.find((c) => c.id === casetaId);
     if (!caseta) return;
-    if (caseta.perfilDefecto) {
-      setPerfil(caseta.perfilDefecto as PerfilEmpleado);
+    if (caseta.tipoEmpleadoDefectoId) {
+      setTipoEmpleadoId(caseta.tipoEmpleadoDefectoId);
     }
     if (caseta.jornalDiarioDefault) {
       setJornalDiario(caseta.jornalDiarioDefault);
@@ -103,7 +117,7 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
             ))}
           </select>
           <p className="text-xs text-muted-foreground mt-1">
-            Prerrellena jornal y perfil con los valores por defecto de la caseta.
+            Prerrellena jornal y tipo con los valores por defecto de la caseta.
           </p>
         </div>
       ) : null}
@@ -146,17 +160,17 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
       </div>
 
       <div>
-        <Label htmlFor="perfil">Perfil</Label>
-        <input type="hidden" name="perfil" value={perfil} />
+        <Label htmlFor="tipoEmpleadoId">Tipo de empleado</Label>
+        <input type="hidden" name="tipoEmpleadoId" value={tipoEmpleadoId} />
         <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 mt-1">
-          {PERFIL_ORDEN.map((p) => {
-            const colores = PERFIL_COLORES[p];
-            const sel = perfil === p;
+          {tiposOrdenados.map((t) => {
+            const colores = colorFor(t);
+            const sel = tipoEmpleadoId === t.id;
             return (
               <button
-                key={p}
+                key={t.id}
                 type="button"
-                onClick={() => setPerfil(p)}
+                onClick={() => setTipoEmpleadoId(t.id)}
                 className="rounded-sm border px-2 py-1.5 text-xs font-medium transition-all"
                 style={
                   sel
@@ -164,12 +178,12 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
                     : { background: colores.bg, borderColor: colores.border, color: colores.text }
                 }
               >
-                {PERFIL_LABEL[p]}
+                {t.label}
               </button>
             );
           })}
         </div>
-        <FieldError messages={errors.perfil} />
+        <FieldError messages={errors.tipoEmpleadoId} />
       </div>
 
       {esVoluntario && (
@@ -208,7 +222,7 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
         <p className="text-xs text-muted-foreground mt-1">
           {esVoluntario
             ? "Los voluntarios no cobran jornal."
-            : "Dejar vacío si es voluntario (usa el perfil Voluntario)."}
+            : "Dejar vacío si es voluntario (selecciona el tipo Voluntario)."}
         </p>
         <FieldError messages={errors.jornalDiario} />
       </div>

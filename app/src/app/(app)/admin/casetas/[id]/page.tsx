@@ -15,6 +15,18 @@ export default async function EditarCasetaPage({
   const caseta = await prisma.caseta.findUnique({ where: { id } });
   if (!caseta) notFound();
 
+  const tiposEmpleado = await prisma.tipoEmpleado.findMany({
+    where: {
+      OR: [
+        { activo: true },
+        ...(caseta.tipoEmpleadoDefectoId
+          ? [{ id: caseta.tipoEmpleadoDefectoId }]
+          : []),
+      ],
+    },
+    orderBy: { orden: "asc" },
+  });
+
   return (
     <FormShell
       title={`Editar: ${caseta.nombre}`}
@@ -22,13 +34,22 @@ export default async function EditarCasetaPage({
     >
       <CasetaForm
         modo="editar"
+        tiposEmpleado={tiposEmpleado.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+          labelCorto: t.labelCorto,
+          colorHex: t.colorHex,
+          esVoluntario: t.esVoluntario,
+          orden: t.orden,
+        }))}
         initial={{
           id: caseta.id,
           nombre: caseta.nombre,
           ubicacion: caseta.ubicacion,
           activa: caseta.activa,
           jornalDiarioDefault: caseta.jornalDiarioDefault?.toString() ?? null,
-          perfilDefecto: caseta.perfilDefecto ?? null,
+          tipoEmpleadoDefectoId: caseta.tipoEmpleadoDefectoId ?? null,
         }}
       />
     </FormShell>

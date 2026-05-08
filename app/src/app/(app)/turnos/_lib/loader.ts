@@ -11,8 +11,8 @@ import type {
   CasetaMin,
   EmpleadoMin,
   EdicionMin,
+  TipoEmpleadoLite,
 } from "../types";
-import { PERFIL_ORDEN, type PerfilEmpleado } from "./perfiles";
 import { addDays, hoyIso, lunesDe } from "./fechas";
 
 // Multi-caseta: necesitamos una edición activa para filtrar. Si no hay
@@ -54,14 +54,34 @@ function empleadoMin(e: {
   nombre: string;
   activo: boolean;
   jornalDiario: { toString(): string } | null;
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
 }): EmpleadoMin {
   return {
     id: e.id,
     nombre: e.nombre,
     activo: e.activo,
     esVoluntario: e.jornalDiario === null,
-    perfil: e.perfil,
+    tipoEmpleadoId: e.tipoEmpleadoId,
+  };
+}
+
+function tipoEmpleadoLite(t: {
+  id: string;
+  slug: string;
+  label: string;
+  labelCorto: string;
+  colorHex: string;
+  esVoluntario: boolean;
+  orden: number;
+}): TipoEmpleadoLite {
+  return {
+    id: t.id,
+    slug: t.slug,
+    label: t.label,
+    labelCorto: t.labelCorto,
+    colorHex: t.colorHex,
+    esVoluntario: t.esVoluntario,
+    orden: t.orden,
   };
 }
 
@@ -77,10 +97,10 @@ type TurnoRaw = {
     empleado: {
       nombre: string;
       jornalDiario: { toString(): string } | null;
-      perfil: PerfilEmpleado;
+      tipoEmpleadoId: string;
     };
   }[];
-  plazas: { perfil: PerfilEmpleado; cantidad: number }[];
+  plazas: { tipoEmpleadoId: string; cantidad: number }[];
 };
 
 function turnoSerializable(t: TurnoRaw): TurnoSerializable {
@@ -88,11 +108,11 @@ function turnoSerializable(t: TurnoRaw): TurnoSerializable {
     empleadoId: a.empleadoId,
     empleadoNombre: a.empleado.nombre,
     esVoluntario: a.empleado.jornalDiario === null,
-    perfil: a.empleado.perfil,
+    tipoEmpleadoId: a.empleado.tipoEmpleadoId,
     asistio: a.asistio,
   }));
   const plazas: TurnoPlazaSerializable[] = t.plazas.map((p) => ({
-    perfil: p.perfil,
+    tipoEmpleadoId: p.tipoEmpleadoId,
     cantidad: p.cantidad,
   }));
   return {
@@ -115,8 +135,9 @@ async function loadContexto(params: {
   casetaSeleccionada: CasetaMin;
   casetas: CasetaMin[];
   empleados: EmpleadoMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
 } | null> {
-  const [ediciones, casetas, empleados] = await Promise.all([
+  const [ediciones, casetas, empleados, tipos] = await Promise.all([
     prisma.edicion.findMany({ orderBy: [{ activa: "desc" }, { anio: "desc" }] }),
     prisma.caseta.findMany({
       where: { activa: true },
@@ -125,6 +146,10 @@ async function loadContexto(params: {
     prisma.empleado.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
+    }),
+    prisma.tipoEmpleado.findMany({
+      where: { activo: true },
+      orderBy: { orden: "asc" },
     }),
   ]);
 
@@ -145,6 +170,7 @@ async function loadContexto(params: {
     casetaSeleccionada: casetaMin(casetaSeleccionada),
     casetas: casetas.map(casetaMin),
     empleados: empleados.map(empleadoMin),
+    tiposEmpleado: tipos.map(tipoEmpleadoLite),
   };
 }
 
@@ -233,28 +259,30 @@ export async function loadSemanaTurnos(params: {
     const empleadosSet = new Set<string>();
     for (const t of delDia) for (const a of t.asignaciones) empleadosSet.add(a.empleadoId);
 
-    // Desglose por perfil: sumar asignados y plazas esperadas en todos los turnos del día.
-    const asignadosPorPerfil = new Map<PerfilEmpleado, Set<string>>();
-    const plazasPorPerfil = new Map<PerfilEmpleado, number>();
+    // Desglose por tipo: sumar asignados y plazas esperadas en todos los turnos del día.
+    const asignadosPorTipo = new Map<string, Set<string>>();
+    const plazasPorTipo = new Map<string, number>();
     for (const t of delDia) {
       for (const a of t.asignaciones) {
-        if (!asignadosPorPerfil.has(a.perfil)) asignadosPorPerfil.set(a.perfil, new Set());
-        asignadosPorPerfil.get(a.perfil)!.add(a.empleadoId);
+        if (!asignadosPorTipo.has(a.tipoEmpleadoId)) asignadosPorTipo.set(a.tipoEmpleadoId, new Set());
+        asignadosPorTipo.get(a.tipoEmpleadoId)!.add(a.empleadoId);
       }
       for (const p of t.plazas) {
-        plazasPorPerfil.set(p.perfil, (plazasPorPerfil.get(p.perfil) ?? 0) + p.cantidad);
+        plazasPorTipo.set(p.tipoEmpleadoId, (plazasPorTipo.get(p.tipoEmpleadoId) ?? 0) + p.cantidad);
       }
     }
-    const perfilesConDatos = new Set<PerfilEmpleado>([
-      ...asignadosPorPerfil.keys(),
-      ...plazasPorPerfil.keys(),
+    const tiposConDatos = new Set<string>([
+      ...asignadosPorTipo.keys(),
+      ...plazasPorTipo.keys(),
     ]);
-    const desglose: DesglosePerfil[] = PERFIL_ORDEN.filter((p) =>
-      perfilesConDatos.has(p)
-    ).map((p) => ({
-      perfil: p,
-      asignados: asignadosPorPerfil.get(p)?.size ?? 0,
-      plazas: plazasPorPerfil.get(p) ?? 0,
+    // Orden por TipoEmpleado.orden.
+    const tiposOrdenados = ctx.tiposEmpleado
+      .filter((t) => tiposConDatos.has(t.id))
+      .map((t) => t.id);
+    const desglose: DesglosePerfil[] = tiposOrdenados.map((tipoEmpleadoId) => ({
+      tipoEmpleadoId,
+      asignados: asignadosPorTipo.get(tipoEmpleadoId)?.size ?? 0,
+      plazas: plazasPorTipo.get(tipoEmpleadoId) ?? 0,
     }));
 
     dias.push({

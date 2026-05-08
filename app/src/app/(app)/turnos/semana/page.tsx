@@ -10,7 +10,7 @@ import {
   lunesToSemanaIso,
   semanaIsoToLunes,
 } from "../_lib/fechas";
-import { PERFIL_COLORES, PERFIL_LABEL_CORTO } from "../_lib/perfiles";
+import { colorFor } from "../_lib/perfiles";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "../../admin/_components/page-header";
@@ -129,16 +129,20 @@ export default async function SemanaTurnosPage({
               {d.desglose.length > 0 ? (
                 <div className="flex flex-wrap gap-1 mt-1">
                   {d.desglose.map((dp) => {
-                    const colores = PERFIL_COLORES[dp.perfil];
+                    const tipo = semana.tiposEmpleado.find(
+                      (t) => t.id === dp.tipoEmpleadoId
+                    );
+                    if (!tipo) return null;
+                    const colores = colorFor(tipo);
                     const sinCubrir = dp.plazas > 0 && dp.asignados < dp.plazas;
                     return (
                       <span
-                        key={dp.perfil}
+                        key={dp.tipoEmpleadoId}
                         className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold"
                         style={{ background: colores.bg, color: colores.text, border: `1px solid ${colores.border}` }}
-                        title={`${PERFIL_LABEL_CORTO[dp.perfil]}: ${dp.asignados}${dp.plazas > 0 ? `/${dp.plazas}` : ""}`}
+                        title={`${tipo.labelCorto}: ${dp.asignados}${dp.plazas > 0 ? `/${dp.plazas}` : ""}`}
                       >
-                        {PERFIL_LABEL_CORTO[dp.perfil]}
+                        {tipo.labelCorto}
                         <span className={sinCubrir ? "text-destructive font-bold" : ""}>
                           {dp.asignados}
                           {dp.plazas > 0 ? `/${dp.plazas}` : ""}

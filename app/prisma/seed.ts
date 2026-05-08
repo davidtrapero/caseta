@@ -40,6 +40,28 @@ async function main() {
     console.log("  Cambia la contraseña en el primer login.");
   }
 
+  // ---- Tipos de empleado ----
+  // Idempotente por slug. Los colores deben coincidir con los del migration SQL.
+  const tiposIniciales = [
+    { slug: "vigilante",   label: "Vigilante",   labelCorto: "Vig",  colorHex: "#931f1c", orden: 1, esVoluntario: false },
+    { slug: "coordinador", label: "Coordinador", labelCorto: "Coor", colorHex: "#8a6128", orden: 2, esVoluntario: false },
+    { slug: "trabajador",  label: "Trabajador",  labelCorto: "Trab", colorHex: "#c88536", orden: 3, esVoluntario: false },
+    { slug: "voluntario",  label: "Voluntario",  labelCorto: "Vol",  colorHex: "#7a8e3f", orden: 4, esVoluntario: true  },
+    { slug: "ayudante",    label: "Ayudante",    labelCorto: "Ay",   colorHex: "#a8916a", orden: 5, esVoluntario: false },
+  ];
+  for (const t of tiposIniciales) {
+    await prisma.tipoEmpleado.upsert({
+      where: { slug: t.slug },
+      update: {},
+      create: t,
+    });
+  }
+  console.log(`✓ ${tiposIniciales.length} tipos de empleado listos`);
+
+  const tiposPorSlug = new Map(
+    (await prisma.tipoEmpleado.findMany()).map((t) => [t.slug, t.id])
+  );
+
   // ---- Edición 2026 ----
   const edicion = await prisma.edicion.upsert({
     where: { anio: 2026 },
@@ -67,24 +89,26 @@ async function main() {
 
   // ---- Empleados ----
   const empleados = [
-    { nombre: "María López", dni: "00000001A", jornalDiario: 70, perfil: "coordinador" as const },
-    { nombre: "Carlos Ruiz", dni: "00000002B", jornalDiario: 75, perfil: "trabajador" as const },
-    { nombre: "Ana García", dni: "00000003C", jornalDiario: 65, perfil: "trabajador" as const },
-    { nombre: "Javier Moreno", dni: "00000004D", jornalDiario: 80, perfil: "vigilante" as const },
-    { nombre: "Lucía Hernández", dni: "00000005E", jornalDiario: 60, perfil: "ayudante" as const },
-    { nombre: "Pablo Jiménez", dni: "00000006F", jornalDiario: null, perfil: "voluntario" as const },
-    { nombre: "Elena Torres", dni: "00000007G", jornalDiario: null, perfil: "voluntario" as const },
+    { nombre: "María López",    dni: "00000001A", jornalDiario: 70,  perfil: "coordinador" as const },
+    { nombre: "Carlos Ruiz",    dni: "00000002B", jornalDiario: 75,  perfil: "trabajador"  as const },
+    { nombre: "Ana García",     dni: "00000003C", jornalDiario: 65,  perfil: "trabajador"  as const },
+    { nombre: "Javier Moreno",  dni: "00000004D", jornalDiario: 80,  perfil: "vigilante"   as const },
+    { nombre: "Lucía Hernández",dni: "00000005E", jornalDiario: 60,  perfil: "ayudante"    as const },
+    { nombre: "Pablo Jiménez",  dni: "00000006F", jornalDiario: null,perfil: "voluntario"  as const },
+    { nombre: "Elena Torres",   dni: "00000007G", jornalDiario: null,perfil: "voluntario"  as const },
   ];
 
   for (const e of empleados) {
+    const tipoId = tiposPorSlug.get(e.perfil);
+    if (!tipoId) throw new Error(`Tipo no encontrado: ${e.perfil}`);
     await prisma.empleado.upsert({
       where: { dni: e.dni },
-      update: { perfil: e.perfil },
+      update: { tipoEmpleadoId: tipoId },
       create: {
         nombre: e.nombre,
         dni: e.dni,
         jornalDiario: e.jornalDiario,
-        perfil: e.perfil,
+        tipoEmpleadoId: tipoId,
         activo: true,
       },
     });

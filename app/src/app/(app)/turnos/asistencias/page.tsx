@@ -4,26 +4,23 @@ import { prisma } from "@/lib/prisma";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { Button } from "@/components/ui/button";
 import { SectionHeader, EmptyState } from "../../admin/_components/page-header";
-import { PERFIL_ORDEN, type PerfilEmpleado } from "../_lib/perfiles";
 import { cargarAsistencias } from "./_lib/query";
 import { FiltrosAsistencias } from "./_components/filtros";
 import { TablaAsistencias, type FilaEmpleado } from "./_components/tabla-asistencias";
 
 type SP = Promise<{
   edicionId?: string;
-  perfiles?: string;
+  tipos?: string;
   entidadId?: string;
   casetaId?: string;
 }>;
 
-function parsePerfiles(raw: string | undefined): PerfilEmpleado[] {
+function parseTipos(raw: string | undefined): string[] {
   if (!raw) return [];
   return raw
     .split(",")
     .map((p) => p.trim())
-    .filter((p): p is PerfilEmpleado =>
-      (PERFIL_ORDEN as readonly string[]).includes(p)
-    );
+    .filter((p) => p.length > 0);
 }
 
 export default async function AsistenciasPage({
@@ -59,9 +56,9 @@ export default async function AsistenciasPage({
     );
   }
 
-  const perfilesActivos = parsePerfiles(sp.perfiles);
+  const tipoEmpleadoIds = parseTipos(sp.tipos);
 
-  const [entidades, casetas, empleados] = await Promise.all([
+  const [entidades, casetas, tiposEmpleado, empleados] = await Promise.all([
     prisma.entidadVoluntario.findMany({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
@@ -70,9 +67,12 @@ export default async function AsistenciasPage({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
     }),
+    prisma.tipoEmpleado.findMany({
+      orderBy: { orden: "asc" },
+    }),
     cargarAsistencias({
       edicionId,
-      perfiles: perfilesActivos,
+      tipoEmpleadoIds,
       entidadId: sp.entidadId,
       casetaId: sp.casetaId,
     }),
@@ -81,7 +81,8 @@ export default async function AsistenciasPage({
   const filas: FilaEmpleado[] = empleados.map((e) => ({
     id: e.id,
     nombre: e.nombre,
-    perfil: e.perfil,
+    tipoLabel: e.tipoEmpleado.label,
+    tipoColorHex: e.tipoEmpleado.colorHex,
     entidad: e.entidad?.nombre ?? null,
     asistencias: e.asignaciones.map((a) => ({
       id: a.id,
@@ -93,7 +94,7 @@ export default async function AsistenciasPage({
 
   const exportParams = new URLSearchParams();
   exportParams.set("edicionId", edicionId);
-  if (sp.perfiles) exportParams.set("perfiles", sp.perfiles);
+  if (sp.tipos) exportParams.set("tipos", sp.tipos);
   if (sp.entidadId) exportParams.set("entidadId", sp.entidadId);
   if (sp.casetaId) exportParams.set("casetaId", sp.casetaId);
 
@@ -121,7 +122,16 @@ export default async function AsistenciasPage({
         entidadId={sp.entidadId ?? ""}
         casetas={casetas}
         casetaId={sp.casetaId ?? ""}
-        perfilesActivos={perfilesActivos}
+        tiposEmpleado={tiposEmpleado.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+          labelCorto: t.labelCorto,
+          colorHex: t.colorHex,
+          esVoluntario: t.esVoluntario,
+          orden: t.orden,
+        }))}
+        tiposActivos={tipoEmpleadoIds}
       />
 
       {filas.length === 0 ? (

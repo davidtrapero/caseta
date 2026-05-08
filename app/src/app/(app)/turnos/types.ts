@@ -2,19 +2,19 @@
 // Los campos de fecha viajan como string ISO para evitar problemas de hydration
 // y permitir rehidratar con new Date() en cliente sin ambigüedad de zona.
 
-import type { PerfilEmpleado } from "./_lib/perfiles";
-export type { PerfilEmpleado };
+import type { TipoEmpleadoLite } from "./_lib/perfiles";
+export type { TipoEmpleadoLite };
 
 export type AsignacionSerializable = {
   empleadoId: string;
   empleadoNombre: string;
   esVoluntario: boolean;
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   asistio: boolean;
 };
 
 export type TurnoPlazaSerializable = {
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   cantidad: number;
 };
 
@@ -39,7 +39,7 @@ export type EmpleadoMin = {
   nombre: string;
   activo: boolean;
   esVoluntario: boolean; // jornalDiario === null
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
 };
 
 export type EdicionMin = {
@@ -61,22 +61,23 @@ export type DiaTurnos = {
   fechaAnterior: string; // YYYY-MM-DD (para duplicar día anterior)
   turnos: TurnoSerializable[];
   empleados: EmpleadoMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
   readonly: boolean;
 };
 
 // Datos para la vista SEMANA (read-only Fase 3).
 export type DesglosePerfil = {
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   asignados: number;
-  plazas: number; // 0 si no hay TurnoPlaza para ese perfil
+  plazas: number; // 0 si no hay TurnoPlaza para ese tipo
 };
 
 export type ResumenDiaSemana = {
   fecha: string; // YYYY-MM-DD
   numTurnos: number;
   numPersonas: number; // empleados distintos asignados ese día
-  desglose: DesglosePerfil[]; // solo perfiles con asignados>0 o plazas>0
+  desglose: DesglosePerfil[]; // solo tipos con asignados>0 o plazas>0
 };
 
 export type SemanaTurnos = {
@@ -89,6 +90,7 @@ export type SemanaTurnos = {
   dias: ResumenDiaSemana[];
   turnos: TurnoSerializable[]; // todos los de la semana, por si imprimir los necesita
   empleados: EmpleadoMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
   readonly: boolean;
 };

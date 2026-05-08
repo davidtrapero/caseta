@@ -16,16 +16,24 @@ export default async function EditarEmpleadoPage({
   if (!empleado) notFound();
 
   // Carga entidades activas + la del empleado si está inactiva (no desaparece el valor guardado).
-  const entidadesConActual = await prisma.entidadVoluntario.findMany({
-    where: {
-      OR: [
-        { activa: true },
-        ...(empleado.entidadId ? [{ id: empleado.entidadId }] : []),
-      ],
-    },
-    orderBy: { nombre: "asc" },
-    select: { id: true, nombre: true },
-  });
+  const [entidadesConActual, tiposEmpleado] = await Promise.all([
+    prisma.entidadVoluntario.findMany({
+      where: {
+        OR: [
+          { activa: true },
+          ...(empleado.entidadId ? [{ id: empleado.entidadId }] : []),
+        ],
+      },
+      orderBy: { nombre: "asc" },
+      select: { id: true, nombre: true },
+    }),
+    prisma.tipoEmpleado.findMany({
+      where: {
+        OR: [{ activo: true }, { id: empleado.tipoEmpleadoId }],
+      },
+      orderBy: { orden: "asc" },
+    }),
+  ]);
 
   return (
     <FormShell
@@ -35,6 +43,15 @@ export default async function EditarEmpleadoPage({
       <EmpleadoForm
         modo="editar"
         entidades={entidadesConActual}
+        tiposEmpleado={tiposEmpleado.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          label: t.label,
+          labelCorto: t.labelCorto,
+          colorHex: t.colorHex,
+          esVoluntario: t.esVoluntario,
+          orden: t.orden,
+        }))}
         initial={{
           id: empleado.id,
           nombre: empleado.nombre,
@@ -44,7 +61,7 @@ export default async function EditarEmpleadoPage({
             ? empleado.jornalDiario.toString()
             : null,
           entidadId: empleado.entidadId,
-          perfil: empleado.perfil,
+          tipoEmpleadoId: empleado.tipoEmpleadoId,
           activo: empleado.activo,
         }}
       />

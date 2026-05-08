@@ -32,7 +32,12 @@ export default async function ApuntarsePage({
       where: {
         edicionId: edicion.id,
         fechaInicio: { gte: ahora },
-        plazas: { some: { perfil: "voluntario", cantidad: { gt: 0 } } },
+        plazas: {
+          some: {
+            tipoEmpleado: { esVoluntario: true },
+            cantidad: { gt: 0 },
+          },
+        },
       },
       select: {
         id: true,

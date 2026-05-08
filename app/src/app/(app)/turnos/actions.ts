@@ -6,7 +6,6 @@ import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
-import type { PerfilEmpleado as PrismaPerfilEmpleado } from "@prisma/client";
 import {
   crearTurnoSchema,
   actualizarTurnoSchema,
@@ -166,7 +165,7 @@ export async function crearTurnoAction(
           await tx.turnoPlaza.createMany({
             data: plazasFiltradas.map((p) => ({
               turnoId: t.id,
-              perfil: p.perfil as PrismaPerfilEmpleado,
+              tipoEmpleadoId: p.tipoEmpleadoId,
               cantidad: p.cantidad,
             })),
           });
@@ -553,21 +552,30 @@ export async function actualizarPlazasAction(
     await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         // Eliminar plazas con cantidad 0 o ausentes en el nuevo payload.
-        const perfilesActivos = plazas
+        const tiposActivos = plazas
           .filter((p) => p.cantidad > 0)
-          .map((p) => p.perfil as PrismaPerfilEmpleado);
+          .map((p) => p.tipoEmpleadoId);
         await tx.turnoPlaza.deleteMany({
           where: {
             turnoId: data.turnoId,
-            perfil: { notIn: perfilesActivos },
+            tipoEmpleadoId: tiposActivos.length > 0 ? { notIn: tiposActivos } : undefined,
           },
         });
-        // Upsert para perfiles con cantidad > 0.
+        // Upsert para tipos con cantidad > 0.
         for (const p of plazas.filter((p) => p.cantidad > 0)) {
           await tx.turnoPlaza.upsert({
-            where: { turnoId_perfil: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado } },
+            where: {
+              turnoId_tipoEmpleadoId: {
+                turnoId: data.turnoId,
+                tipoEmpleadoId: p.tipoEmpleadoId,
+              },
+            },
             update: { cantidad: p.cantidad },
-            create: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado, cantidad: p.cantidad },
+            create: {
+              turnoId: data.turnoId,
+              tipoEmpleadoId: p.tipoEmpleadoId,
+              cantidad: p.cantidad,
+            },
           });
         }
       })
