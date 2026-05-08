@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FieldError, FormError } from "../../_components/page-header";
+import { FieldError, FormError } from "../../admin/_components/page-header";
 import type { ActionResult } from "@/lib/action-result";
 import {
   crearEmpleadoAction,
@@ -15,7 +15,7 @@ import {
   colorFor,
   ordenarTipos,
   type TipoEmpleadoLite,
-} from "../../../turnos/_lib/perfiles";
+} from "../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
 
@@ -242,7 +242,7 @@ export function EmpleadoForm({
           {pending ? "Guardando…" : modo === "crear" ? "Crear empleado" : "Guardar cambios"}
         </Button>
         <Button type="button" variant="ghost" asChild>
-          <Link href="/admin/empleados">Cancelar</Link>
+          <Link href="/empleados">Cancelar</Link>
         </Button>
       </div>
     </form>

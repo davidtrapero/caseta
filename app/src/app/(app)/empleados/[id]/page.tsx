@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
-import { FormShell } from "../../_components/page-header";
+import { FormShell } from "../../admin/_components/page-header";
 import { EmpleadoForm } from "../_components/empleado-form";
 
 export default async function EditarEmpleadoPage({

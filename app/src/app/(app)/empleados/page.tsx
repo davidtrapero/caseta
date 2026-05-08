@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { SectionHeader, EmptyState } from "../_components/page-header";
+import { SectionHeader, EmptyState } from "../admin/_components/page-header";
 import { ToggleActivoEmpleadoForm } from "./_components/toggle-activo";
-import { colorFor } from "../../turnos/_lib/perfiles";
+import { colorFor } from "../turnos/_lib/perfiles";
 
 const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -34,7 +34,7 @@ export default async function EmpleadosPage() {
       <SectionHeader
         title="Empleados"
         subtitle="Personal disponible para turnos. Los voluntarios no cobran jornal."
-        actionHref="/admin/empleados/nuevo"
+        actionHref="/empleados/nuevo"
         actionLabel="Nuevo empleado"
         canAct={puedeEditar}
       />
@@ -43,7 +43,7 @@ export default async function EmpleadosPage() {
         <EmptyState
           title="Sin empleados registrados"
           description="Registra empleados para poder asignarles turnos y calcular nóminas."
-          actionHref={puedeEditar ? "/admin/empleados/nuevo" : undefined}
+          actionHref={puedeEditar ? "/empleados/nuevo" : undefined}
           actionLabel={puedeEditar ? "Crear empleado" : undefined}
         />
       ) : (
@@ -99,7 +99,7 @@ export default async function EmpleadosPage() {
                   <TableCell className="text-right">
                     {puedeEditar ? (
                       <Button asChild size="sm" variant="ghost">
-                        <Link href={`/admin/empleados/${e.id}`}>Editar</Link>
+                        <Link href={`/empleados/${e.id}`}>Editar</Link>
                       </Button>
                     ) : (
                       <span className="text-xs text-muted-foreground">Solo lectura</span>

@@ -13,6 +13,7 @@ import {
   Package,
   Receipt,
   Settings,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet } from "@/components/ui/sheet";
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   "/turnos": Calendar,
   "/turnos/asistencias": ClipboardCheck,
   "/admin/solicitudes": ClipboardList,
+  "/empleados": Users,
   "/inventario": Package,
   "/caja": Receipt,
   "/admin": Settings,

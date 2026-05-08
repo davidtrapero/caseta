@@ -93,8 +93,8 @@ export async function crearEmpleadoAction(
     return toActionError(err);
   }
 
-  revalidatePath("/admin/empleados");
-  redirect("/admin/empleados");
+  revalidatePath("/empleados");
+  redirect("/empleados");
 }
 
 export async function actualizarEmpleadoAction(
@@ -138,8 +138,8 @@ export async function actualizarEmpleadoAction(
     return toActionError(err);
   }
 
-  revalidatePath("/admin/empleados");
-  redirect("/admin/empleados");
+  revalidatePath("/empleados");
+  redirect("/empleados");
 }
 
 export async function toggleActivoEmpleadoAction(
@@ -165,7 +165,7 @@ export async function toggleActivoEmpleadoAction(
       prisma.empleado.update({ where: { id }, data: { activo: !actual.activo } })
     );
 
-    revalidatePath("/admin/empleados");
+    revalidatePath("/empleados");
     return { ok: true, data: { activo: actualizado.activo } };
   } catch (err) {
     return toActionError(err);
