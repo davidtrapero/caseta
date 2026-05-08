@@ -116,27 +116,39 @@ export const toggleAsistenciaSchema = z.object({
   asistio: z.preprocess((v) => v === "on" || v === true || v === "true", z.boolean()),
 });
 
+// Checkbox HTML: cuando está marcado llega como "on"; desmarcado no llega.
+const checkboxFlag = z
+  .preprocess(
+    (v) => v === "on" || v === "true" || v === true,
+    z.boolean()
+  )
+  .optional()
+  .default(false);
+
 // Duplicar un día completo dentro de una caseta: copia todos los turnos
-// (con sus asignaciones) cuyo fechaInicio cae en el día origen al día destino.
+// (con sus plazas) cuyo fechaInicio cae en el día origen al día destino.
+// Las asignaciones de empleados se copian sólo si copiarAsignaciones=true.
 export const duplicarDiaSchema = z
   .object({
     casetaId: z.string().cuid(),
     edicionId: z.string().cuid(),
     diaOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     diaDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+    copiarAsignaciones: checkboxFlag,
   })
   .refine((d) => d.diaOrigen !== d.diaDestino, {
     message: "El día origen y destino deben ser diferentes",
     path: ["diaDestino"],
   });
 
-// Duplicar semana completa (incluye asignaciones).
+// Duplicar semana completa. Las asignaciones se copian sólo si el flag está activo.
 export const duplicarSemanaSchema = z
   .object({
     casetaId: z.string().cuid(),
     edicionId: z.string().cuid(),
     lunesOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     lunesDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+    copiarAsignaciones: checkboxFlag,
   })
   .refine((d) => d.lunesOrigen !== d.lunesDestino, {
     message: "La semana origen y destino deben ser diferentes",

@@ -74,6 +74,24 @@ export function BotonDuplicarSemana({ casetaId, edicionId, lunesActual }: Props)
               </p>
             </div>
 
+            <div className="flex items-start gap-2">
+              <input
+                id="copiarAsignaciones"
+                name="copiarAsignaciones"
+                type="checkbox"
+                className="mt-1"
+              />
+              <div className="flex flex-col">
+                <Label htmlFor="copiarAsignaciones" className="font-normal">
+                  Copiar también asignaciones de empleados
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Si lo dejas desmarcado se copian solo los turnos y sus plazas,
+                  sin asignar empleados.
+                </span>
+              </div>
+            </div>
+
             <div className="flex items-center gap-2 pt-2">
               <Button type="submit" disabled={pending}>
                 {pending ? "Duplicando…" : "Duplicar"}

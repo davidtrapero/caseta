@@ -457,7 +457,10 @@ export async function duplicarDiaAction(
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
-      include: { asignaciones: { select: { empleadoId: true } } },
+      include: {
+        asignaciones: { select: { empleadoId: true } },
+        plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
+      },
       orderBy: { fechaInicio: "asc" },
     });
 
@@ -471,6 +474,7 @@ export async function duplicarDiaAction(
       casetaId: data.casetaId,
       edicionId: data.edicionId,
       userId: user.id,
+      copiarAsignaciones: data.copiarAsignaciones,
     });
     if ("error" in resultado) return { ok: false, error: resultado.error };
 
@@ -507,7 +511,10 @@ export async function duplicarSemanaAction(
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
-      include: { asignaciones: { select: { empleadoId: true } } },
+      include: {
+        asignaciones: { select: { empleadoId: true } },
+        plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
+      },
       orderBy: { fechaInicio: "asc" },
     });
 
@@ -521,6 +528,7 @@ export async function duplicarSemanaAction(
       casetaId: data.casetaId,
       edicionId: data.edicionId,
       userId: user.id,
+      copiarAsignaciones: data.copiarAsignaciones,
     });
     if ("error" in resultado) return { ok: false, error: resultado.error };
 
@@ -597,6 +605,7 @@ type TurnoConAsignaciones = {
   fechaInicio: Date;
   fechaFin: Date;
   asignaciones: { empleadoId: string }[];
+  plazas: { tipoEmpleadoId: string; cantidad: number }[];
 };
 
 async function validarYCopiarTurnos(args: {
@@ -605,26 +614,40 @@ async function validarYCopiarTurnos(args: {
   casetaId: string;
   edicionId: string;
   userId: string;
+  copiarAsignaciones: boolean;
 }): Promise<{ copiados: number } | { error: string }> {
-  const { origenes, desplazamientoMs, casetaId, edicionId, userId } = args;
+  const {
+    origenes,
+    desplazamientoMs,
+    casetaId,
+    edicionId,
+    userId,
+    copiarAsignaciones,
+  } = args;
 
-  // Empleados involucrados en destino + ventana temporal.
-  const empleadoIds = Array.from(
-    new Set(origenes.flatMap((t) => t.asignaciones.map((a) => a.empleadoId)))
-  );
+  // Empleados involucrados (sólo si vamos a copiar asignaciones).
+  const empleadoIds = copiarAsignaciones
+    ? Array.from(
+        new Set(origenes.flatMap((t) => t.asignaciones.map((a) => a.empleadoId)))
+      )
+    : [];
 
-  // Plan: lista de turnos nuevos (fechas desplazadas).
+  // Plan: lista de turnos nuevos (fechas desplazadas). Las plazas se copian
+  // siempre; los empleados sólo si copiarAsignaciones=true.
   const plan = origenes.map((t) => ({
     fechaInicio: new Date(t.fechaInicio.getTime() + desplazamientoMs),
     fechaFin: new Date(t.fechaFin.getTime() + desplazamientoMs),
-    empleadoIds: t.asignaciones.map((a) => a.empleadoId),
+    empleadoIds: copiarAsignaciones
+      ? t.asignaciones.map((a) => a.empleadoId)
+      : [],
+    plazas: t.plazas.filter((p) => p.cantidad > 0),
   }));
 
-  // Validar: empleados activos.
-  const empErr = await validarEmpleadosActivos(empleadoIds);
-  if (empErr) return { error: empErr };
+  if (copiarAsignaciones && empleadoIds.length > 0) {
+    // Validar: empleados activos.
+    const empErr = await validarEmpleadosActivos(empleadoIds);
+    if (empErr) return { error: empErr };
 
-  if (empleadoIds.length > 0) {
     const minInicio = plan.reduce(
       (m, p) => (p.fechaInicio < m ? p.fechaInicio : m),
       plan[0].fechaInicio
@@ -679,6 +702,15 @@ async function validarYCopiarTurnos(args: {
             fechaFin: p.fechaFin,
           },
         });
+        if (p.plazas.length > 0) {
+          await tx.turnoPlaza.createMany({
+            data: p.plazas.map((pl) => ({
+              turnoId: nuevo.id,
+              tipoEmpleadoId: pl.tipoEmpleadoId,
+              cantidad: pl.cantidad,
+            })),
+          });
+        }
         if (p.empleadoIds.length > 0) {
           await tx.turnoEmpleado.createMany({
             data: p.empleadoIds.map((empleadoId) => ({
