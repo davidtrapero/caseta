@@ -162,6 +162,7 @@ model Empleado {
   nombre             String
   dni                String?        @unique
   telefono           String?
+  email              String?
   jornalDiario       Decimal?       @db.Decimal(10, 2)
   tipoEmpleadoId     String
   entidadId          String?

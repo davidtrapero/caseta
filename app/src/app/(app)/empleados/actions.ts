@@ -6,7 +6,23 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { dniNieSchema } from "@/lib/validators";
 import { crearEmpleadoSchema, actualizarEmpleadoSchema } from "./schema";
+
+// Valida formato DNI sólo si no-voluntario. Para voluntarios devolvemos
+// null (se ignora el valor, aunque el form haya llegado con texto residual).
+function resolverDni(
+  dniRaw: string | undefined,
+  esVoluntario: boolean
+): { ok: true; valor: string | null } | { ok: false; error: string } {
+  if (esVoluntario) return { ok: true, valor: null };
+  if (!dniRaw) return { ok: true, valor: null };
+  const parsed = dniNieSchema.safeParse(dniRaw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "DNI/NIE inválido" };
+  }
+  return { ok: true, valor: parsed.data };
+}
 
 // Valida la regla "voluntario ⇒ jornal NULL + entidad NOT NULL" según el
 // flag esVoluntario del TipoEmpleado seleccionado.
@@ -16,7 +32,7 @@ async function validarReglaVoluntario(data: {
   entidadId: string | undefined;
   telefono: string | undefined;
   exigirContacto: boolean;
-}): Promise<ActionResult<unknown> | null> {
+}): Promise<{ esVoluntario: boolean } | ActionResult<unknown>> {
   const tipo = await prisma.tipoEmpleado.findUnique({
     where: { id: data.tipoEmpleadoId },
     select: { esVoluntario: true, activo: true },
@@ -56,7 +72,13 @@ async function validarReglaVoluntario(data: {
       };
     }
   }
-  return null;
+  return { esVoluntario: tipo.esVoluntario };
+}
+
+function esActionResult(
+  v: { esVoluntario: boolean } | ActionResult<unknown>
+): v is ActionResult<unknown> {
+  return "ok" in v;
 }
 
 export async function crearEmpleadoAction(
@@ -67,20 +89,30 @@ export async function crearEmpleadoAction(
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearEmpleadoSchema, formData);
 
-    const err = await validarReglaVoluntario({
+    const reglaRes = await validarReglaVoluntario({
       tipoEmpleadoId: data.tipoEmpleadoId,
       jornalDiario: data.jornalDiario,
       entidadId: data.entidadId,
       telefono: data.telefono,
       exigirContacto: true,
     });
-    if (err) return err as ActionResult<{ id: string }>;
+    if (esActionResult(reglaRes)) return reglaRes as ActionResult<{ id: string }>;
+
+    const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);
+    if (!dniRes.ok) {
+      return {
+        ok: false,
+        error: dniRes.error,
+        fieldErrors: { dni: [dniRes.error] },
+      };
+    }
 
     await withAuditContext(user.id, () =>
       prisma.empleado.create({
         data: {
           nombre: data.nombre,
-          dni: data.dni ?? null,
+          dni: dniRes.valor,
+          email: data.email ?? null,
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
           entidadId: data.entidadId ?? null,
@@ -111,21 +143,31 @@ export async function actualizarEmpleadoAction(
     const data = parseForm(actualizarEmpleadoSchema, formData);
 
     // Al actualizar no exigimos teléfono — coherente con baseline previo.
-    const err = await validarReglaVoluntario({
+    const reglaRes = await validarReglaVoluntario({
       tipoEmpleadoId: data.tipoEmpleadoId,
       jornalDiario: data.jornalDiario,
       entidadId: data.entidadId,
       telefono: data.telefono,
       exigirContacto: false,
     });
-    if (err) return err as ActionResult<{ id: string }>;
+    if (esActionResult(reglaRes)) return reglaRes as ActionResult<{ id: string }>;
+
+    const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);
+    if (!dniRes.ok) {
+      return {
+        ok: false,
+        error: dniRes.error,
+        fieldErrors: { dni: [dniRes.error] },
+      };
+    }
 
     await withAuditContext(user.id, () =>
       prisma.empleado.update({
         where: { id },
         data: {
           nombre: data.nombre,
-          dni: data.dni ?? null,
+          dni: dniRes.valor,
+          email: data.email ?? null,
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
           entidadId: data.entidadId ?? null,

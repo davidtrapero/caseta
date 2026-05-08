@@ -37,6 +37,7 @@ type EmpleadoFormProps = {
     id: string;
     nombre: string;
     dni: string | null;
+    email: string | null;
     telefono: string | null;
     jornalDiario: string | null;
     entidadId: string | null;
@@ -134,17 +135,69 @@ export function EmpleadoForm({
         <FieldError messages={errors.nombre} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="dni">DNI / NIE</Label>
-          <Input
-            id="dni"
-            name="dni"
-            defaultValue={initial?.dni ?? ""}
-            placeholder="12345678A"
-          />
-          <FieldError messages={errors.dni} />
+      <div>
+        <Label htmlFor="tipoEmpleadoId">Tipo de empleado</Label>
+        <input type="hidden" name="tipoEmpleadoId" value={tipoEmpleadoId} />
+        <div
+          role="radiogroup"
+          aria-label="Tipo de empleado"
+          className="flex flex-wrap gap-2 mt-1.5"
+        >
+          {tiposOrdenados.map((t) => {
+            const colores = colorFor(t);
+            const sel = tipoEmpleadoId === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={sel}
+                onClick={() => setTipoEmpleadoId(t.id)}
+                className="inline-flex items-center gap-2 rounded-md border-2 px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                style={
+                  sel
+                    ? {
+                        background: t.colorHex,
+                        borderColor: t.colorHex,
+                        color: colores.text === "#fdf8ec" ? colores.text : "#ffffff",
+                        boxShadow: `0 1px 0 ${colores.border}55, 0 0 0 2px ${colores.bg}`,
+                      }
+                    : {
+                        background: "transparent",
+                        borderColor: t.colorHex,
+                        color: colores.border,
+                      }
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{
+                    background: sel ? "rgba(255,255,255,0.85)" : t.colorHex,
+                    boxShadow: sel ? "none" : `0 0 0 1px ${t.colorHex}`,
+                  }}
+                />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
+        <FieldError messages={errors.tipoEmpleadoId} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {!esVoluntario && (
+          <div>
+            <Label htmlFor="dni">DNI / NIE</Label>
+            <Input
+              id="dni"
+              name="dni"
+              defaultValue={initial?.dni ?? ""}
+              placeholder="12345678A"
+            />
+            <FieldError messages={errors.dni} />
+          </div>
+        )}
         <div>
           <Label htmlFor="telefono">
             Teléfono{esVoluntario ? " *" : ""}
@@ -157,33 +210,17 @@ export function EmpleadoForm({
           />
           <FieldError messages={errors.telefono} />
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="tipoEmpleadoId">Tipo de empleado</Label>
-        <input type="hidden" name="tipoEmpleadoId" value={tipoEmpleadoId} />
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 mt-1">
-          {tiposOrdenados.map((t) => {
-            const colores = colorFor(t);
-            const sel = tipoEmpleadoId === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTipoEmpleadoId(t.id)}
-                className="rounded-sm border px-2 py-1.5 text-xs font-medium transition-all"
-                style={
-                  sel
-                    ? { background: colores.border, borderColor: colores.border, color: "hsl(40 48% 97%)" }
-                    : { background: colores.bg, borderColor: colores.border, color: colores.text }
-                }
-              >
-                {t.label}
-              </button>
-            );
-          })}
+        <div className={esVoluntario ? "" : "sm:col-span-2"}>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            defaultValue={initial?.email ?? ""}
+            placeholder="nombre@ejemplo.com"
+          />
+          <FieldError messages={errors.email} />
         </div>
-        <FieldError messages={errors.tipoEmpleadoId} />
       </div>
 
       {esVoluntario && (

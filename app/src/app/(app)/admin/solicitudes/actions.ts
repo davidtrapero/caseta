@@ -95,7 +95,7 @@ export async function aprobarTurnosAction(
                 telefono: solicitud.telefono,
                 tipoEmpleadoId: tipoVoluntario.id,
               },
-              select: { id: true, entidadId: true, activo: true },
+              select: { id: true, entidadId: true, activo: true, email: true },
             })
           : null;
 
@@ -105,17 +105,28 @@ export async function aprobarTurnosAction(
               nombre: solicitud.nombre,
               tipoEmpleadoId: tipoVoluntario.id,
               telefono: solicitud.telefono,
+              email: solicitud.email ?? null,
               entidadId: solicitud.entidadId,
               activo: true,
               jornalDiario: null,
             },
-            select: { id: true, entidadId: true, activo: true },
+            select: { id: true, entidadId: true, activo: true, email: true },
           });
-        } else if (empleado.entidadId !== solicitud.entidadId) {
-          await tx.empleado.update({
-            where: { id: empleado.id },
-            data: { entidadId: solicitud.entidadId },
-          });
+        } else {
+          const updates: { entidadId?: string; email?: string } = {};
+          if (empleado.entidadId !== solicitud.entidadId) {
+            updates.entidadId = solicitud.entidadId;
+          }
+          // Sólo rellenamos email si el empleado no tiene uno (no sobreescribir).
+          if (!empleado.email && solicitud.email) {
+            updates.email = solicitud.email;
+          }
+          if (Object.keys(updates).length > 0) {
+            await tx.empleado.update({
+              where: { id: empleado.id },
+              data: updates,
+            });
+          }
         }
 
         if (!empleado.activo) {

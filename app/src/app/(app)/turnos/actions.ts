@@ -377,6 +377,47 @@ export async function desasignarEmpleadoAction(
   }
 }
 
+// ---------- desasignar empleado desde la página del empleado ----------
+//
+// Misma lógica que `desasignarEmpleadoAction` pero revalidando además
+// `/empleados/[id]`. Mantiene el original intacto para no acoplar las dos
+// vistas (turnos vs empleado).
+
+export async function desasignarTurnoDesdeEmpleadoAction(
+  _prev: ActionResult<{ turnoId: string; empleadoId: string }> | null,
+  formData: FormData
+): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const data = parseForm(desasignarEmpleadoSchema, formData);
+
+    const fila = await prisma.turnoEmpleado.findUnique({
+      where: {
+        turnoId_empleadoId: {
+          turnoId: data.turnoId,
+          empleadoId: data.empleadoId,
+        },
+      },
+    });
+    if (!fila) {
+      return { ok: false, error: "Asignación no encontrada." };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.turnoEmpleado.delete({ where: { id: fila.id } })
+    );
+
+    revalidatePath("/turnos");
+    revalidatePath(`/empleados/${data.empleadoId}`);
+    return {
+      ok: true,
+      data: { turnoId: data.turnoId, empleadoId: data.empleadoId },
+    };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
 // ---------- toggle asistencia ----------
 
 export async function toggleAsistenciaAction(

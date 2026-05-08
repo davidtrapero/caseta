@@ -1,11 +1,17 @@
 import { z } from "zod";
-import { dniNieOpcionalSchema } from "@/lib/validators";
 
 const opcionalString = (max: number) =>
   z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.string().trim().max(max).optional()
   );
+
+// Email opcional. La regla "obligatorio si voluntario" no aplica:
+// se acepta vacío en cualquier caso. Sólo validamos formato.
+const emailOpcional = z.preprocess(
+  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  z.string().trim().toLowerCase().email("Email inválido").max(120).optional()
+);
 
 const jornalSchema = z.preprocess(
   (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
@@ -19,9 +25,13 @@ const jornalSchema = z.preprocess(
 // Tipo de empleado: id de la tabla TipoEmpleado. La regla
 // "voluntario ⇒ jornal NULL + entidad NOT NULL" se valida en la action,
 // donde se hace el lookup del tipo (esVoluntario).
+// DNI: sólo opcional en Zod (sin validación de formato aquí). La regla
+// "obligatorio si no voluntario" se evalúa en la action tras lookup del
+// TipoEmpleado, donde sí podemos llamar a dniNieSchema para validar formato.
 const baseEmpleado = z.object({
   nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
-  dni: dniNieOpcionalSchema,
+  dni: opcionalString(20),
+  email: emailOpcional,
   telefono: opcionalString(40),
   jornalDiario: jornalSchema,
   entidadId: opcionalString(40),
