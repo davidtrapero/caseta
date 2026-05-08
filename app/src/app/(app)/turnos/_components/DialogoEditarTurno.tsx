@@ -5,10 +5,11 @@ import { startTransition, useActionState, useEffect, useRef, useState } from "re
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { actualizarTurnoAction, eliminarTurnoAction } from "../actions";
+import { actualizarTurnoYPlazasAction, eliminarTurnoAction } from "../actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useToast } from "@/components/ui/toaster";
-import type { TurnoSerializable } from "../types";
+import type { TipoEmpleadoLite, TurnoSerializable } from "../types";
+import { colorFor, ordenarTipos } from "../_lib/perfiles";
 import { FieldError, FormError } from "../../admin/_components/page-header";
 
 function isoHora(fechaYmd: string, hora: number): string {
@@ -27,11 +28,14 @@ type Props = {
   open: boolean;
   onClose: () => void;
   turno: TurnoSerializable;
+  tiposEmpleado: TipoEmpleadoLite[];
 };
 
-export function DialogoEditarTurno({ open, onClose, turno }: Props) {
+export function DialogoEditarTurno({ open, onClose, turno, tiposEmpleado }: Props) {
   const inicioDate = new Date(turno.fechaInicio);
   const finDate = new Date(turno.fechaFin);
+
+  const tiposOrdenados = ordenarTipos(tiposEmpleado);
 
   const [horaInicio, setHoraInicio] = useState(inicioDate.getUTCHours());
   const [horaFin, setHoraFin] = useState(finDate.getUTCHours() || 24);
@@ -40,11 +44,16 @@ export function DialogoEditarTurno({ open, onClose, turno }: Props) {
   const [cruzaMedianoche, setCruzaMedianoche] = useState(
     fechaInicioYmd !== fechaFinYmd
   );
+  const [plazas, setPlazas] = useState<Record<string, number>>(() => {
+    const base = Object.fromEntries(tiposOrdenados.map((t) => [t.id, 0]));
+    for (const p of turno.plazas) base[p.tipoEmpleadoId] = p.cantidad;
+    return base;
+  });
 
   const [state, action, pending] = useActionState<
     ActionResult<{ id: string }> | null,
     FormData
-  >(actualizarTurnoAction, null);
+  >(actualizarTurnoYPlazasAction, null);
 
   const [delState, delAction, delPending] = useActionState<
     ActionResult<undefined> | null,
@@ -119,6 +128,15 @@ export function DialogoEditarTurno({ open, onClose, turno }: Props) {
         <input type="hidden" name="casetaId" value={turno.casetaId} />
         <input type="hidden" name="fechaInicio" value={fechaInicioIso} />
         <input type="hidden" name="fechaFin" value={fechaFinIso} />
+        <input
+          type="hidden"
+          name="plazasJson"
+          value={JSON.stringify(
+            tiposOrdenados
+              .filter((t) => (plazas[t.id] ?? 0) > 0)
+              .map((t) => ({ tipoEmpleadoId: t.id, cantidad: plazas[t.id] }))
+          )}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -164,6 +182,42 @@ export function DialogoEditarTurno({ open, onClose, turno }: Props) {
           />
           <span>Fin en el día siguiente</span>
         </label>
+
+        <div>
+          <Label>Plazas del turno</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Ajusta el número de empleados esperados por tipo. No puedes bajar
+            por debajo de los ya asignados.
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {tiposOrdenados.map((t) => {
+              const colores = colorFor(t);
+              return (
+                <label
+                  key={t.id}
+                  className="flex items-center gap-1.5 rounded-sm border px-2 py-1.5 text-xs"
+                  style={{ borderColor: colores.border, background: colores.bg, color: colores.text }}
+                >
+                  <span className="flex-1 font-medium">{t.label}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={99}
+                    value={plazas[t.id] ?? 0}
+                    onChange={(e) =>
+                      setPlazas((prev) => ({
+                        ...prev,
+                        [t.id]: Math.max(0, Math.min(99, Number(e.target.value) || 0)),
+                      }))
+                    }
+                    className="w-10 rounded border border-current bg-transparent text-center text-xs [appearance:textfield]"
+                    style={{ color: colores.text }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </div>
 
         <p className="text-xs text-muted-foreground">
           Las asignaciones de empleados se editan con los chips del propio turno.

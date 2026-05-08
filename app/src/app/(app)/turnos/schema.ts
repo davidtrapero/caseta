@@ -160,8 +160,31 @@ export const actualizarPlazasSchema = z.object({
   plazasJson,
 });
 
+// Wrapper que combina horario + plazas (Fase 4 evolutivo C):
+// permite editar el turno y sus plazas en una sola transacción.
+export const actualizarTurnoYPlazasSchema = z
+  .object({
+    edicionId: z.string().cuid("Edición inválida"),
+    casetaId: z.string().cuid("Caseta inválida"),
+    fechaInicio: isoDateTime,
+    fechaFin: isoDateTime,
+    plazasJson,
+  })
+  .refine(
+    (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
+    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+  )
+  .refine(
+    (d) => {
+      const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
+      return ms <= 24 * 60 * 60 * 1000;
+    },
+    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+  );
+
 export type CrearTurnoInput = z.infer<typeof crearTurnoSchema>;
 export type ActualizarTurnoInput = z.infer<typeof actualizarTurnoSchema>;
+export type ActualizarTurnoYPlazasInput = z.infer<typeof actualizarTurnoYPlazasSchema>;
 export type AsignarEmpleadoInput = z.infer<typeof asignarEmpleadoSchema>;
 export type DesasignarEmpleadoInput = z.infer<typeof desasignarEmpleadoSchema>;
 export type ToggleAsistenciaInput = z.infer<typeof toggleAsistenciaSchema>;

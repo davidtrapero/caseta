@@ -146,6 +146,7 @@ export function BloqueTurno({
           open={editando}
           onClose={() => setEditando(false)}
           turno={turno}
+          tiposEmpleado={tiposEmpleado}
         />
       ) : null}
     </article>
