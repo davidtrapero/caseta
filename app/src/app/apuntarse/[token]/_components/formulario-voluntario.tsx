@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,31 @@ export function FormularioVoluntario({
   }, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+
+  const [diaSeleccionado, setDiaSeleccionado] = useState("");
+  const [casetaSeleccionada, setCasetaSeleccionada] = useState("");
+
+  const casetasDisponibles = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          dias.flatMap((d) => d.casetas).map((c) => [c.nombre, c])
+        ).values()
+      ),
+    [dias]
+  );
+
+  const diasFiltrados = useMemo(() => {
+    return dias
+      .filter((d) => !diaSeleccionado || d.clave === diaSeleccionado)
+      .map((d) => ({
+        ...d,
+        casetas: d.casetas.filter(
+          (c) => !casetaSeleccionada || c.nombre === casetaSeleccionada
+        ),
+      }))
+      .filter((d) => d.casetas.length > 0);
+  }, [dias, diaSeleccionado, casetaSeleccionada]);
 
   return (
     <form action={formAction} className="flex flex-col gap-6 animate-fade-in">
@@ -149,38 +174,83 @@ export function FormularioVoluntario({
         </div>
         <FieldError messages={errors.turnoIds} />
 
+        <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="filtro-dia" className="text-xs text-muted-foreground">
+              Día
+            </Label>
+            <select
+              id="filtro-dia"
+              value={diaSeleccionado}
+              onChange={(e) => setDiaSeleccionado(e.target.value)}
+              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
+            >
+              <option value="">Todos los días</option>
+              {dias.map((d) => (
+                <option key={d.clave} value={d.clave}>
+                  {d.titulo}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="filtro-caseta" className="text-xs text-muted-foreground">
+              Caseta
+            </Label>
+            <select
+              id="filtro-caseta"
+              value={casetaSeleccionada}
+              onChange={(e) => setCasetaSeleccionada(e.target.value)}
+              className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
+            >
+              <option value="">Todas las casetas</option>
+              {casetasDisponibles.map((c) => (
+                <option key={c.nombre} value={c.nombre}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-5">
-          {dias.map((dia) => (
-            <div key={dia.clave}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                {dia.titulo}
-              </h3>
-              <div className="flex flex-col gap-3">
-                {dia.casetas.map((caseta) => (
-                  <fieldset key={caseta.nombre} className="rounded-md border p-3">
-                    <legend className="px-1 text-sm font-medium">{caseta.nombre}</legend>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
-                      {caseta.turnos.map((t) => (
-                        <label
-                          key={t.id}
-                          className="flex items-center gap-2 text-sm rounded px-2 py-1.5 hover:bg-accent/20 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            name="turnoIds"
-                            value={t.id}
-                            className="h-4 w-4 rounded border-input"
-                          />
-                          <span>{t.rango}</span>
-                          <HuecosBadge huecos={t.huecos} />
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                ))}
+          {diasFiltrados.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No hay turnos para los filtros seleccionados.
+            </p>
+          ) : (
+            diasFiltrados.map((dia) => (
+              <div key={dia.clave}>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {dia.titulo}
+                </h3>
+                <div className="flex flex-col gap-3">
+                  {dia.casetas.map((caseta) => (
+                    <fieldset key={caseta.nombre} className="rounded-md border p-3">
+                      <legend className="px-1 text-sm font-medium">{caseta.nombre}</legend>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+                        {caseta.turnos.map((t) => (
+                          <label
+                            key={t.id}
+                            className="flex items-center gap-2 text-sm rounded px-2 py-1.5 hover:bg-accent/20 cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              name="turnoIds"
+                              value={t.id}
+                              className="h-4 w-4 rounded border-input"
+                            />
+                            <span>{t.rango}</span>
+                            <HuecosBadge huecos={t.huecos} />
+                          </label>
+                        ))}
+                      </div>
+                    </fieldset>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </section>
 

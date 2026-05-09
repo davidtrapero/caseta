@@ -160,6 +160,40 @@ export const actualizarPlazasSchema = z.object({
   plazasJson,
 });
 
+// Rellenar plazas en turnos huérfanos (sin TurnoPlaza). Plantilla recibida
+// como JSON en `plazasJson`. `casetaId` opcional: si vacío, aplica a todas.
+const plazaPlantillaArrayJson = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v) return [] as { tipoEmpleadoId: string; cantidad: number }[];
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })
+  .pipe(
+    z
+      .array(
+        z.object({
+          tipoEmpleadoId: z.string().min(1, "Tipo de empleado inválido"),
+          cantidad: z.coerce.number().int().min(1).max(99),
+        })
+      )
+      .min(1, "Define al menos una plaza")
+  );
+
+export const rellenarPlazasTurnosSinPlazasSchema = z.object({
+  casetaId: z.string().optional(),
+  plazasJson: plazaPlantillaArrayJson,
+});
+
+export type RellenarPlazasTurnosSinPlazasInput = z.infer<
+  typeof rellenarPlazasTurnosSinPlazasSchema
+>;
+
 // Wrapper que combina horario + plazas (Fase 4 evolutivo C):
 // permite editar el turno y sus plazas en una sola transacción.
 export const actualizarTurnoYPlazasSchema = z

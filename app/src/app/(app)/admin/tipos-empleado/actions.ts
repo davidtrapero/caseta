@@ -28,6 +28,11 @@ export async function crearTipoEmpleadoAction(
     const { user } = await requireRole(["admin"]);
     const data = parseForm(crearTipoEmpleadoSchema, formData);
 
+    const maxOrden = await prisma.tipoEmpleado.aggregate({
+      _max: { orden: true },
+    });
+    const nuevoOrden = (maxOrden._max.orden ?? -10) + 10;
+
     await withAuditContext(user.id, () =>
       prisma.tipoEmpleado.create({
         data: {
@@ -35,9 +40,9 @@ export async function crearTipoEmpleadoAction(
           label: data.label,
           labelCorto: data.labelCorto,
           colorHex: data.colorHex,
-          orden: data.orden,
+          orden: nuevoOrden,
           esVoluntario: data.esVoluntario,
-          activo: data.activo,
+          activo: true,
         },
       })
     );

@@ -82,7 +82,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
         ) : null}
 
         <div>
-          <Label htmlFor="slug">Slug</Label>
+          <Label htmlFor="slug">Identificador interno</Label>
           {modo === "editar" ? (
             <>
               <Input
@@ -92,7 +92,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
                 readOnly
               />
               <p className="text-xs text-muted-foreground mt-1">
-                El slug es inmutable: identifica el tipo de forma estable.
+                El identificador es inmutable: identifica el tipo de forma estable.
               </p>
             </>
           ) : (
@@ -105,8 +105,9 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
                 pattern="^[a-z][a-z0-9_-]*$"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Identificador estable: minúsculas, dígitos, guion o guion bajo.
-                No editable tras crear.
+                Texto corto único que identifica el tipo internamente. Solo
+                letras minúsculas, dígitos, guion o guion bajo. No editable
+                después de crear.
               </p>
               <FieldError messages={errors.slug} />
             </>
@@ -143,30 +144,17 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-[auto_1fr] gap-4 items-end">
-          <div>
-            <Label htmlFor="colorHexPicker">Color</Label>
-            <input
-              id="colorHexPicker"
-              type="color"
-              value={colorValido ? colorHex : "#9b1c2c"}
-              onChange={(e) => setColorHex(e.target.value)}
-              className="h-9 w-16 rounded-md border border-input bg-transparent p-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="colorHex">Hex</Label>
-            <Input
-              id="colorHex"
-              name="colorHex"
-              value={colorHex}
-              onChange={(e) => setColorHex(e.target.value)}
-              placeholder="#9b1c2c"
-              required
-              pattern="^#[0-9a-fA-F]{6}$"
-            />
-            <FieldError messages={errors.colorHex} />
-          </div>
+        <div>
+          <Label htmlFor="colorHexPicker">Color</Label>
+          <input
+            id="colorHexPicker"
+            type="color"
+            value={colorValido ? colorHex : "#9b1c2c"}
+            onChange={(e) => setColorHex(e.target.value)}
+            className="h-9 w-16 rounded-md border border-input bg-transparent p-1"
+          />
+          <input type="hidden" name="colorHex" value={colorHex} />
+          <FieldError messages={errors.colorHex} />
         </div>
 
         <div>
@@ -194,22 +182,24 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="orden">Orden</Label>
-          <Input
-            id="orden"
-            name="orden"
-            type="number"
-            min="0"
-            step="1"
-            defaultValue={initial?.orden ?? 0}
-            required
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Posición relativa en listados y selectores (menor = antes).
-          </p>
-          <FieldError messages={errors.orden} />
-        </div>
+        {modo === "editar" && (
+          <div>
+            <Label htmlFor="orden">Orden</Label>
+            <Input
+              id="orden"
+              name="orden"
+              type="number"
+              min="0"
+              step="1"
+              defaultValue={initial?.orden ?? 0}
+              required
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Posición relativa en listados y selectores (menor = antes).
+            </p>
+            <FieldError messages={errors.orden} />
+          </div>
+        )}
 
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -223,15 +213,17 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
           </span>
         </label>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="activo"
-            defaultChecked={initial?.activo ?? true}
-            className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
-          />
-          <span>Tipo activo (disponible para asignar a empleados y plazas).</span>
-        </label>
+        {modo === "editar" && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="activo"
+              defaultChecked={initial?.activo ?? true}
+              className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
+            />
+            <span>Tipo activo (disponible para asignar a empleados y plazas).</span>
+          </label>
+        )}
 
         <div className="flex items-center gap-2 pt-2">
           <Button type="submit" disabled={pending}>

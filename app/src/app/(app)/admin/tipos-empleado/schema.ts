@@ -28,13 +28,17 @@ const baseTipoEmpleado = z.object({
   activo: checkbox,
 });
 
-export const crearTipoEmpleadoSchema = baseTipoEmpleado.extend({
+export const crearTipoEmpleadoSchema = z.object({
   slug: z
     .string()
     .trim()
     .min(2, "El slug es obligatorio (mínimo 2 caracteres).")
     .max(32, "Máximo 32 caracteres.")
     .regex(slugRegex, "Solo minúsculas, dígitos, '-' o '_'. Debe empezar por letra."),
+  label: baseTipoEmpleado.shape.label,
+  labelCorto: baseTipoEmpleado.shape.labelCorto,
+  colorHex: baseTipoEmpleado.shape.colorHex,
+  esVoluntario: baseTipoEmpleado.shape.esVoluntario,
 });
 
 export const actualizarTipoEmpleadoSchema = baseTipoEmpleado;

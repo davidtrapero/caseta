@@ -35,7 +35,7 @@ const baseEmpleado = z.object({
   telefono: opcionalString(40),
   jornalDiario: jornalSchema,
   entidadId: opcionalString(40),
-  tipoEmpleadoId: z.string().cuid("Tipo de empleado inválido"),
+  tipoEmpleadoId: z.string().min(1, "Tipo de empleado obligatorio"),
   activo: z.preprocess((v) => v === "on" || v === true, z.boolean()),
 });
 

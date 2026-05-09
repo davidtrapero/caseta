@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 import {
   crearTurnoSchema,
   actualizarTurnoSchema,
@@ -16,6 +17,7 @@ import {
   toggleAsistenciaSchema,
   duplicarDiaSchema,
   duplicarSemanaSchema,
+  rellenarPlazasTurnosSinPlazasSchema,
 } from "./schema";
 
 // ---------- helpers ----------
@@ -896,4 +898,122 @@ async function validarYCopiarTurnos(args: {
   );
 
   return { copiados: plan.length };
+}
+
+// ---------- mantenimiento: rellenar plazas en turnos huérfanos ----------
+
+type ContadorTurnosSinPlazas = {
+  total: number;
+  porCaseta: { casetaId: string; casetaNombre: string; total: number }[];
+};
+
+export async function contarTurnosSinPlazasAction(): Promise<
+  ActionResult<ContadorTurnosSinPlazas>
+> {
+  try {
+    await requireRole(["admin"]);
+
+    const ed = await obtenerEdicionActiva();
+    if (!ed) {
+      return { ok: true, data: { total: 0, porCaseta: [] } };
+    }
+
+    const turnos = await prisma.turno.findMany({
+      where: { edicionId: ed.id, plazas: { none: {} } },
+      select: {
+        casetaId: true,
+        caseta: { select: { nombre: true } },
+      },
+    });
+
+    const acc = new Map<string, { casetaId: string; casetaNombre: string; total: number }>();
+    for (const t of turnos) {
+      const prev = acc.get(t.casetaId);
+      if (prev) {
+        prev.total += 1;
+      } else {
+        acc.set(t.casetaId, {
+          casetaId: t.casetaId,
+          casetaNombre: t.caseta.nombre,
+          total: 1,
+        });
+      }
+    }
+
+    const porCaseta = Array.from(acc.values()).sort((a, b) =>
+      a.casetaNombre.localeCompare(b.casetaNombre, "es")
+    );
+
+    return { ok: true, data: { total: turnos.length, porCaseta } };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function rellenarPlazasTurnosSinPlazasAction(
+  _prev: ActionResult<{ rellenados: number }> | null,
+  formData: FormData
+): Promise<ActionResult<{ rellenados: number }>> {
+  try {
+    const { user } = await requireRole(["admin"]);
+    const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
+
+    const ed = await obtenerEdicionActiva();
+    if (!ed) return { ok: false, error: "No hay edición activa." };
+
+    const tipoIds = data.plazasJson.map((p) => p.tipoEmpleadoId);
+    const tiposUnicos = new Set(tipoIds);
+    if (tiposUnicos.size !== tipoIds.length) {
+      return { ok: false, error: "No puedes repetir el mismo tipo de empleado." };
+    }
+
+    const tipos = await prisma.tipoEmpleado.findMany({
+      where: { id: { in: tipoIds } },
+      select: { id: true, activo: true },
+    });
+    if (tipos.length !== tipoIds.length) {
+      return { ok: false, error: "Algún tipo de empleado no existe." };
+    }
+    if (tipos.some((t) => !t.activo)) {
+      return { ok: false, error: "Algún tipo de empleado no está activo." };
+    }
+
+    if (data.casetaId) {
+      const casErr = await validarCasetaActiva(data.casetaId);
+      if (casErr) return { ok: false, error: casErr };
+    }
+
+    const turnos = await prisma.turno.findMany({
+      where: {
+        edicionId: ed.id,
+        plazas: { none: {} },
+        ...(data.casetaId ? { casetaId: data.casetaId } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (turnos.length === 0) {
+      return { ok: true, data: { rellenados: 0 } };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.$transaction(async (tx) => {
+        for (const t of turnos) {
+          await tx.turnoPlaza.createMany({
+            data: data.plazasJson.map((p) => ({
+              turnoId: t.id,
+              tipoEmpleadoId: p.tipoEmpleadoId,
+              cantidad: p.cantidad,
+            })),
+          });
+        }
+      })
+    );
+
+    revalidatePath("/turnos");
+    revalidatePath("/admin/mantenimiento");
+    return { ok: true, data: { rellenados: turnos.length } };
+  } catch (err) {
+    return toActionError(err);
+  }
 }

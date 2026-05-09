@@ -72,23 +72,15 @@ export function EmpleadoCard({
               {empleado.tipoEmpleado.label}
             </span>
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] items-baseline gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="text-muted-foreground/70">DNI:</span>
+            <span className="font-mono">{empleado.dni ?? "—"}</span>
+            <span className="text-muted-foreground/70">Tel:</span>
+            <span>{empleado.telefono ?? "—"}</span>
+            <span className="text-muted-foreground/70">Email:</span>
+            <span className="truncate">{empleado.email ?? "—"}</span>
+            <span className="text-muted-foreground/70">Jornal:</span>
             <span>
-              <span className="text-muted-foreground/70">DNI:</span>{" "}
-              <span className="font-mono">{empleado.dni ?? "—"}</span>
-            </span>
-            <span>
-              <span className="text-muted-foreground/70">Tel:</span>{" "}
-              {empleado.telefono ?? "—"}
-            </span>
-            {empleado.email ? (
-              <span>
-                <span className="text-muted-foreground/70">Email:</span>{" "}
-                {empleado.email}
-              </span>
-            ) : null}
-            <span>
-              <span className="text-muted-foreground/70">Jornal:</span>{" "}
               {empleado.jornalDiario === null ? (
                 <Badge variant="outline">Voluntario</Badge>
               ) : (

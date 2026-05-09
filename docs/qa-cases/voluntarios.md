@@ -75,6 +75,75 @@ Cobertura: formulario público con token, validación de solapamientos en solici
 
 ---
 
+### CASO-VOL-007: Formulario público muestra filtros de Día y Caseta
+
+**Rol**: público
+**Precondición**: Edición activa con formulario público activado y al menos un turno con plazas disponibles para voluntarios.
+**Pasos**:
+1. Navegar a `/apuntarse/<token>`
+2. Localizar la sección "Turnos disponibles"
+
+**Aserciones**:
+- Encima de la lista de turnos aparecen dos selectores: "Día" y "Caseta"
+- "Día" tiene primera opción "Todos los días" y luego un option por cada día con turnos
+- "Caseta" tiene primera opción "Todas las casetas" y luego un option por cada caseta única con turnos
+
+---
+
+### CASO-VOL-008: Filtrar por día muestra solo turnos de ese día
+
+**Rol**: público
+**Precondición**: Al menos dos días distintos con turnos disponibles.
+**Pasos**:
+1. Navegar a `/apuntarse/<token>`
+2. Seleccionar un día concreto en el filtro "Día"
+
+**Aserciones**:
+- Solo aparecen los grupos (`<h3>` con el título del día) correspondientes al día seleccionado
+- Los turnos de los demás días no se renderizan
+
+---
+
+### CASO-VOL-009: Filtrar por caseta muestra solo turnos de esa caseta
+
+**Rol**: público
+**Precondición**: Al menos dos casetas con turnos disponibles.
+**Pasos**:
+1. Navegar a `/apuntarse/<token>`
+2. Seleccionar una caseta concreta en el filtro "Caseta"
+
+**Aserciones**:
+- En cada día visible solo aparece el `<fieldset>` de la caseta seleccionada
+- Días que no tienen turnos para esa caseta dejan de mostrarse
+
+---
+
+### CASO-VOL-010: Filtros combinados día + caseta
+
+**Rol**: público
+**Precondición**: Existe combinación día/caseta con al menos un turno y otra combinación distinta con otros turnos.
+**Pasos**:
+1. Navegar a `/apuntarse/<token>`
+2. Seleccionar un día concreto y una caseta concreta
+
+**Aserciones**:
+- Solo se muestran los turnos que coinciden simultáneamente con día y caseta seleccionados
+
+---
+
+### CASO-VOL-011: Filtros sin resultados muestran mensaje específico
+
+**Rol**: público
+**Pasos**:
+1. Navegar a `/apuntarse/<token>`
+2. Seleccionar combinación día + caseta para la que no haya turnos disponibles
+
+**Aserciones**:
+- En lugar de la lista de fieldsets aparece el texto: "No hay turnos para los filtros seleccionados."
+- No se renderiza ningún `<fieldset>` de turnos
+
+---
+
 ### CASO-VOL-006: Solicitud con solapamiento se marca o bloquea al aprobar
 
 **Rol**: admin

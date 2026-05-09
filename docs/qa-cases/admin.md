@@ -62,14 +62,35 @@ Cobertura: CRUD de ediciones, casetas, empleados, usuarios, proveedores, tipos d
 ### CASO-ADMIN-005: Crear empleado voluntario fuerza jornalDiario null
 
 **Rol**: admin
+**Precondición**: Existe al menos una entidad activa (crear desde `/admin/entidades` si no la hay).
 **Pasos**:
-1. Crear empleado con tipo = "voluntario", nombre = "Vol Uno"
-2. Intentar fijar jornal = 70€
+1. Crear empleado con tipo = "voluntario", nombre = "Vol Uno", entidad = la creada
+2. Dejar DNI vacío y jornal vacío
+3. Submit
 
 **Aserciones**:
 - O bien el campo de jornal se desactiva al elegir voluntario
 - O bien el submit falla validación
 - Empleado creado tiene jornal = null
+- DNI no es obligatorio para voluntarios (submit OK con DNI vacío)
+- Empleado queda asociado a la entidad seleccionada
+
+---
+
+### CASO-ADMIN-005b: Editar empleado y cambiar tipo a Voluntario guarda sin error
+
+**Rol**: admin
+**Precondición**: Empleado "Juan Pérez" creado en CASO-ADMIN-004 (tipo "trabajador", con DNI y jornal).
+**Pasos**:
+1. Navegar a `/empleados`, abrir Juan Pérez
+2. Cambiar tipo a "voluntario"
+3. Asignar una entidad activa
+4. Submit
+
+**Aserciones**:
+- Submit no muestra error de validación de `tipoEmpleadoId` (regresión: la validación Zod ya no exige formato `cuid`, es `min(1)`; existencia/activo se valida en la action)
+- Cambios persisten tras refresh
+- Empleado pasa a tener `jornalDiario = null`
 
 ---
 
@@ -127,16 +148,53 @@ Cobertura: CRUD de ediciones, casetas, empleados, usuarios, proveedores, tipos d
 
 ---
 
-### CASO-ADMIN-010: Crear tipo de empleado custom
+### CASO-ADMIN-010: Crear tipo de empleado custom (formulario simplificado)
 
 **Rol**: admin
 **Pasos**:
-1. Navegar a `/admin/tipos-empleado` (si existe), "Nuevo tipo"
-2. Slug = "barra", nombre = "Barra"
-3. Submit
+1. Navegar a `/admin/tipos-empleado`, "Nuevo tipo"
+2. Identificador interno = "barra", Etiqueta = "Barra", Etiqueta corta = "Barra"
+3. Elegir un color en el picker
+4. Dejar "Es tipo de voluntario" sin marcar
+5. Submit
 
 **Aserciones**:
+- En modo crear NO aparecen los campos: Hex en texto, Orden, ni el checkbox "Tipo activo"
+- Sí aparecen: Identificador interno, Etiqueta, Etiqueta corta, Color (picker), Vista previa, "Es tipo de voluntario"
+- Tras submit, el tipo creado queda con `activo = true` y `orden = max(orden) + 10` automáticamente
 - Tipo aparece y es seleccionable al crear empleados
+
+---
+
+### CASO-ADMIN-010b: Editar tipo de empleado expone Orden y Tipo activo
+
+**Rol**: admin
+**Precondición**: Tipo "barra" creado en CASO-ADMIN-010.
+**Pasos**:
+1. Abrir tipo "barra" en `/admin/tipos-empleado`
+2. Verificar que aparecen los campos Orden y "Tipo activo"
+3. Cambiar orden a 5, desmarcar "Tipo activo"
+4. Submit
+
+**Aserciones**:
+- Cambios persisten tras refresh
+- El tipo desactivado deja de aparecer como opción al crear empleados (o aparece marcado como inactivo)
+- El identificador interno (slug) sigue siendo de solo lectura
+
+---
+
+### CASO-ADMIN-010c: Crear tipo voluntario y aparece como opción en /apuntarse
+
+**Rol**: admin
+**Precondición**: Edición activa con formulario público activado y token copiado.
+**Pasos**:
+1. En `/admin/tipos-empleado`, crear tipo: identificador "hermandad-rocio", etiqueta "Hermandad del Rocío", etiqueta corta "Rocío", marcar "Es tipo de voluntario"
+2. Submit
+3. Logout y navegar a `/apuntarse/<token>`
+
+**Aserciones**:
+- El tipo se crea con `activo = true` y `esVoluntario = true`
+- El nuevo tipo no aparece como entidad/opción de tipo en el formulario público (los voluntarios eligen entidad, no tipo), pero sí queda disponible como tipo asignable al aprobar la solicitud desde `/admin/solicitudes`
 
 ---
 
@@ -163,3 +221,18 @@ Cobertura: CRUD de ediciones, casetas, empleados, usuarios, proveedores, tipos d
 
 **Aserciones**:
 - Se listan todos sus turnos agrupados por fecha
+
+---
+
+### CASO-ADMIN-013: Tarjeta de empleado en listado muestra DNI/Tel/Email/Jornal alineados
+
+**Rol**: admin (verificación manual / regresión visual)
+**Precondición**: Empleado con DNI, teléfono, email y jornal cumplimentados.
+**Pasos**:
+1. Navegar a `/empleados`
+2. Localizar la tarjeta del empleado
+
+**Aserciones**:
+- Las etiquetas "DNI:", "Tel:", "Email:", "Jornal:" están presentes en ese orden
+- Los pares etiqueta/valor se alinean en grid (`[auto_1fr]` en mobile, `[auto_1fr_auto_1fr]` ≥sm) — etiquetas a la izquierda, valores alineados verticalmente
+- Para empleado voluntario, "Jornal:" muestra badge "Voluntario" en lugar de importe
