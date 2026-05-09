@@ -29,9 +29,12 @@ export async function loginUI(
 ): Promise<void> {
   await page.goto("/login");
   await page.getByLabel("Email").fill(`${rol}@caseta.test`);
-  await page.getByLabel("Contraseña").fill(TEST_PASSWORD);
+  await page.getByLabel("Contraseña", { exact: true }).fill(TEST_PASSWORD);
   await page.getByRole("button", { name: /entrar/i }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), {
     timeout: 15_000,
   });
+  // Drenar el router.refresh() de Next.js que sigue en vuelo tras el redirect.
+  // networkidle con timeout corto: si en 3s no para (p.ej. por polling), continuamos igual.
+  await page.waitForLoadState("networkidle", { timeout: 3_000 }).catch(() => {});
 }
