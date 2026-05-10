@@ -52,7 +52,7 @@ export default async function ApuntarsePage({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
     }),
-    prisma.$transaction(async (tx) => calcularHuecosVoluntario(tx, edicion.id)),
+    calcularHuecosVoluntario(prisma, edicion.id),
   ]);
 
   const turnosDisponibles = turnos.filter((t) => (huecos.get(t.id) ?? 0) > 0);
