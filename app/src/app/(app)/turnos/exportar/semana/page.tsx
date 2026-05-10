@@ -11,6 +11,7 @@ import {
 } from "../../_lib/fechas";
 import { Fragment } from "react";
 import type { TurnoSerializable } from "../../types";
+import { colorFor } from "../../_lib/perfiles";
 
 type SP = Promise<{ casetaId?: string; semana?: string }>;
 
@@ -107,17 +108,34 @@ export default async function ExportarSemanaPage({
                     {t.asignaciones.length === 0 ? (
                       <em style={{ color: "#7a6750" }}>Sin asignar</em>
                     ) : (
-                      t.asignaciones.map((a) => (
-                        <div key={a.empleadoId}>
-                          {a.empleadoNombre}
-                          {a.esVoluntario ? (
-                            <span style={{ fontSize: 10, color: "#7a6750" }}>
-                              {" "}
-                              (voluntario)
-                            </span>
-                          ) : null}
-                        </div>
-                      ))
+                      t.asignaciones.map((a) => {
+                        const tipo = semana.tiposEmpleado.find(
+                          (te) => te.id === a.tipoEmpleadoId,
+                        );
+                        const colores = tipo
+                          ? colorFor(tipo)
+                          : { bg: "transparent", border: "#ccc", text: "inherit" };
+                        return (
+                          <div
+                            key={a.empleadoId}
+                            data-tipo-slug={tipo?.slug}
+                            style={{
+                              background: colores.bg,
+                              color: colores.text,
+                              borderLeft: `3px solid ${colores.border}`,
+                              padding: "2px 6px",
+                              margin: "1px 0",
+                              display: "inline-block",
+                              marginRight: 4,
+                            }}
+                          >
+                            {a.empleadoNombre}
+                            {a.esVoluntario ? (
+                              <span style={{ fontSize: 10 }}> (voluntario)</span>
+                            ) : null}
+                          </div>
+                        );
+                      })
                     )}
                   </td>
                 </tr>,

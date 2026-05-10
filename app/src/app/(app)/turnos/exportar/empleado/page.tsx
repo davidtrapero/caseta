@@ -8,6 +8,7 @@ import {
   horaDe,
   duracionHoras,
 } from "../../_lib/fechas";
+import { colorFor } from "../../_lib/perfiles";
 
 type SP = Promise<{ empleadoId?: string; desde?: string; hasta?: string }>;
 
@@ -69,6 +70,30 @@ export default async function ExportarEmpleadoPage({
         </>
       }
     >
+      {(() => {
+        const tipo = data.empleado.tipoEmpleado;
+        if (!tipo) return null;
+        const colores = colorFor(tipo);
+        return (
+          <div style={{ marginBottom: 12 }}>
+            <span
+              data-tipo-slug={tipo.slug}
+              style={{
+                background: colores.bg,
+                color: colores.text,
+                borderLeft: `3px solid ${colores.border}`,
+                padding: "4px 10px",
+                fontSize: 12,
+                fontWeight: 600,
+                display: "inline-block",
+              }}
+            >
+              {tipo.label}
+            </span>
+          </div>
+        );
+      })()}
+
       {data.turnos.length === 0 ? (
         <p>Sin turnos asignados en este rango.</p>
       ) : (

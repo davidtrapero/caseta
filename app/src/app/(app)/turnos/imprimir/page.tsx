@@ -6,6 +6,7 @@ import {
   duracionHoras,
 } from "../_lib/fechas";
 import { BotonImprimir } from "../_components/BotonImprimir";
+import { colorFor } from "../_lib/perfiles";
 
 type SP = Promise<{ fecha?: string; casetaId?: string }>;
 
@@ -41,7 +42,11 @@ export default async function ImprimirPage({
           font-size: 12px;
         }
         .print-table th { background: #ebe3d3; font-weight: 600; }
-        .emp-line { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+        .emp-line {
+          display: flex; align-items: center; gap: 6px; padding: 2px 0;
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
         .check-box {
           display: inline-block;
           width: 12px; height: 12px;
@@ -96,19 +101,33 @@ export default async function ImprimirPage({
                   {t.asignaciones.length === 0 ? (
                     <em style={{ color: "#666" }}>Sin asignar</em>
                   ) : (
-                    t.asignaciones.map((a) => (
-                      <div className="emp-line" key={a.empleadoId}>
-                        <span
-                          className={`check-box ${a.asistio ? "asistio" : ""}`}
-                        />
-                        <span>{a.empleadoNombre}</span>
-                        {a.esVoluntario ? (
-                          <span style={{ fontSize: 10, color: "#666" }}>
-                            (voluntario)
-                          </span>
-                        ) : null}
-                      </div>
-                    ))
+                    t.asignaciones.map((a) => {
+                      const tipo = dia.tiposEmpleado.find(
+                        (te) => te.id === a.tipoEmpleadoId,
+                      );
+                      const colorHex = tipo?.colorHex ?? "#999";
+                      return (
+                        <div
+                          className="emp-line"
+                          key={a.empleadoId}
+                          data-tipo-slug={tipo?.slug}
+                          style={{
+                            borderLeft: `4px solid ${colorHex}`,
+                            paddingLeft: 6,
+                          }}
+                        >
+                          <span
+                            className={`check-box ${a.asistio ? "asistio" : ""}`}
+                          />
+                          <span>{a.empleadoNombre}</span>
+                          {a.esVoluntario ? (
+                            <span style={{ fontSize: 10, color: "#666" }}>
+                              (voluntario)
+                            </span>
+                          ) : null}
+                        </div>
+                      );
+                    })
                   )}
                 </td>
               </tr>

@@ -4,6 +4,7 @@ import { LayoutExport } from "../../_components/LayoutExport";
 import { BotonesExport } from "../../_components/BotonesExport";
 import { ResumenVacantesPie } from "../../_components/ResumenVacantes";
 import { formatFechaLarga, horaDe, duracionHoras } from "../../_lib/fechas";
+import { colorFor } from "../../_lib/perfiles";
 
 type SP = Promise<{ fecha?: string; casetaId?: string }>;
 
@@ -62,12 +63,32 @@ export default async function ExportarDiaPage({
                     {t.asignaciones.length === 0 ? (
                       <em>Sin asignar</em>
                     ) : (
-                      t.asignaciones.map((a) => (
-                        <div key={a.empleadoId}>
-                          {a.empleadoNombre}
-                          {a.esVoluntario ? " (voluntario)" : ""}
-                        </div>
-                      ))
+                      t.asignaciones.map((a) => {
+                        const tipo = dia.tiposEmpleado.find(
+                          (te) => te.id === a.tipoEmpleadoId,
+                        );
+                        const colores = tipo
+                          ? colorFor(tipo)
+                          : { bg: "transparent", border: "#ccc", text: "inherit" };
+                        return (
+                          <div
+                            key={a.empleadoId}
+                            data-tipo-slug={tipo?.slug}
+                            style={{
+                              background: colores.bg,
+                              color: colores.text,
+                              borderLeft: `3px solid ${colores.border}`,
+                              padding: "2px 6px",
+                              margin: "1px 0",
+                              display: "inline-block",
+                              marginRight: 4,
+                            }}
+                          >
+                            {a.empleadoNombre}
+                            {a.esVoluntario ? " (voluntario)" : ""}
+                          </div>
+                        );
+                      })
                     )}
                   </td>
                 </tr>
