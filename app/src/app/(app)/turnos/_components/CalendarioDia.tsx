@@ -99,6 +99,7 @@ export function CalendarioDia({ dia, puedeEditar }: Props) {
           diaOrigen={dia.fecha}
           duplicarDesdeAnterior
           diaAnterior={dia.fechaAnterior}
+          casetas={dia.casetas}
         />
       ) : null}
     </div>

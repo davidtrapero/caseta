@@ -489,6 +489,10 @@ export async function duplicarDiaAction(
     if (edErr) return { ok: false, error: edErr };
     const casErr = await validarCasetaActiva(data.casetaId);
     if (casErr) return { ok: false, error: casErr };
+    if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
+      const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
+      if (casOrigErr) return { ok: false, error: casOrigErr };
+    }
 
     const origenIni = ymdToUtcDate(data.diaOrigen);
     const origenFin = new Date(origenIni.getTime() + 24 * 60 * 60 * 1000);
@@ -497,7 +501,7 @@ export async function duplicarDiaAction(
 
     const origenes = await prisma.turno.findMany({
       where: {
-        casetaId: data.casetaId,
+        casetaId: data.casetaIdOrigen ?? data.casetaId,
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
@@ -543,6 +547,10 @@ export async function duplicarSemanaAction(
     if (edErr) return { ok: false, error: edErr };
     const casErr = await validarCasetaActiva(data.casetaId);
     if (casErr) return { ok: false, error: casErr };
+    if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
+      const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
+      if (casOrigErr) return { ok: false, error: casOrigErr };
+    }
 
     const origenIni = ymdToUtcDate(data.lunesOrigen);
     const origenFin = new Date(origenIni.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -551,7 +559,7 @@ export async function duplicarSemanaAction(
 
     const origenes = await prisma.turno.findMany({
       where: {
-        casetaId: data.casetaId,
+        casetaId: data.casetaIdOrigen ?? data.casetaId,
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },

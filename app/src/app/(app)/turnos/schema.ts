@@ -131,29 +131,48 @@ const checkboxFlag = z
 export const duplicarDiaSchema = z
   .object({
     casetaId: z.string().cuid(),
+    casetaIdOrigen: z.string().cuid().optional(),
     edicionId: z.string().cuid(),
     diaOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     diaDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     copiarAsignaciones: checkboxFlag,
   })
-  .refine((d) => d.diaOrigen !== d.diaDestino, {
-    message: "El día origen y destino deben ser diferentes",
-    path: ["diaDestino"],
-  });
+  // Origen == destino solo es ilegal si además ambas casetas coinciden:
+  // cuando el origen es otra caseta, mismo día es un caso válido (replicar
+  // planificación del mismo día desde otra caseta).
+  .refine(
+    (d) =>
+      !(
+        d.diaOrigen === d.diaDestino &&
+        (d.casetaIdOrigen ?? d.casetaId) === d.casetaId
+      ),
+    {
+      message: "El día origen y destino deben ser diferentes",
+      path: ["diaDestino"],
+    }
+  );
 
 // Duplicar semana completa. Las asignaciones se copian sólo si el flag está activo.
 export const duplicarSemanaSchema = z
   .object({
     casetaId: z.string().cuid(),
+    casetaIdOrigen: z.string().cuid().optional(),
     edicionId: z.string().cuid(),
     lunesOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     lunesDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     copiarAsignaciones: checkboxFlag,
   })
-  .refine((d) => d.lunesOrigen !== d.lunesDestino, {
-    message: "La semana origen y destino deben ser diferentes",
-    path: ["lunesDestino"],
-  });
+  .refine(
+    (d) =>
+      !(
+        d.lunesOrigen === d.lunesDestino &&
+        (d.casetaIdOrigen ?? d.casetaId) === d.casetaId
+      ),
+    {
+      message: "La semana origen y destino deben ser diferentes",
+      path: ["lunesDestino"],
+    }
+  );
 
 export const actualizarPlazasSchema = z.object({
   turnoId: z.string().cuid(),

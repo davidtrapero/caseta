@@ -112,6 +112,7 @@ export default async function SemanaTurnosPage({
               casetaId={semana.casetaSeleccionada.id}
               edicionId={semana.edicion.id}
               lunesActual={semana.lunes}
+              casetas={semana.casetas}
             />
           ) : null}
         </div>

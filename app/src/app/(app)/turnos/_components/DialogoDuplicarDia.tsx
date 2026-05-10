@@ -20,6 +20,7 @@ type Props = {
   /** Si true: el diálogo permite elegir día origen, y destino = día actual. */
   duplicarDesdeAnterior?: boolean;
   diaAnterior?: string;
+  casetas: { id: string; nombre: string }[];
 };
 
 export function DialogoDuplicarDia({
@@ -30,12 +31,15 @@ export function DialogoDuplicarDia({
   diaOrigen,
   duplicarDesdeAnterior = false,
   diaAnterior,
+  casetas,
 }: Props) {
   // Modo más común: copiar el día anterior AL día mostrado actualmente.
   const [origen, setOrigen] = useState(
     duplicarDesdeAnterior ? diaAnterior ?? diaOrigen : diaOrigen
   );
   const [destino, setDestino] = useState(duplicarDesdeAnterior ? diaOrigen : "");
+  const [casetaOrigen, setCasetaOrigen] = useState(casetaId);
+  const [copiarAsig, setCopiarAsig] = useState(false);
 
   const [state, action, pending] = useActionState<
     ActionResult<{ copiados: number }> | null,
@@ -59,7 +63,25 @@ export function DialogoDuplicarDia({
       <form action={action} className="flex flex-col gap-4">
         {state && !state.ok ? <FormError message={state.error} /> : null}
         <input type="hidden" name="casetaId" value={casetaId} />
+        <input type="hidden" name="casetaIdOrigen" value={casetaOrigen} />
         <input type="hidden" name="edicionId" value={edicionId} />
+
+        <div>
+          <Label htmlFor="casetaIdOrigenSel">Copiar desde la caseta…</Label>
+          <select
+            id="casetaIdOrigenSel"
+            value={casetaOrigen}
+            onChange={(e) => setCasetaOrigen(e.target.value)}
+            className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            {casetas.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+                {c.id === casetaId ? " (esta caseta)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <div>
           <Label htmlFor="diaOrigen">Día origen</Label>
@@ -90,6 +112,8 @@ export function DialogoDuplicarDia({
             name="copiarAsignaciones"
             type="checkbox"
             className="mt-1"
+            checked={copiarAsig}
+            onChange={(e) => setCopiarAsig(e.target.checked)}
           />
           <div className="flex flex-col">
             <Label htmlFor="copiarAsignaciones" className="font-normal">
@@ -101,6 +125,13 @@ export function DialogoDuplicarDia({
             </span>
           </div>
         </div>
+
+        {casetaOrigen !== casetaId && copiarAsig ? (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+            Las asignaciones se replicarán; revisa que los empleados sigan dados
+            de alta para la caseta destino.
+          </p>
+        ) : null}
 
         <p className="text-xs text-muted-foreground">
           Si hay solapes con turnos existentes, la operación se aborta.
