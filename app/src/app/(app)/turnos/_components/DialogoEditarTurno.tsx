@@ -10,7 +10,7 @@ import type { ActionResult } from "@/lib/action-result";
 import { useToast } from "@/components/ui/toaster";
 import type { TipoEmpleadoLite, TurnoSerializable } from "../types";
 import { colorFor, ordenarTipos } from "../_lib/perfiles";
-import { FieldError, FormError } from "../../admin/_components/page-header";
+import { FieldError, FormError, UnmappedFieldErrors } from "../../admin/_components/page-header";
 
 function isoHora(fechaYmd: string, hora: number): string {
   const [y, m, d] = fechaYmd.split("-").map(Number);
@@ -122,6 +122,10 @@ export function DialogoEditarTurno({ open, onClose, turno, tiposEmpleado }: Prop
         className="flex flex-col gap-4"
       >
         {state && !state.ok ? <FormError message={state.error} /> : null}
+        <UnmappedFieldErrors
+          fieldErrors={state && !state.ok ? state.fieldErrors : undefined}
+          excluded={["fechaInicio", "fechaFin"]}
+        />
         <input type="hidden" name="_id" value={turno.id} />
         <input type="hidden" name="id" value={turno.id} />
         <input type="hidden" name="edicionId" value={turno.edicionId} />

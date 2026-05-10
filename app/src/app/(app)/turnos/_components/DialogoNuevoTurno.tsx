@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toaster";
 import type { EmpleadoMin, TipoEmpleadoLite } from "../types";
 import { colorFor, ordenarTipos } from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
-import { FieldError, FormError } from "../../admin/_components/page-header";
+import { FieldError, FormError, UnmappedFieldErrors } from "../../admin/_components/page-header";
 
 type Props = {
   open: boolean;
@@ -113,6 +113,10 @@ export function DialogoNuevoTurno({
         className="flex flex-col gap-4"
       >
         {state && !state.ok ? <FormError message={state.error} /> : null}
+        <UnmappedFieldErrors
+          fieldErrors={state && !state.ok ? state.fieldErrors : undefined}
+          excluded={["fechaInicio", "fechaFin"]}
+        />
         <input type="hidden" name="edicionId" value={edicionId} />
         <input type="hidden" name="casetaId" value={casetaId} />
         <input type="hidden" name="fechaInicio" value={fechaInicioIso} />

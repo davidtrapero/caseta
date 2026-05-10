@@ -94,3 +94,28 @@ export function FormError({ message }: { message?: string }) {
     </div>
   );
 }
+
+export function UnmappedFieldErrors({
+  fieldErrors,
+  excluded,
+}: {
+  fieldErrors?: Record<string, string[]>;
+  excluded: string[];
+}) {
+  if (!fieldErrors) return null;
+  const entries = Object.entries(fieldErrors).filter(
+    ([key]) => !excluded.includes(key) && !excluded.some((e) => key.startsWith(`${e}.`))
+  );
+  if (entries.length === 0) return null;
+  return (
+    <ul className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-foreground mb-2 list-disc list-inside space-y-0.5">
+      {entries.flatMap(([key, msgs]) =>
+        msgs.map((m, i) => (
+          <li key={`${key}-${i}`}>
+            <span className="font-mono text-[10px] text-muted-foreground">{key}:</span> {m}
+          </li>
+        ))
+      )}
+    </ul>
+  );
+}

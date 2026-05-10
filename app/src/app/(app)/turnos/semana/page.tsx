@@ -7,10 +7,12 @@ import {
   DIAS_SEMANA_LARGOS,
   addDays,
   formatFechaCorta,
+  horaDe,
   lunesToSemanaIso,
   semanaIsoToLunes,
 } from "../_lib/fechas";
 import { colorFor } from "../_lib/perfiles";
+import { vacantesDeTurno } from "../_lib/loader";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { EmptyState } from "../../admin/_components/page-header";
@@ -89,6 +91,22 @@ export default async function SemanaTurnosPage({
             </Link>
           </Button>
           <div className="flex-1" />
+          <Button asChild variant="outline" size="sm">
+            <Link
+              href={`/turnos/exportar/semana?${casetaQS}&semana=${lunesToSemanaIso(semana.lunes)}`}
+              target="_blank"
+            >
+              Exportar semana
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link
+              href={`/turnos/exportar/semana-global?semana=${lunesToSemanaIso(semana.lunes)}`}
+              target="_blank"
+            >
+              Vista global
+            </Link>
+          </Button>
           {puedeEditar ? (
             <BotonDuplicarSemana
               casetaId={semana.casetaSeleccionada.id}
@@ -106,7 +124,7 @@ export default async function SemanaTurnosPage({
             <Link
               key={d.fecha}
               href={`/turnos?fecha=${d.fecha}&${casetaQS}`}
-              className={`block rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:border-primary/60 ${
+              className={`flex flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:border-primary/60 ${
                 esHoy ? "border-primary" : "border-border"
               }`}
             >
@@ -114,43 +132,87 @@ export default async function SemanaTurnosPage({
                 {DIAS_SEMANA_LARGOS[i]}
               </div>
               <div className="font-mono text-sm">{formatFechaCorta(d.fecha)}</div>
-              <div className="mt-3 flex items-baseline gap-1">
-                <span className="text-2xl font-semibold tabular-nums">
-                  {d.numTurnos}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {d.numTurnos === 1 ? "turno" : "turnos"}
-                </span>
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">
-                {d.numPersonas}{" "}
+              <div className="mt-2 text-xs text-muted-foreground tabular-nums">
+                <span className="font-semibold text-foreground">{d.numTurnos}</span>{" "}
+                {d.numTurnos === 1 ? "turno" : "turnos"} ·{" "}
+                <span className="font-semibold text-foreground">{d.numPersonas}</span>{" "}
                 {d.numPersonas === 1 ? "persona" : "personas"}
               </div>
-              {d.desglose.length > 0 ? (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {d.desglose.map((dp) => {
-                    const tipo = semana.tiposEmpleado.find(
-                      (t) => t.id === dp.tipoEmpleadoId
-                    );
-                    if (!tipo) return null;
-                    const colores = colorFor(tipo);
-                    const sinCubrir = dp.plazas > 0 && dp.asignados < dp.plazas;
+
+              {d.turnos.length > 0 ? (
+                <ul className="mt-3 flex flex-col gap-2 border-t border-border/60 pt-2">
+                  {d.turnos.map((t) => {
+                    const vacantes = vacantesDeTurno(t);
+                    const conPlazas = t.plazas.length > 0;
+                    const completo = conPlazas && vacantes.length === 0;
+                    const indicador = !conPlazas
+                      ? "bg-muted-foreground/40"
+                      : completo
+                        ? "bg-emerald-600"
+                        : "bg-amber-500";
+                    const indicadorTitle = !conPlazas
+                      ? "Sin plazas definidas"
+                      : completo
+                        ? "Turno completo"
+                        : `Faltan ${vacantes.reduce((s, v) => s + v.faltan, 0)} plaza(s)`;
+
+                    // Conteo de asignados por tipo (para badges).
+                    const asigPorTipo = new Map<string, number>();
+                    for (const a of t.asignaciones) {
+                      asigPorTipo.set(a.tipoEmpleadoId, (asigPorTipo.get(a.tipoEmpleadoId) ?? 0) + 1);
+                    }
+                    // Tipos a renderizar: union de plazas + tipos asignados, ordenados por TipoEmpleado.orden.
+                    const tipoIds = new Set<string>([
+                      ...t.plazas.map((p) => p.tipoEmpleadoId),
+                      ...asigPorTipo.keys(),
+                    ]);
+                    const tiposBadge = semana.tiposEmpleado.filter((te) => tipoIds.has(te.id));
+
                     return (
-                      <span
-                        key={dp.tipoEmpleadoId}
-                        className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold"
-                        style={{ background: colores.bg, color: colores.text, border: `1px solid ${colores.border}` }}
-                        title={`${tipo.labelCorto}: ${dp.asignados}${dp.plazas > 0 ? `/${dp.plazas}` : ""}`}
-                      >
-                        {tipo.labelCorto}
-                        <span className={sinCubrir ? "text-destructive font-bold" : ""}>
-                          {dp.asignados}
-                          {dp.plazas > 0 ? `/${dp.plazas}` : ""}
-                        </span>
-                      </span>
+                      <li key={t.id} className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            aria-hidden
+                            title={indicadorTitle}
+                            className={`inline-block h-2 w-2 rounded-full ${indicador}`}
+                          />
+                          <span className="font-mono text-[11px] tabular-nums">
+                            {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
+                          </span>
+                        </div>
+                        {tiposBadge.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 pl-3.5">
+                            {tiposBadge.map((tipo) => {
+                              const plaza = t.plazas.find((p) => p.tipoEmpleadoId === tipo.id);
+                              const cantidad = plaza?.cantidad ?? 0;
+                              const asignados = asigPorTipo.get(tipo.id) ?? 0;
+                              const sinCubrir = cantidad > 0 && asignados < cantidad;
+                              const colores = colorFor(tipo);
+                              return (
+                                <span
+                                  key={tipo.id}
+                                  className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                                  style={{
+                                    background: colores.bg,
+                                    color: colores.text,
+                                    border: `1px solid ${colores.border}`,
+                                  }}
+                                  title={`${tipo.label}: ${asignados}${cantidad > 0 ? `/${cantidad}` : ""}`}
+                                >
+                                  {tipo.labelCorto}
+                                  <span className={sinCubrir ? "text-destructive font-bold" : ""}>
+                                    {asignados}
+                                    {cantidad > 0 ? `/${cantidad}` : ""}
+                                  </span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </li>
                     );
                   })}
-                </div>
+                </ul>
               ) : null}
             </Link>
           );

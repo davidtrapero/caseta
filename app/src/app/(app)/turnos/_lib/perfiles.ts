@@ -56,9 +56,11 @@ function rgbToHex({ r, g, b }: { r: number; g: number; b: number }): string {
  */
 export function colorFor(tipo: { colorHex: string }): ColoresTipo {
   const base = hexToRgb(tipo.colorHex);
-  const bg = rgbToHex(mixWithWhite(base, 0.78));
-  const lum = luminance(base);
-  // Para fondos claros usamos un texto oscuro derivado del color.
+  const bgRgb = mixWithWhite(base, 0.78);
+  const bg = rgbToHex(bgRgb);
+  // El texto se pinta sobre `bg`, no sobre el color base — la decisión de
+  // contraste debe usar la luminancia del fondo real.
+  const lumBg = luminance(bgRgb);
   const textDark = rgbToHex({
     r: Math.round(base.r * 0.35),
     g: Math.round(base.g * 0.35),
@@ -67,7 +69,7 @@ export function colorFor(tipo: { colorHex: string }): ColoresTipo {
   return {
     bg,
     border: tipo.colorHex,
-    text: lum < 0.35 ? "#fdf8ec" : textDark,
+    text: lumBg < 0.35 ? "#fdf8ec" : textDark,
   };
 }
 
