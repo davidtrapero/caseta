@@ -13,6 +13,11 @@ import type {
 } from "../types";
 import { colorFor, ordenarTipos } from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type Props = {
   turnoId: string;
@@ -67,24 +72,25 @@ export function AsignarEmpleado({
     .filter((g) => g.empleados.length > 0);
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-sm border border-dashed border-border/80 px-2 py-1 text-xs text-muted-foreground",
-          "hover:border-primary hover:text-foreground transition-colors"
-        )}
-        aria-label="Añadir empleado"
-      >
-        <Plus className="h-3 w-3" /> empleado
-      </button>
-      {open ? (
-        <div
-          className="absolute z-30 top-full left-0 mt-1 w-64 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-xl p-1"
-          onMouseLeave={() => setOpen(false)}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-sm border border-dashed border-border/80 px-2 py-1 text-xs text-muted-foreground",
+            "hover:border-primary hover:text-foreground transition-colors"
+          )}
+          aria-label="Añadir empleado"
         >
-          {grupos.map((g) => {
+          <Plus className="h-3 w-3" /> empleado
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-64 max-h-72 overflow-auto p-1"
+        align="start"
+        sideOffset={4}
+      >
+        {grupos.map((g) => {
             const colores = colorFor(g.tipo);
             const pendientes = Math.max(0, g.plazas - g.asignados);
             return (
@@ -124,10 +130,9 @@ export function AsignarEmpleado({
                   </form>
                 ))}
               </div>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
   );
 }
