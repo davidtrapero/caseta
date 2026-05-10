@@ -115,3 +115,96 @@ Lógica de solape clave: [src/lib/turnos-solape.ts](../../app/src/lib/turnos-sol
 **Aserciones**:
 - Página renderiza sin errores
 - Layout es printable (sin sidebar, sin botones de acción)
+
+---
+
+<!-- TODO qa-catalog-sync (working-tree): revisar y aprobar -->
+<!--
+### CASO-TURNOS-PROPUESTO-009: Exportar semana de una caseta (PDF/imagen)
+
+**Origen**: feature working tree — añadió `app/src/app/(app)/turnos/exportar/semana/page.tsx`
+**Rol**: gerente o cajero
+**Precondición**: Edición activa con al menos una caseta y turnos asignados en la semana.
+**Pasos**:
+1. Navegar a `/turnos/semana?casetaId=<id>&semana=<YYYY-Www>`
+2. Pulsar el botón "Exportar semana" (abre `/turnos/exportar/semana?...` en nueva pestaña)
+3. Pulsar "Imprimir / PDF" → diálogo de impresión del navegador
+4. Volver a la pestaña, pulsar "Descargar imagen" → PNG en disco
+
+**Aserciones**:
+- La vista exportable muestra una tabla agrupada por día con columnas Día, Horario, Plazas, Asignados
+- Cada turno con plazas no cubiertas emite filas adicionales con texto "VACANTE — <tipo>" en granate
+- El pie muestra resumen: número total de plazas sin cubrir desglosado por tipo de empleado
+- El PNG descargado tiene el fondo beige (#ebe3d3) y la tabla legible
+
+**Notas**:
+- Cambio detectado automáticamente. Verificar manualmente que el caso es ejecutable y completo.
+-->
+
+<!-- TODO qa-catalog-sync (working-tree): revisar y aprobar -->
+<!--
+### CASO-TURNOS-PROPUESTO-010: Exportar día de una caseta (consulta sin checkboxes)
+
+**Origen**: feature working tree — añadió `app/src/app/(app)/turnos/exportar/dia/page.tsx`
+**Rol**: gerente o cajero
+**Precondición**: Edición activa con turnos en una fecha concreta.
+**Pasos**:
+1. Navegar a `/turnos/imprimir?fecha=<YYYY-MM-DD>&casetaId=<id>`
+2. Pulsar "Vista exportable (sin checkboxes)" → abre `/turnos/exportar/dia?...`
+3. Verificar tabla y resumen de huecos
+
+**Aserciones**:
+- La vista de export NO tiene checkboxes de asistencia (a diferencia de `/turnos/imprimir`)
+- Filas VACANTE aparecen en granate cuando hay plazas sin cubrir
+- El resumen al pie agrupa los huecos por tipo de empleado
+- Botones "Imprimir / PDF" y "Descargar imagen" son funcionales
+
+**Notas**:
+- Coexiste con `/turnos/imprimir` (vista con checkboxes para fichaje en papel) — son casos de uso distintos.
+-->
+
+<!-- TODO qa-catalog-sync (working-tree): revisar y aprobar -->
+<!--
+### CASO-TURNOS-PROPUESTO-011: Exportar vista global semanal (todas las casetas)
+
+**Origen**: feature working tree — añadió `app/src/app/(app)/turnos/exportar/semana-global/page.tsx`
+**Rol**: gerente o admin
+**Precondición**: Edición activa con varias casetas y turnos repartidos.
+**Pasos**:
+1. Navegar a `/turnos/semana`
+2. Pulsar "Vista global"
+3. Comprobar matriz casetas × días
+
+**Aserciones**:
+- Tabla con una fila por caseta y 7 columnas (días)
+- Cada celda muestra "N turnos / M pers." y, si hay vacantes, badge "X vacante(s)" en granate
+- Celdas con vacantes destacan con fondo `--destructive` (clase `export-vacante`)
+- Resumen al pie con el total de plazas sin cubrir de toda la semana
+- En `@page` el formato es A4 horizontal (landscape)
+
+**Notas**:
+- Vista cross-caseta — confirma que `loadSemanaGlobal` no filtra por casetaId.
+-->
+
+<!-- TODO qa-catalog-sync (working-tree): revisar y aprobar -->
+<!--
+### CASO-TURNOS-PROPUESTO-012: Exportar turnos de un empleado en un rango
+
+**Origen**: feature working tree — añadió `app/src/app/(app)/turnos/exportar/empleado/page.tsx`; integración en `empleados/[id]/_components/TurnosAsignadosEmpleado.tsx`
+**Rol**: admin o gerente
+**Precondición**: Empleado con al menos un turno asignado en la edición activa.
+**Pasos**:
+1. Navegar a `/empleados/<id>`
+2. Pulsar "Exportar turnos" en la sección "Turnos asignados"
+3. Verificar tabla y totales
+
+**Aserciones**:
+- Tabla con columnas Fecha, Caseta, Horario, Duración, Asistencia
+- Cada fila representa un turno asignado al empleado en el rango (por defecto = edición completa)
+- Símbolo `■` verde si asistió, `□` si no
+- Pie muestra totales: número de turnos, horas totales, asistencias / total
+- Si se pasan `desde`/`hasta` por query string, el rango se respeta
+
+**Notas**:
+- Útil para entregar el cuadrante individual a cada voluntario o empleado.
+-->

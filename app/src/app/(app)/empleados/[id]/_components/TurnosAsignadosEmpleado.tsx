@@ -23,11 +23,22 @@ type Props = {
 export function TurnosAsignadosEmpleado({ empleadoId, turnos }: Props) {
   return (
     <section className="mt-10 border-t pt-8">
-      <header className="mb-4">
-        <h2 className="text-base font-semibold">Turnos asignados</h2>
-        <p className="text-sm text-muted-foreground">
-          Próximos turnos del empleado en la edición activa.
-        </p>
+      <header className="mb-4 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-base font-semibold">Turnos asignados</h2>
+          <p className="text-sm text-muted-foreground">
+            Próximos turnos del empleado en la edición activa.
+          </p>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <a
+            href={`/turnos/exportar/empleado?empleadoId=${empleadoId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Exportar turnos
+          </a>
+        </Button>
       </header>
 
       {turnos.length === 0 ? (

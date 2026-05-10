@@ -12,8 +12,46 @@ import type {
   EmpleadoMin,
   EdicionMin,
   TipoEmpleadoLite,
+  VacanteTurno,
+  ResumenVacantes,
+  SemanaGlobal,
+  SemanaGlobalCaseta,
+  SemanaGlobalCelda,
+  TurnosEmpleado,
+  TurnoEmpleadoExport,
 } from "../types";
 import { addDays, hoyIso, lunesDe } from "./fechas";
+
+export function vacantesDeTurno(t: TurnoSerializable): VacanteTurno[] {
+  const asignadasPorTipo = new Map<string, number>();
+  for (const a of t.asignaciones) {
+    asignadasPorTipo.set(a.tipoEmpleadoId, (asignadasPorTipo.get(a.tipoEmpleadoId) ?? 0) + 1);
+  }
+  const out: VacanteTurno[] = [];
+  for (const p of t.plazas) {
+    const cubiertas = asignadasPorTipo.get(p.tipoEmpleadoId) ?? 0;
+    const faltan = p.cantidad - cubiertas;
+    if (faltan > 0) out.push({ tipoEmpleadoId: p.tipoEmpleadoId, faltan });
+  }
+  return out;
+}
+
+export function resumenVacantes(turnos: TurnoSerializable[]): ResumenVacantes {
+  const acc = new Map<string, number>();
+  for (const t of turnos) {
+    for (const v of vacantesDeTurno(t)) {
+      acc.set(v.tipoEmpleadoId, (acc.get(v.tipoEmpleadoId) ?? 0) + v.faltan);
+    }
+  }
+  const porTipo = Array.from(acc.entries()).map(([tipoEmpleadoId, faltan]) => ({
+    tipoEmpleadoId,
+    faltan,
+  }));
+  return {
+    totalFaltan: porTipo.reduce((s, x) => s + x.faltan, 0),
+    porTipo,
+  };
+}
 
 // Multi-caseta: necesitamos una edición activa para filtrar. Si no hay
 // edición activa, devolvemos datos vacíos con una primera edición disponible.
@@ -290,6 +328,7 @@ export async function loadSemanaTurnos(params: {
       numTurnos: delDia.length,
       numPersonas: empleadosSet.size,
       desglose,
+      turnos: delDia,
     });
   }
 
@@ -301,5 +340,126 @@ export async function loadSemanaTurnos(params: {
     turnos,
     hoyIso: hoyIso(),
     readonly: params.readonly ?? false,
+  };
+}
+
+export async function loadSemanaGlobal(params: {
+  lunes?: string;
+  edicionId?: string;
+}): Promise<SemanaGlobal | null> {
+  const lunes = params.lunes ? lunesDe(params.lunes) : lunesDe(hoyIso());
+  const ctx = await loadContexto({});
+  if (!ctx) return null;
+
+  const inicio = startOfDayUtc(lunes);
+  const fin = new Date(inicio);
+  fin.setUTCDate(fin.getUTCDate() + 7);
+
+  const turnosRaw = await prisma.turno.findMany({
+    where: {
+      edicionId: ctx.edicion.id,
+      fechaInicio: { gte: inicio, lt: fin },
+    },
+    orderBy: { fechaInicio: "asc" },
+    include: {
+      asignaciones: { include: { empleado: true }, orderBy: { createdAt: "asc" } },
+      plazas: true,
+    },
+  });
+  const turnos = turnosRaw.map(turnoSerializable);
+
+  const filas: SemanaGlobalCaseta[] = ctx.casetas.map((caseta) => {
+    const dias: SemanaGlobalCelda[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(inicio);
+      d.setUTCDate(d.getUTCDate() + i);
+      const ymd = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+      const desde = d.getTime();
+      const hasta = desde + 24 * 3600_000;
+      const delDia = turnos.filter((t) => {
+        if (t.casetaId !== caseta.id) return false;
+        const ti = new Date(t.fechaInicio).getTime();
+        return ti >= desde && ti < hasta;
+      });
+      const personas = new Set<string>();
+      let totalVacantes = 0;
+      for (const t of delDia) {
+        for (const a of t.asignaciones) personas.add(a.empleadoId);
+        for (const v of vacantesDeTurno(t)) totalVacantes += v.faltan;
+      }
+      dias.push({
+        fecha: ymd,
+        numTurnos: delDia.length,
+        numPersonas: personas.size,
+        totalVacantes,
+        turnos: delDia,
+      });
+    }
+    return { caseta, dias };
+  });
+
+  return {
+    edicion: ctx.edicion,
+    lunes,
+    domingo: addDays(lunes, 6),
+    filas,
+    tiposEmpleado: ctx.tiposEmpleado,
+    hoyIso: hoyIso(),
+  };
+}
+
+export async function loadTurnosEmpleado(params: {
+  empleadoId: string;
+  desde?: string;
+  hasta?: string;
+  edicionId?: string;
+}): Promise<TurnosEmpleado | null> {
+  const ctx = await loadContexto({ edicionId: params.edicionId });
+  if (!ctx) return null;
+
+  const desde = params.desde ?? ctx.edicion.fechaInicio.slice(0, 10);
+  const hasta = params.hasta ?? ctx.edicion.fechaFin.slice(0, 10);
+
+  const inicio = startOfDayUtc(desde);
+  const finExcl = startOfDayUtc(addDays(hasta, 1));
+
+  const empleadoRaw = await prisma.empleado.findUnique({
+    where: { id: params.empleadoId },
+    include: { tipoEmpleado: true },
+  });
+  if (!empleadoRaw) return null;
+
+  const turnosRaw = await prisma.turno.findMany({
+    where: {
+      edicionId: ctx.edicion.id,
+      fechaInicio: { gte: inicio, lt: finExcl },
+      asignaciones: { some: { empleadoId: params.empleadoId } },
+    },
+    orderBy: { fechaInicio: "asc" },
+    include: {
+      caseta: true,
+      asignaciones: { where: { empleadoId: params.empleadoId } },
+    },
+  });
+
+  const turnos: TurnoEmpleadoExport[] = turnosRaw.map((t) => ({
+    id: t.id,
+    fechaInicio: t.fechaInicio.toISOString(),
+    fechaFin: t.fechaFin.toISOString(),
+    caseta: { id: t.caseta.id, nombre: t.caseta.nombre, activa: t.caseta.activa },
+    asistio: t.asignaciones[0]?.asistio ?? false,
+  }));
+
+  return {
+    edicion: ctx.edicion,
+    empleado: {
+      ...empleadoMin(empleadoRaw),
+      tipoEmpleado: empleadoRaw.tipoEmpleado
+        ? tipoEmpleadoLite(empleadoRaw.tipoEmpleado)
+        : null,
+    },
+    desde,
+    hasta,
+    turnos,
   };
 }

@@ -52,6 +52,14 @@ export default async function ImprimirPage({
 
       <div className="no-print mb-4 flex items-center gap-2">
         <BotonImprimir />
+        <a
+          href={`/turnos/exportar/dia?fecha=${dia.fecha}&casetaId=${dia.casetaSeleccionada.id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="border border-black px-3 py-1 text-sm"
+        >
+          Vista exportable (sin checkboxes)
+        </a>
       </div>
 
       <header className="mb-4">

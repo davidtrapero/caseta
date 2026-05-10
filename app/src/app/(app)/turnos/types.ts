@@ -78,6 +78,7 @@ export type ResumenDiaSemana = {
   numTurnos: number;
   numPersonas: number; // empleados distintos asignados ese día
   desglose: DesglosePerfil[]; // solo tipos con asignados>0 o plazas>0
+  turnos: TurnoSerializable[]; // turnos del día ordenados por fechaInicio
 };
 
 export type SemanaTurnos = {
@@ -93,6 +94,56 @@ export type SemanaTurnos = {
   tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
   readonly: boolean;
+};
+
+// --- Export views ---
+
+export type VacanteTurno = {
+  tipoEmpleadoId: string;
+  faltan: number;
+};
+
+export type ResumenVacantes = {
+  totalFaltan: number;
+  porTipo: Array<{ tipoEmpleadoId: string; faltan: number }>;
+};
+
+export type SemanaGlobalCelda = {
+  fecha: string;
+  numTurnos: number;
+  numPersonas: number;
+  totalVacantes: number;
+  turnos: TurnoSerializable[]; // turnos del día en esa caseta, ordenados por fechaInicio
+};
+
+export type SemanaGlobalCaseta = {
+  caseta: CasetaMin;
+  dias: SemanaGlobalCelda[];
+};
+
+export type SemanaGlobal = {
+  edicion: EdicionMin;
+  lunes: string;
+  domingo: string;
+  filas: SemanaGlobalCaseta[];
+  tiposEmpleado: TipoEmpleadoLite[];
+  hoyIso: string;
+};
+
+export type TurnoEmpleadoExport = {
+  id: string;
+  fechaInicio: string;
+  fechaFin: string;
+  caseta: CasetaMin;
+  asistio: boolean;
+};
+
+export type TurnosEmpleado = {
+  edicion: EdicionMin;
+  empleado: EmpleadoMin & { tipoEmpleado: TipoEmpleadoLite | null };
+  desde: string;
+  hasta: string;
+  turnos: TurnoEmpleadoExport[];
 };
 
 // Resultado tipado de la detección de solape.
