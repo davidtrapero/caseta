@@ -21,7 +21,7 @@ export function KpiCard({
 }) {
   const colorValor =
     tono === "neto-positivo"
-      ? "text-[hsl(var(--color-acento))]"
+      ? "text-[hsl(var(--accent))]"
       : tono === "neto-negativo"
         ? "text-destructive-foreground"
         : tono === "negativo"
