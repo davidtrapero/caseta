@@ -1,9 +1,12 @@
 "use server";
 
+// Acción global — no pertenece a ninguna ruta concreta.
+
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import type { Theme } from "@/lib/theme";
 
-export type Theme = "light" | "dark";
+export type { Theme };
 
 export async function setTheme(theme: Theme) {
   const cookieStore = await cookies();
