@@ -23,12 +23,6 @@ function formatFechaLarga(ymd: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
-
 export default async function InicioPage() {
   const session = await getSession();
   if (!session?.user) redirect("/login");
