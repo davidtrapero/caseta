@@ -3,7 +3,10 @@ import { cn } from "@/lib/utils";
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (
-    <div className="relative w-full overflow-auto rounded-lg border bg-card">
+    <div
+      className="relative w-full overflow-auto rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
       <table
         ref={ref}
         className={cn("w-full caption-bottom text-sm", className)}
@@ -18,7 +21,7 @@ const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttribut
   ({ className, ...props }, ref) => (
     <thead
       ref={ref}
-      className={cn("sticky top-0 z-10 border-b bg-card [&_tr]:border-b", className)}
+      className={cn("sticky top-0 z-10 border-b bg-[hsl(var(--primary)/0.08)] [&_tr]:border-b", className)}
       {...props}
     />
   )
@@ -30,7 +33,7 @@ const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes
     <tbody
       ref={ref}
       className={cn(
-        "[&_tr:last-child]:border-0 [&_tr:nth-child(even)]:bg-muted/30",
+        "[&_tr:last-child]:border-0 [&_tr:nth-child(even)]:bg-[hsl(var(--foreground)/0.03)]",
         className
       )}
       {...props}
@@ -58,7 +61,7 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
     <th
       ref={ref}
       className={cn(
-        "h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-foreground/70",
+        "h-10 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-[hsl(var(--primary))]",
         "data-[numeric]:text-right",
         className
       )}
