@@ -126,7 +126,11 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton, 
       </aside>
 
       {/* Drawer en móvil */}
-      <Sheet open={open} onClose={() => setOpen(false)}>
+      <Sheet
+        open={open}
+        onClose={() => setOpen(false)}
+        className="bg-[var(--surface-glass-strong)] backdrop-blur-md border-r border-[var(--surface-glass-border)]"
+      >
         <button
           className="absolute top-4 right-4 rounded-md p-1 hover:bg-accent/20"
           onClick={() => setOpen(false)}
