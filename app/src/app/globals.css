@@ -28,51 +28,113 @@
   --radius-sm: calc(var(--radius) - 4px);
 }
 
-/* Opción C — Cuero y latón. Tema claro único. */
+/* ─── Tema claro: Cuero y latón ─────────────────────────────────────────── */
 :root {
-  --background: 39 34% 87%;           /* #ebe3d3 beige-grisáceo */
-  --foreground: 30 22% 6%;            /* #14100c tinta */
+  /* Colores base (canales HSL sin wrapper — @theme inline los envuelve) */
+  --background: 39 34% 87%;            /* #ebe3d3 beige-grisáceo */
+  --foreground: 28 50% 12%;            /* marrón oscuro */
 
-  --card: 40 48% 94%;                 /* papel más claro sobre fondo */
-  --card-foreground: 30 22% 6%;
+  --card: 39 30% 92%;                  /* papel ligeramente más claro */
+  --card-foreground: 28 50% 12%;
 
-  --popover: 40 48% 94%;
-  --popover-foreground: 30 22% 6%;
+  --popover: 39 30% 92%;
+  --popover-foreground: 28 50% 12%;
 
-  --primary: 33 57% 50%;              /* #c68a3a latón envejecido */
+  --primary: 33 57% 50%;               /* #c68a3a latón envejecido */
   --primary-foreground: 40 48% 97%;
 
-  --secondary: 35 40% 45%;             /* #9b6b33 ocre-cuero para badges y tags */
+  --secondary: 35 40% 40%;             /* #9b6b33 ocre-cuero */
   --secondary-foreground: 40 48% 97%;
 
-  --muted: 38 22% 82%;
+  --muted: 39 25% 78%;
   --muted-foreground: 30 12% 32%;
 
-  --accent: 85 25% 40%;               /* #5e7040 verde oliva — hovers y estados activos */
+  --accent: 85 25% 35%;                /* #5e7040 verde oliva */
   --accent-foreground: 40 48% 97%;
 
-  --destructive: 3 60% 23%;           /* #5c1a17 granate profundo */
+  --destructive: 2 47% 23%;            /* #5c1a17 granate */
   --destructive-foreground: 40 48% 95%;
 
-  --border: 35 18% 72%;
+  --border: 35 30% 75%;
   --input: 35 18% 68%;
   --ring: 33 57% 50%;
 
   --radius: 0.375rem;
+
+  /* ── Superficies de cristal ───────────────────────────────────────────── */
+  --surface-glass: linear-gradient(135deg, rgba(253,249,240,.7), rgba(240,231,211,.5));
+  --surface-glass-strong: linear-gradient(135deg, rgba(253,249,240,.85), rgba(240,231,211,.65));
+  --surface-glass-border: rgba(198,138,58,.25);
+  --surface-glass-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 8px 22px rgba(74,52,27,.06);
+
+  /* ── Fondos atmosféricos ──────────────────────────────────────────────── */
+  --glow-warm: radial-gradient(ellipse 80% 60% at 15% 10%, rgba(244,201,120,.28) 0%, transparent 70%);
+  --glow-cool: radial-gradient(ellipse 70% 55% at 85% 90%, rgba(94,112,64,.18) 0%, transparent 65%);
+  --glow-page:
+    var(--glow-warm),
+    var(--glow-cool),
+    linear-gradient(160deg, hsl(39 34% 87%) 0%, hsl(36 32% 82%) 50%, hsl(33 30% 74%) 100%);
+
+  /* ── Textura de papel ─────────────────────────────────────────────────── */
+  --grain: radial-gradient(circle, rgba(74,52,27,.06) 1px, transparent 1px);
+  --grain-size: 18px 18px;
 }
 
+/* ─── Tema oscuro: Cuero envejecido ─────────────────────────────────────── */
+[data-theme="dark"] {
+  /* Colores base */
+  --background: 28 28% 11%;
+  --foreground: 39 30% 90%;
+
+  --card: 28 25% 14%;
+  --card-foreground: 39 30% 90%;
+
+  --popover: 28 25% 14%;
+  --popover-foreground: 39 30% 90%;
+
+  --primary: 36 60% 56%;               /* #d99a44 latón claro */
+  --primary-foreground: 28 28% 9%;
+
+  --secondary: 33 45% 50%;
+  --secondary-foreground: 28 28% 9%;
+
+  --muted: 28 20% 18%;
+  --muted-foreground: 39 20% 55%;
+
+  --accent: 85 30% 50%;                /* #7a8e54 oliva claro */
+  --accent-foreground: 28 28% 9%;
+
+  --destructive: 8 60% 55%;
+  --destructive-foreground: 39 30% 95%;
+
+  --border: 36 30% 30%;
+  --input: 36 25% 25%;
+  --ring: 36 60% 56%;
+
+  /* ── Superficies de cristal ───────────────────────────────────────────── */
+  --surface-glass: linear-gradient(135deg, rgba(253,249,240,.05), rgba(244,201,120,.02));
+  --surface-glass-strong: linear-gradient(135deg, rgba(253,249,240,.08), rgba(244,201,120,.04));
+  --surface-glass-border: rgba(244,201,120,.18);
+  --surface-glass-shadow: 0 1px 0 rgba(255,245,225,.08) inset, 0 12px 32px rgba(0,0,0,.22);
+
+  /* ── Fondos atmosféricos ──────────────────────────────────────────────── */
+  --glow-warm: radial-gradient(ellipse 80% 60% at 15% 10%, rgba(244,201,120,.12) 0%, transparent 70%);
+  --glow-cool: radial-gradient(ellipse 70% 55% at 85% 90%, rgba(184,212,160,.06) 0%, transparent 65%);
+  --glow-page:
+    var(--glow-warm),
+    var(--glow-cool),
+    linear-gradient(160deg, hsl(28 28% 11%) 0%, hsl(28 24% 14%) 50%, hsl(30 22% 18%) 100%);
+
+  /* ── Textura de papel ─────────────────────────────────────────────────── */
+  --grain: radial-gradient(circle, rgba(255,245,225,.04) 1px, transparent 1px);
+  --grain-size: 18px 18px;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 @layer base {
   html {
     font-family: var(--font-sans), system-ui, sans-serif;
     font-feature-settings: "ss01", "cv02", "cv11";
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    background-image:
-      url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0 0.04 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    background-attachment: fixed;
-    background-blend-mode: multiply;
   }
 
   h1, h2, h3, h4 {
@@ -87,7 +149,23 @@
   }
 }
 
-/* Animaciones reservadas. No usar en hover de tablas. */
+body {
+  background: var(--glow-page);
+  color: hsl(var(--foreground));
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--grain);
+  background-size: var(--grain-size);
+  pointer-events: none;
+  opacity: .5;
+}
+
+/* ─── Animaciones reservadas — NO usar en hover de tablas ────────────────── */
 @keyframes caseta-fade-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -104,3 +182,20 @@
   animation: caseta-stagger 260ms ease-out both;
 }
 
+/* ─── Motion utilities ───────────────────────────────────────────────────── */
+@keyframes caseta-glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(198,138,58,.15), 0 0 12px 2px rgba(198,138,58,.10); }
+  50%       { box-shadow: 0 0 0 3px rgba(198,138,58,.08), 0 0 22px 6px rgba(198,138,58,.18); }
+}
+
+.caseta-cta-active {
+  animation: caseta-glow-pulse 2.4s ease-in-out infinite;
+}
+
+.caseta-card-hover {
+  transition: transform .18s ease-out, box-shadow .22s ease-out, border-color .22s ease-out;
+}
+.caseta-card-hover:hover {
+  transform: translateY(-1px);
+  border-color: rgba(198,138,58,.45);
+}
