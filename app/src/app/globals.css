@@ -68,12 +68,9 @@
   --surface-glass-shadow: 0 1px 0 rgba(255,255,255,.6) inset, 0 8px 22px rgba(74,52,27,.06);
 
   /* ── Fondos atmosféricos ──────────────────────────────────────────────── */
-  --glow-warm: radial-gradient(ellipse 80% 60% at 15% 10%, rgba(244,201,120,.28) 0%, transparent 70%);
+  --glow-warm: radial-gradient(circle at 12% 10%, rgba(244,201,120,.4) 0%, transparent 38%);
   --glow-cool: radial-gradient(ellipse 70% 55% at 85% 90%, rgba(94,112,64,.18) 0%, transparent 65%);
-  --glow-page:
-    var(--glow-warm),
-    var(--glow-cool),
-    linear-gradient(160deg, hsl(39 34% 87%) 0%, hsl(36 32% 82%) 50%, hsl(33 30% 74%) 100%);
+  --glow-page: var(--glow-warm), var(--glow-cool), linear-gradient(160deg, #f0e7d3 0%, #e6dac2 60%, #d8c9a8 100%);
 
   /* ── Textura de papel ─────────────────────────────────────────────────── */
   --grain: radial-gradient(circle, rgba(74,52,27,.06) 1px, transparent 1px);
@@ -123,7 +120,7 @@
   --glow-page:
     var(--glow-warm),
     var(--glow-cool),
-    linear-gradient(160deg, hsl(28 28% 11%) 0%, hsl(28 24% 14%) 50%, hsl(30 22% 18%) 100%);
+    linear-gradient(160deg, #1a130a 0%, #2a1f12 50%, #3d2d1a 100%);
 
   /* ── Textura de papel ─────────────────────────────────────────────────── */
   --grain: radial-gradient(circle, rgba(255,245,225,.04) 1px, transparent 1px);
@@ -198,4 +195,5 @@ body::before {
 .caseta-card-hover:hover {
   transform: translateY(-1px);
   border-color: rgba(198,138,58,.45);
+  box-shadow: 0 6px 18px rgba(74,52,27,.10);
 }
