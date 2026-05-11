@@ -124,7 +124,7 @@
 
   /* ── Textura de papel ─────────────────────────────────────────────────── */
   --grain: radial-gradient(circle, rgba(255,245,225,.04) 1px, transparent 1px);
-  --grain-size: 18px 18px;
+  /* --grain-size se hereda de :root (misma densidad de grano en ambos temas) */
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
