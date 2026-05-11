@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
+import type { Theme } from "@/lib/theme";
 
 export type NavItem = {
   href: string;
@@ -40,6 +42,7 @@ interface SidebarNavProps {
   userEmail: string;
   userRol: string;
   logoutButton: React.ReactNode;
+  theme: Theme;
 }
 
 function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => void }) {
@@ -67,7 +70,7 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
             className={cn(
               "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
               isActive
-                ? "border-l-2 border-primary bg-primary/10 pl-[10px] font-medium text-primary"
+                ? "border-l-2 border-primary bg-gradient-to-r from-primary/15 to-primary/5 pl-[10px] font-medium text-primary"
                 : "hover:bg-accent/20 hover:text-accent-foreground"
             )}
           >
@@ -80,7 +83,7 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
   );
 }
 
-export function SidebarNav({ items, userName, userEmail, userRol, logoutButton }: SidebarNavProps) {
+export function SidebarNav({ items, userName, userEmail, userRol, logoutButton, theme }: SidebarNavProps) {
   const [open, setOpen] = useState(false);
 
   const sidebarContent = (
@@ -98,7 +101,10 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton }
           <p className="text-muted-foreground truncate">{userEmail}</p>
           <p className="text-muted-foreground mt-1 uppercase">{userRol}</p>
         </div>
-        {logoutButton}
+        <div className="flex items-center gap-2">
+          <ThemeToggle theme={theme} />
+          <div className="flex-1">{logoutButton}</div>
+        </div>
       </div>
     </>
   );
@@ -107,7 +113,7 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton }
     <>
       {/* Botón hamburguesa — solo en móvil */}
       <button
-        className="md:hidden fixed top-4 left-4 z-30 rounded-md border bg-card p-2 shadow-sm"
+        className="md:hidden fixed top-4 left-4 z-30 rounded-md border border-[var(--surface-glass-border)] bg-[var(--surface-glass-strong)] backdrop-blur-md p-2 shadow-sm"
         onClick={() => setOpen(true)}
         aria-label="Abrir menú"
       >
@@ -115,7 +121,7 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton }
       </button>
 
       {/* Sidebar fijo en desktop */}
-      <aside className="hidden md:flex w-60 border-r bg-card flex-col">
+      <aside className="hidden md:flex w-60 flex-col bg-[var(--surface-glass-strong)] border-r border-[var(--surface-glass-border)] backdrop-blur-md">
         {sidebarContent}
       </aside>
 
