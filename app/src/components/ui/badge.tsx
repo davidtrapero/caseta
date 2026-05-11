@@ -15,11 +15,11 @@ const badgeVariants = cva(
         active: "border-primary/50 bg-primary/20 text-foreground",
         inactive: "border-border bg-muted text-muted-foreground",
         success:
-          "border-[hsl(var(--accent)/0.5)] bg-[hsl(var(--accent)/0.18)] text-[hsl(var(--accent))]",
+          "border-[hsl(var(--accent)/0.5)] bg-[hsl(var(--accent)/0.18)] text-accent",
         warning:
-          "border-[hsl(var(--primary)/0.5)] bg-[hsl(var(--primary)/0.18)] text-[hsl(var(--primary))]",
+          "border-[hsl(var(--primary)/0.5)] bg-[hsl(var(--primary)/0.18)] text-primary",
         danger:
-          "border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.18)] text-[hsl(var(--destructive))]",
+          "border-[hsl(var(--destructive)/0.5)] bg-[hsl(var(--destructive)/0.18)] text-destructive",
       },
     },
     defaultVariants: { variant: "default" },
