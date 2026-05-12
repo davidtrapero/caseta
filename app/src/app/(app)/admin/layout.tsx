@@ -21,10 +21,10 @@ export default async function AdminLayout({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">
           Administración
         </p>
-        <h1 className="text-3xl">Datos maestros de San Isidro</h1>
+        <h1 className="text-3xl">Administración</h1>
       </header>
 
       <nav
