@@ -42,7 +42,7 @@ export function TurnosHoy({ turnos }: { turnos: TurnoHoyData[] }) {
               </td>
               <td className="px-3 py-2 text-right font-mono text-xs tabular-nums">
                 {t.plazasTotales > 0 ? (
-                  <span className={t.asignados < t.plazasTotales ? "text-destructive-foreground" : ""}>
+                  <span className={t.asignados < t.plazasTotales ? "text-destructive" : ""}>
                     {t.asignados}/{t.plazasTotales}
                   </span>
                 ) : (
