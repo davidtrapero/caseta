@@ -90,7 +90,7 @@ export default async function EmpleadosPage({
     <div className="flex flex-col gap-4">
       <SectionHeader
         title="Empleados"
-        subtitle="Personal disponible para turnos. Los voluntarios no cobran jornal."
+        subtitle="Personal disponible para turnos."
         actionHref="/empleados/nuevo"
         actionLabel="Nuevo empleado"
         canAct={puedeEditar}

@@ -44,7 +44,7 @@ export default async function NominasPage() {
       <div>
         <SectionHeader
           title="Nóminas"
-          subtitle="Cálculo de nóminas por edición."
+          subtitle="Nóminas de la edición."
         />
         <EmptyState
           title="No hay edición activa"
@@ -80,7 +80,7 @@ export default async function NominasPage() {
     <div>
       <SectionHeader
         title={`Nóminas — ${edicion.nombre}`}
-        subtitle="Calculadas a partir de turnos con asistencia marcada. Voluntarios excluidos."
+        subtitle="Nóminas de la edición."
       />
 
       {puedeCalcular ? (
@@ -177,8 +177,11 @@ function ResumenCard({
   destacar?: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+    <div
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
+      <p className="text-xs uppercase tracking-wider text-primary">
         {label}
       </p>
       <p

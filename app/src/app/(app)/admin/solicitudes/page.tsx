@@ -80,7 +80,7 @@ export default async function SolicitudesPage({
     <div className="flex flex-col gap-6">
       <SectionHeader
         title="Solicitudes de voluntarios"
-        subtitle="Aprueba o rechaza solicitudes recibidas desde el formulario público."
+        subtitle="Solicitudes de voluntarios pendientes de revisión."
       />
 
       <div className="flex items-center gap-2 flex-wrap text-sm">
@@ -123,7 +123,8 @@ export default async function SolicitudesPage({
           {solicitudes.map((s) => (
             <article
               key={s.id}
-              className="rounded-lg border bg-card p-4 flex flex-col gap-3"
+              className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 flex flex-col gap-3"
+              style={{ boxShadow: "var(--surface-glass-shadow)" }}
             >
               <div>
                 <div className="flex items-center gap-2 flex-wrap">

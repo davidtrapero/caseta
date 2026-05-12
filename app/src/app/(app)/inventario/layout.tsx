@@ -18,10 +18,10 @@ export default async function InventarioLayout({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          Inventario
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">
+          Productos · stock · pedidos
         </p>
-        <h1 className="text-3xl">Productos, stock y pedidos</h1>
+        <h1 className="text-3xl">Inventario</h1>
       </header>
 
       <nav

@@ -1,19 +1,34 @@
 import { requireRole } from "@/lib/authz";
-import { loadSemanaTurnos, vacantesDeTurno, resumenVacantes } from "../../_lib/loader";
+import { loadSemanaTurnos, vacantesDeTurno, resumenAlcance } from "../../_lib/loader";
 import { LayoutExport } from "../../_components/LayoutExport";
 import { BotonesExport } from "../../_components/BotonesExport";
-import { ResumenVacantesPie } from "../../_components/ResumenVacantes";
+import { BandaResumen } from "../../_components/BandaResumen";
 import {
   formatFechaCorta,
   horaDe,
+  duracionHoras,
   DIAS_SEMANA_CORTOS,
   semanaIsoToLunes,
 } from "../../_lib/fechas";
 import { Fragment } from "react";
 import type { TurnoSerializable } from "../../types";
-import { colorFor } from "../../_lib/perfiles";
+import { agruparPorRol, nombreCorto } from "../../_lib/perfiles";
 
 type SP = Promise<{ casetaId?: string; semana?: string }>;
+
+type GrupoRol = {
+  key: "coordinadores" | "trabajadores" | "voluntarios" | "otros";
+  singular: string;
+  plural: string;
+  slug?: string;
+};
+
+const GRUPOS_ROL: GrupoRol[] = [
+  { key: "coordinadores", singular: "Coordinador", plural: "Coordinadores" },
+  { key: "trabajadores", singular: "Trabajador", plural: "Trabajadores" },
+  { key: "voluntarios", singular: "Voluntario", plural: "Voluntarios", slug: "grupo-rol-vol" },
+  { key: "otros", singular: "Otro", plural: "Otros" },
+];
 
 export default async function ExportarSemanaPage({
   searchParams,
@@ -66,13 +81,19 @@ export default async function ExportarSemanaPage({
         </>
       }
     >
+      <BandaResumen
+        resumen={resumenAlcance(semana.turnos)}
+        tipos={semana.tiposEmpleado}
+        variante="papel"
+      />
+
       <table className="export-table">
         <thead>
           <tr>
-            <th style={{ width: 90 }}>Día</th>
             <th style={{ width: 110 }}>Horario</th>
-            <th style={{ width: 90 }}>Plazas</th>
+            <th style={{ width: 80 }}>Duración</th>
             <th>Asignados</th>
+            <th style={{ width: 200 }}>Vacantes</th>
           </tr>
         </thead>
         <tbody>
@@ -83,90 +104,91 @@ export default async function ExportarSemanaPage({
 
             if (turnos.length === 0) {
               return (
-                <tr key={fecha} style={{ color: "#7a6750" }}>
-                  <td>{etiquetaDia}</td>
-                  <td colSpan={3}>
-                    <em>Sin turnos programados</em>
-                  </td>
+                <tr key={fecha} className="dia-sin-turnos">
+                  <td colSpan={4}>{etiquetaDia} — Sin turnos programados</td>
                 </tr>
               );
             }
 
-            const filas: React.ReactNode[] = [];
-            for (const t of turnos) {
-              const totalPlazas = t.plazas.reduce((s, p) => s + p.cantidad, 0);
-              filas.push(
-                <tr key={t.id}>
-                  <td>{etiquetaDia}</td>
-                  <td className="export-mono">
-                    {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
-                  </td>
-                  <td>
-                    {t.asignaciones.length}/{totalPlazas}
-                  </td>
-                  <td>
-                    {t.asignaciones.length === 0 ? (
-                      <em style={{ color: "#7a6750" }}>Sin asignar</em>
-                    ) : (
-                      t.asignaciones.map((a) => {
-                        const tipo = semana.tiposEmpleado.find(
-                          (te) => te.id === a.tipoEmpleadoId,
-                        );
-                        const colores = tipo
-                          ? colorFor(tipo)
-                          : { bg: "transparent", border: "#ccc", text: "inherit" };
-                        return (
-                          <div
-                            key={a.empleadoId}
-                            data-tipo-slug={tipo?.slug}
-                            style={{
-                              background: colores.bg,
-                              color: colores.text,
-                              borderLeft: `3px solid ${colores.border}`,
-                              padding: "2px 6px",
-                              margin: "1px 0",
-                              display: "inline-block",
-                              marginRight: 4,
-                            }}
-                          >
-                            {a.empleadoNombre}
-                            {a.esVoluntario ? (
-                              <span style={{ fontSize: 10 }}> (voluntario)</span>
-                            ) : null}
-                          </div>
-                        );
-                      })
-                    )}
-                  </td>
-                </tr>,
-              );
+            const totalVacantesDia = turnos.reduce(
+              (s, t) => s + vacantesDeTurno(t).reduce((ss, v) => ss + v.faltan, 0),
+              0,
+            );
 
-              const vacantes = vacantesDeTurno(t);
-              for (const v of vacantes) {
-                const tipo = semana.tiposEmpleado.find((x) => x.id === v.tipoEmpleadoId);
-                for (let i = 0; i < v.faltan; i++) {
-                  filas.push(
-                    <tr key={`${t.id}-vac-${v.tipoEmpleadoId}-${i}`} className="export-vacante">
-                      <td>{etiquetaDia}</td>
+            return (
+              <Fragment key={fecha}>
+                <tr className="dia-header">
+                  <td colSpan={4}>
+                    <div className="dia-header-row">
+                      <span>{etiquetaDia}</span>
+                      <span className="dia-header-resumen">
+                        {turnos.length} turnos · {totalVacantesDia} vacantes
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+                {turnos.map((t) => {
+                  const grupos = agruparPorRol(t.asignaciones, semana.tiposEmpleado);
+                  const vacantes = vacantesDeTurno(t);
+                  const totalVacTurno = vacantes.reduce((s, v) => s + v.faltan, 0);
+                  const detalleVacantes = vacantes
+                    .map((v) => {
+                      const tipo = semana.tiposEmpleado.find((x) => x.id === v.tipoEmpleadoId);
+                      if (!tipo) return null;
+                      const label = v.faltan === 1 ? tipo.label : `${tipo.label}s`;
+                      return `${v.faltan} ${label}`;
+                    })
+                    .filter(Boolean)
+                    .join(" · ");
+
+                  return (
+                    <tr key={t.id}>
                       <td className="export-mono">
                         {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
                       </td>
-                      <td>—</td>
-                      <td>VACANTE — {tipo?.label ?? "?"}</td>
-                    </tr>,
+                      <td className="export-mono">
+                        {duracionHoras(t.fechaInicio, t.fechaFin)}h
+                      </td>
+                      <td>
+                        {t.asignaciones.length === 0 ? (
+                          <em>Sin asignar</em>
+                        ) : (
+                          GRUPOS_ROL.map((g) => {
+                            const items = grupos[g.key];
+                            if (items.length === 0) return null;
+                            const count = items.length;
+                            const etiqueta = count === 1 ? g.singular : g.plural;
+                            const className = `grupo-rol${g.slug ? ` ${g.slug}` : ""}`;
+                            return (
+                              <div key={g.key} className={className}>
+                                <span className="grupo-rol-titulo">
+                                  {etiqueta} ({count})
+                                </span>{" "}
+                                <span className="grupo-rol-nombres">
+                                  {items.map((a) => nombreCorto(a.empleadoNombre)).join(" · ")}
+                                </span>
+                              </div>
+                            );
+                          })
+                        )}
+                      </td>
+                      <td>
+                        {totalVacTurno > 0 ? (
+                          <span className="vacantes-inline">{detalleVacantes}</span>
+                        ) : t.plazas.length > 0 ? (
+                          <span className="vacantes-inline cubierto">Completo</span>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
                   );
-                }
-              }
-            }
-            return <Fragment key={fecha}>{filas}</Fragment>;
+                })}
+              </Fragment>
+            );
           })}
         </tbody>
       </table>
-
-      <ResumenVacantesPie
-        resumen={resumenVacantes(semana.turnos)}
-        tipos={semana.tiposEmpleado}
-      />
     </LayoutExport>
   );
 }

@@ -11,6 +11,9 @@ export type AsignacionSerializable = {
   esVoluntario: boolean;
   tipoEmpleadoId: string;
   asistio: boolean;
+  // Nombre de la EntidadVoluntario del empleado (hermandad/asociación).
+  // Solo poblado para voluntarios (esVoluntario === true). null en contratados.
+  entidadNombre: string | null;
 };
 
 export type TurnoPlazaSerializable = {
@@ -108,6 +111,16 @@ export type ResumenVacantes = {
   porTipo: Array<{ tipoEmpleadoId: string; faltan: number }>;
 };
 
+export type ResumenAlcance = {
+  numTurnos: number;
+  numPersonas: number;
+  vacantes: ResumenVacantes;
+  // Plazas totales programadas en el alcance (suma de cantidad en TurnoPlaza).
+  plazasTotales: number;
+  // Plazas cubiertas (asignaciones que entran dentro de las plazas, sin sobre-asignaciones).
+  plazasCubiertas: number;
+};
+
 export type SemanaGlobalCelda = {
   fecha: string;
   numTurnos: number;
@@ -126,6 +139,8 @@ export type SemanaGlobal = {
   lunes: string;
   domingo: string;
   filas: SemanaGlobalCaseta[];
+  // Todas las casetas activas (sin filtrar) para el dropdown de filtro UI.
+  casetas: CasetaMin[];
   tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
 };

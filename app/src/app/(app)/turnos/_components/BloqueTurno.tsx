@@ -65,12 +65,12 @@ export function BloqueTurno({
   return (
     <article
       className={cn(
-        "rounded-lg border bg-card/80 shadow-sm",
+        "rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md",
         "animate-stagger"
       )}
-      style={{ animationDelay: `${index * 60}ms` }}
+      style={{ animationDelay: `${index * 60}ms`, boxShadow: "var(--surface-glass-shadow)" }}
     >
-      <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
+      <header className="flex items-center justify-between gap-3 border-b border-[var(--surface-glass-border)] px-4 py-2.5">
         <button
           type="button"
           onClick={() => !readonly && setEditando(true)}

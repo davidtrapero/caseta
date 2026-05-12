@@ -56,3 +56,4 @@ docs/qa-runs/
 
 # QA specs generados desde el catálogo (regenerados en cada run de qa-e2e)
 app/tests-e2e/qa-cases/
+.superpowers/
