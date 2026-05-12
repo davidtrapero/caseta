@@ -80,7 +80,7 @@ export default async function NominasPage() {
     <div>
       <SectionHeader
         title={`Nóminas — ${edicion.nombre}`}
-        subtitle="Calculadas a partir de turnos con asistencia marcada. Voluntarios excluidos."
+        subtitle="Nóminas de la edición."
       />
 
       {puedeCalcular ? (

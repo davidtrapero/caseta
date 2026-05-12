@@ -225,11 +225,11 @@ export default async function BalancePage() {
       </div>
 
       <section className="mt-6">
-        <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+        <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
           Nóminas por empleado
         </h3>
         {nominasDetalle.length === 0 ? (
-          <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
+          <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
             Sin nóminas calculadas.
           </div>
         ) : (
