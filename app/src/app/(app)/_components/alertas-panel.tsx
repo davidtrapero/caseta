@@ -10,8 +10,8 @@ const ICONO: Record<AlertaData["tipo"], string> = {
 export function AlertasPanel({ alertas }: { alertas: AlertaData[] }) {
   if (alertas.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
-        Todo en orden — sin alertas pendientes.
+      <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
+        Sin alertas pendientes.
       </div>
     );
   }
@@ -22,9 +22,10 @@ export function AlertasPanel({ alertas }: { alertas: AlertaData[] }) {
         <li key={`${a.tipo}-${a.href}`}>
           <Link
             href={a.href}
-            className="flex items-start gap-3 rounded-lg border bg-card px-4 py-3 hover:bg-muted/20 transition-colors group"
+            className="flex items-start gap-3 rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md px-4 py-3 hover:bg-[hsl(var(--primary)/0.08)] transition-colors group"
+            style={{ boxShadow: "var(--surface-glass-shadow)" }}
           >
-            <span className="mt-0.5 text-[10px] text-[hsl(var(--color-acento))] select-none">
+            <span className="mt-0.5 text-[10px] text-primary select-none">
               {ICONO[a.tipo]}
             </span>
             <span className="flex-1 text-sm leading-snug">{a.mensaje}</span>

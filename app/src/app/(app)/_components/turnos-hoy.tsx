@@ -5,27 +5,30 @@ import type { TurnoHoyData } from "../_lib/dashboard";
 export function TurnosHoy({ turnos }: { turnos: TurnoHoyData[] }) {
   if (turnos.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
-        Sin turnos registrados para hoy.
+      <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
+        Sin turnos hoy.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border bg-card overflow-hidden">
+    <div
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md overflow-hidden"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b bg-muted/30">
-            <th className="px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <tr className="border-b bg-[hsl(var(--primary)/0.08)]">
+            <th className="px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-primary">
               Caseta
             </th>
-            <th className="px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <th className="px-3 py-2 text-left text-[10px] font-medium uppercase tracking-wider text-primary">
               Horario
             </th>
-            <th className="px-3 py-2 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <th className="px-3 py-2 text-right text-[10px] font-medium uppercase tracking-wider text-primary">
               Personal
             </th>
-            <th className="px-3 py-2 text-right text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            <th className="px-3 py-2 text-right text-[10px] font-medium uppercase tracking-wider text-primary">
               Estado
             </th>
           </tr>
@@ -50,7 +53,7 @@ export function TurnosHoy({ turnos }: { turnos: TurnoHoyData[] }) {
                 {t.cubierto ? (
                   <Badge variant="active" className="text-[10px]">Cubierto</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] border-destructive/40 text-destructive-foreground">
+                  <Badge variant="danger" className="text-[10px]">
                     Faltan plazas
                   </Badge>
                 )}
@@ -59,7 +62,7 @@ export function TurnosHoy({ turnos }: { turnos: TurnoHoyData[] }) {
           ))}
         </tbody>
       </table>
-      <div className="px-3 py-2 border-t bg-muted/10">
+      <div className="px-3 py-2 border-t bg-[hsl(var(--foreground)/0.03)]">
         <Link href="/turnos" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
           Ver todos los turnos →
         </Link>

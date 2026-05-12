@@ -14,14 +14,17 @@ function tiempoRelativo(isoFecha: string): string {
 export function ActividadFeed({ actividad }: { actividad: ActividadData[] }) {
   if (actividad.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
-        Sin actividad reciente.
+      <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
+        Sin actividad.
       </div>
     );
   }
 
   return (
-    <ul className="rounded-lg border bg-card divide-y">
+    <ul
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md divide-y divide-[var(--surface-glass-border)]"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
       {actividad.map((a) => (
         <li key={a.id} className="flex items-baseline gap-3 px-4 py-2.5">
           <span className="flex-1 text-sm">
