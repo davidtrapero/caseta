@@ -1,23 +1,17 @@
 import { requireRole } from "@/lib/authz";
-import { loadSemanaGlobal, vacantesDeTurno } from "../../_lib/loader";
+import { loadSemanaGlobal, resumenAlcance, vacantesDeTurno } from "../../_lib/loader";
 import { LayoutExport } from "../../_components/LayoutExport";
 import { BotonesExport } from "../../_components/BotonesExport";
+import { BandaResumen } from "../../_components/BandaResumen";
+import { FiltroCasetas } from "../../_components/FiltroCasetas";
 import {
   formatFechaCorta,
   DIAS_SEMANA_CORTOS,
   horaDe,
   semanaIsoToLunes,
 } from "../../_lib/fechas";
-import { colorFor } from "../../_lib/perfiles";
+import { colorFor, nombreCorto } from "../../_lib/perfiles";
 import type { TurnoSerializable, TipoEmpleadoLite } from "../../types";
-
-// Abrevia un nombre largo: "María López García" → "María L.".
-function abreviarNombre(nombre: string): string {
-  const partes = nombre.trim().split(/\s+/);
-  if (partes.length < 2) return nombre;
-  if (nombre.length <= 16) return nombre;
-  return `${partes[0]} ${partes[1][0]}.`;
-}
 
 function CeldaTurno({
   turno,
@@ -45,7 +39,7 @@ function CeldaTurno({
   // Nombres: hasta 5 + "+N más", con tooltip listando todos.
   const nombresCompletos = turno.asignaciones.map((a) => a.empleadoNombre);
   const limite = 5;
-  const visibles = nombresCompletos.slice(0, limite).map(abreviarNombre);
+  const visibles = nombresCompletos.slice(0, limite).map(nombreCorto);
   const restantes = nombresCompletos.length - limite;
 
   return (
@@ -98,7 +92,11 @@ function CeldaTurno({
   );
 }
 
-type SP = Promise<{ semana?: string }>;
+type SP = Promise<{
+  semana?: string;
+  casetaIds?: string;
+  casetaId?: string;
+}>;
 
 export default async function ExportarSemanaGlobalPage({
   searchParams,
@@ -108,7 +106,15 @@ export default async function ExportarSemanaGlobalPage({
   await requireRole(["admin", "gerente", "cajero"]);
   const sp = await searchParams;
   const lunesParam = sp.semana ? semanaIsoToLunes(sp.semana) : undefined;
-  const data = await loadSemanaGlobal({ lunes: lunesParam });
+  const seleccionadasIds = sp.casetaIds
+    ? sp.casetaIds.split(",").filter(Boolean)
+    : sp.casetaId
+      ? [sp.casetaId]
+      : [];
+  const data = await loadSemanaGlobal({
+    lunes: lunesParam,
+    casetaIds: seleccionadasIds,
+  });
 
   if (!data) {
     return <div className="p-8">Faltan datos base.</div>;
@@ -123,6 +129,8 @@ export default async function ExportarSemanaGlobalPage({
     data.filas[0]?.dias[i]?.fecha ?? "",
   );
 
+  const turnos = data.filas.flatMap((f) => f.dias.flatMap((d) => d.turnos));
+
   return (
     <LayoutExport
       eyebrow={`Turnos · Vista global semana · ${data.edicion.nombre}`}
@@ -130,10 +138,16 @@ export default async function ExportarSemanaGlobalPage({
       subtitle={`${formatFechaCorta(data.lunes)} – ${formatFechaCorta(data.domingo)}`}
       exportId="export-semana-global"
       toolbar={
-        <BotonesExport
-          targetId="export-semana-global"
-          nombreArchivo={`turnos-semana-global-${data.lunes}`}
-        />
+        <>
+          <BotonesExport
+            targetId="export-semana-global"
+            nombreArchivo={`turnos-semana-global-${data.lunes}`}
+          />
+          <FiltroCasetas
+            casetas={data.casetas}
+            seleccionadas={seleccionadasIds}
+          />
+        </>
       }
       footer={
         <>
@@ -142,8 +156,13 @@ export default async function ExportarSemanaGlobalPage({
         </>
       }
     >
+      <BandaResumen
+        resumen={resumenAlcance(turnos)}
+        tipos={data.tiposEmpleado}
+        variante="papel"
+      />
       <table className="export-table">
-        <thead>
+        <thead style={{ position: "sticky", top: 0, zIndex: 10 }}>
           <tr>
             <th>Caseta</th>
             {fechasHeader.map((fecha, i) => (
@@ -154,39 +173,54 @@ export default async function ExportarSemanaGlobalPage({
           </tr>
         </thead>
         <tbody>
-          {data.filas.map((fila) => (
-            <tr key={fila.caseta.id}>
-              <td>
-                <strong>{fila.caseta.nombre}</strong>
-              </td>
-              {fila.dias.map((celda) => {
-                if (celda.numTurnos === 0) {
+          {data.filas.map((fila) => {
+            const totalTurnosCaseta = fila.dias.reduce(
+              (s, d) => s + d.numTurnos,
+              0,
+            );
+            if (totalTurnosCaseta === 0 && seleccionadasIds.length === 0) {
+              return (
+                <tr key={fila.caseta.id} className="caseta-vacia">
+                  <td colSpan={8}>
+                    {fila.caseta.nombre} — sin turnos esta semana
+                  </td>
+                </tr>
+              );
+            }
+            return (
+              <tr key={fila.caseta.id}>
+                <td>
+                  <strong>{fila.caseta.nombre}</strong>
+                </td>
+                {fila.dias.map((celda) => {
+                  if (celda.numTurnos === 0) {
+                    return (
+                      <td key={celda.fecha} className="global-td global-td-vacio">
+                        —
+                      </td>
+                    );
+                  }
+                  const tieneVacantes = celda.totalVacantes > 0;
                   return (
-                    <td key={celda.fecha} className="global-td global-td-vacio">
-                      —
+                    <td
+                      key={celda.fecha}
+                      className={`global-td${tieneVacantes ? " export-vacante" : ""}`}
+                    >
+                      {celda.turnos.map((t) => (
+                        <CeldaTurno key={t.id} turno={t} tipos={data.tiposEmpleado} />
+                      ))}
+                      {tieneVacantes ? (
+                        <div className="global-resumen-vacantes">
+                          {celda.totalVacantes} vacante
+                          {celda.totalVacantes === 1 ? "" : "s"}
+                        </div>
+                      ) : null}
                     </td>
                   );
-                }
-                const tieneVacantes = celda.totalVacantes > 0;
-                return (
-                  <td
-                    key={celda.fecha}
-                    className={`global-td${tieneVacantes ? " export-vacante" : ""}`}
-                  >
-                    {celda.turnos.map((t) => (
-                      <CeldaTurno key={t.id} turno={t} tipos={data.tiposEmpleado} />
-                    ))}
-                    {tieneVacantes ? (
-                      <div className="global-resumen-vacantes">
-                        {celda.totalVacantes} vacante
-                        {celda.totalVacantes === 1 ? "" : "s"}
-                      </div>
-                    ) : null}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 

@@ -7,6 +7,7 @@ import type {
   TurnoPlazaSerializable,
   AsignacionSerializable,
   ResumenDiaSemana,
+  ResumenAlcance,
   DesglosePerfil,
   CasetaMin,
   EmpleadoMin,
@@ -50,6 +51,39 @@ export function resumenVacantes(turnos: TurnoSerializable[]): ResumenVacantes {
   return {
     totalFaltan: porTipo.reduce((s, x) => s + x.faltan, 0),
     porTipo,
+  };
+}
+
+/**
+ * Resumen agregado de un alcance arbitrario de turnos (un día, una semana,
+ * todas las casetas…). Incluye conteos para banda superior y % cobertura.
+ *
+ * - plazasTotales: suma de TurnoPlaza.cantidad de todos los turnos del alcance.
+ * - plazasCubiertas: por cada turno y tipo, min(asignados, plazas). Evita que
+ *   sobre-asignaciones inflen el porcentaje por encima del 100%.
+ * - numPersonas: empleados distintos asignados (un empleado en 3 turnos cuenta 1).
+ */
+export function resumenAlcance(turnos: TurnoSerializable[]): ResumenAlcance {
+  const empleadosSet = new Set<string>();
+  let plazasTotales = 0;
+  let plazasCubiertas = 0;
+  for (const t of turnos) {
+    for (const a of t.asignaciones) empleadosSet.add(a.empleadoId);
+    const asigPorTipo = new Map<string, number>();
+    for (const a of t.asignaciones) {
+      asigPorTipo.set(a.tipoEmpleadoId, (asigPorTipo.get(a.tipoEmpleadoId) ?? 0) + 1);
+    }
+    for (const p of t.plazas) {
+      plazasTotales += p.cantidad;
+      plazasCubiertas += Math.min(asigPorTipo.get(p.tipoEmpleadoId) ?? 0, p.cantidad);
+    }
+  }
+  return {
+    numTurnos: turnos.length,
+    numPersonas: empleadosSet.size,
+    vacantes: resumenVacantes(turnos),
+    plazasTotales,
+    plazasCubiertas,
   };
 }
 
@@ -136,6 +170,7 @@ type TurnoRaw = {
       nombre: string;
       jornalDiario: { toString(): string } | null;
       tipoEmpleadoId: string;
+      entidad: { nombre: string } | null;
     };
   }[];
   plazas: { tipoEmpleadoId: string; cantidad: number }[];
@@ -148,6 +183,7 @@ function turnoSerializable(t: TurnoRaw): TurnoSerializable {
     esVoluntario: a.empleado.jornalDiario === null,
     tipoEmpleadoId: a.empleado.tipoEmpleadoId,
     asistio: a.asistio,
+    entidadNombre: a.empleado.entidad?.nombre ?? null,
   }));
   const plazas: TurnoPlazaSerializable[] = t.plazas.map((p) => ({
     tipoEmpleadoId: p.tipoEmpleadoId,
@@ -235,7 +271,7 @@ export async function loadDiaTurnos(params: {
     orderBy: { fechaInicio: "asc" },
     include: {
       asignaciones: {
-        include: { empleado: true },
+        include: { empleado: { include: { entidad: true } } },
         orderBy: { createdAt: "asc" },
       },
       plazas: true,
@@ -275,7 +311,7 @@ export async function loadSemanaTurnos(params: {
     orderBy: { fechaInicio: "asc" },
     include: {
       asignaciones: {
-        include: { empleado: true },
+        include: { empleado: { include: { entidad: true } } },
         orderBy: { createdAt: "asc" },
       },
       plazas: true,
@@ -346,10 +382,16 @@ export async function loadSemanaTurnos(params: {
 export async function loadSemanaGlobal(params: {
   lunes?: string;
   edicionId?: string;
+  casetaIds?: string[];
 }): Promise<SemanaGlobal | null> {
   const lunes = params.lunes ? lunesDe(params.lunes) : lunesDe(hoyIso());
   const ctx = await loadContexto({});
   if (!ctx) return null;
+
+  const casetasFiltradas =
+    params.casetaIds && params.casetaIds.length > 0
+      ? ctx.casetas.filter((c) => params.casetaIds!.includes(c.id))
+      : ctx.casetas;
 
   const inicio = startOfDayUtc(lunes);
   const fin = new Date(inicio);
@@ -362,13 +404,13 @@ export async function loadSemanaGlobal(params: {
     },
     orderBy: { fechaInicio: "asc" },
     include: {
-      asignaciones: { include: { empleado: true }, orderBy: { createdAt: "asc" } },
+      asignaciones: { include: { empleado: { include: { entidad: true } } }, orderBy: { createdAt: "asc" } },
       plazas: true,
     },
   });
   const turnos = turnosRaw.map(turnoSerializable);
 
-  const filas: SemanaGlobalCaseta[] = ctx.casetas.map((caseta) => {
+  const filas: SemanaGlobalCaseta[] = casetasFiltradas.map((caseta) => {
     const dias: SemanaGlobalCelda[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(inicio);
@@ -403,6 +445,7 @@ export async function loadSemanaGlobal(params: {
     lunes,
     domingo: addDays(lunes, 6),
     filas,
+    casetas: ctx.casetas,
     tiposEmpleado: ctx.tiposEmpleado,
     hoyIso: hoyIso(),
   };
