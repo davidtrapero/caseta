@@ -125,10 +125,11 @@ export default async function SemanaTurnosPage({
             <Link
               key={d.fecha}
               href={`/turnos?fecha=${d.fecha}&${casetaQS}`}
-              className={`flex flex-col rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-3 transition-colors hover:border-[rgba(198,138,58,.45)] hover:shadow-md ${
-                esHoy ? "border-primary" : ""
-              }`}
-              style={{ boxShadow: "var(--surface-glass-shadow)" }}
+              className="flex flex-col rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-3 transition-colors hover:border-[var(--surface-glass-border)] hover:opacity-90 hover:shadow-md"
+              style={{
+                boxShadow: "var(--surface-glass-shadow)",
+                ...(esHoy && { borderColor: "hsl(var(--primary))", boxShadow: "var(--surface-glass-shadow), 0 0 0 1px hsl(var(--primary) / 0.4)" }),
+              }}
             >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {DIAS_SEMANA_LARGOS[i]}
