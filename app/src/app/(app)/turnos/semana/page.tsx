@@ -41,7 +41,7 @@ export default async function SemanaTurnosPage({
         <h1 className="text-2xl mb-2">Turnos — Semana</h1>
         <EmptyState
           title="Faltan datos base"
-          description="Necesitas al menos una edición y una caseta activa."
+          description="Crea una edición y caseta activas."
           actionHref="/admin/ediciones"
           actionLabel="Ir a ediciones"
         />
@@ -58,7 +58,7 @@ export default async function SemanaTurnosPage({
       <header className="flex flex-col gap-3 border-b border-border/60 pb-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs uppercase tracking-wider text-primary">
               Turnos · Semana · {semana.edicion.nombre}
             </div>
             <h1 className="text-2xl font-[var(--font-display)] mt-1">
@@ -125,9 +125,10 @@ export default async function SemanaTurnosPage({
             <Link
               key={d.fecha}
               href={`/turnos?fecha=${d.fecha}&${casetaQS}`}
-              className={`flex flex-col rounded-lg border bg-card/80 p-3 shadow-sm transition-colors hover:border-primary/60 ${
-                esHoy ? "border-primary" : "border-border"
+              className={`flex flex-col rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-3 transition-colors hover:border-[rgba(198,138,58,.45)] hover:shadow-md ${
+                esHoy ? "border-primary" : ""
               }`}
+              style={{ boxShadow: "var(--surface-glass-shadow)" }}
             >
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {DIAS_SEMANA_LARGOS[i]}
