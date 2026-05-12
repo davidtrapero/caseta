@@ -3,7 +3,8 @@
 import { useTransition } from "react";
 import { Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { setTheme, type Theme } from "@/app/actions/theme";
+import { setTheme } from "@/app/actions/theme";
+import type { Theme } from "@/lib/theme";
 
 export function ThemeToggle({ theme }: { theme: Theme }) {
   const [isPending, startTransition] = useTransition();

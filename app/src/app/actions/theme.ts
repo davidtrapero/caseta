@@ -6,8 +6,6 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import type { Theme } from "@/lib/theme";
 
-export type { Theme };
-
 export async function setTheme(theme: Theme) {
   const cookieStore = await cookies();
   cookieStore.set("caseta-theme", theme, {
