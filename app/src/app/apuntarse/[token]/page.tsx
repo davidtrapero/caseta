@@ -87,7 +87,7 @@ export default async function ApuntarsePage({
   }));
 
   return (
-    <main className="min-h-screen bg-background py-10 px-4">
+    <main className="min-h-screen py-10 px-4">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold">Apuntarse como voluntario</h1>

@@ -74,7 +74,7 @@ export function LoginForm() {
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center pb-2">
         <div className="text-4xl mb-2" aria-hidden="true">🎪</div>
-        <CardTitle className="text-2xl">Caseta</CardTitle>
+        <CardTitle className="text-2xl font-semibold">Caseta</CardTitle>
         <CardDescription>Accede con tu cuenta.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -121,7 +121,7 @@ export function LoginForm() {
           {error && (
             <div
               role="alert"
-              className="flex items-start gap-2 rounded-md bg-destructive/8 border border-destructive/20 px-3 py-2 text-sm text-destructive"
+              className="flex items-start gap-2 rounded-md bg-[hsl(var(--destructive)/0.1)] border border-destructive/20 px-3 py-2 text-sm text-destructive"
             >
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
               <span>{error}</span>
