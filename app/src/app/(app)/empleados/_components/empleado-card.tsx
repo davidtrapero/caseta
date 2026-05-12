@@ -52,8 +52,8 @@ export function EmpleadoCard({
 
   return (
     <article
-      className="rounded-lg border border-border/70 bg-card/60 p-4 shadow-sm transition-opacity"
-      style={{ opacity: empleado.activo ? 1 : 0.7 }}
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 transition-opacity"
+      style={{ opacity: empleado.activo ? 1 : 0.7, boxShadow: "var(--surface-glass-shadow)" }}
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
@@ -117,7 +117,7 @@ export function EmpleadoCard({
                 — edición activa, desde hoy
               </span>
             </summary>
-            <ul className="mt-2 space-y-1 border-l border-border/60 pl-3">
+            <ul className="mt-2 space-y-1 border-l border-[var(--surface-glass-border)] pl-3">
               {turnos.map((t) => (
                 <li
                   key={t.id}
