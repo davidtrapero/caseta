@@ -44,7 +44,7 @@ export default async function NominasPage() {
       <div>
         <SectionHeader
           title="Nóminas"
-          subtitle="Cálculo de nóminas por edición."
+          subtitle="Nóminas de la edición."
         />
         <EmptyState
           title="No hay edición activa"

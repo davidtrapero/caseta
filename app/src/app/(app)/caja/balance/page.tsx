@@ -106,7 +106,7 @@ export default async function BalancePage() {
     <div>
       <SectionHeader
         title={`Balance — ${edicion.nombre}`}
-        subtitle="Resumen económico calculado al vuelo desde cierres, gastos y nóminas."
+        subtitle="Cierres, gastos y nóminas acumulados."
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -138,11 +138,11 @@ export default async function BalancePage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>
-          <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
             Ingresos por caseta
           </h3>
           {ingresosPorCaseta.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
               Sin cierres registrados.
             </div>
           ) : (
@@ -179,11 +179,11 @@ export default async function BalancePage() {
         </section>
 
         <section>
-          <h3 className="mb-3 text-sm font-medium uppercase tracking-wider text-muted-foreground">
+          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
             Gastos por categoría
           </h3>
           {gastosPorCategoria.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-card/40 p-6 text-center text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
               Sin gastos registrados.
             </div>
           ) : (
@@ -298,11 +298,14 @@ function BalanceCard({
           : "text-foreground";
 
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+    <div
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
+      <p className="text-[10px] uppercase tracking-widest text-primary">
         {label}
       </p>
-      <p className={`mt-1 font-mono text-2xl font-medium ${valorClase}`}>
+      <p className={`mt-1 font-mono text-2xl font-semibold tabular-nums leading-none ${valorClase}`}>
         {FORMATO_EUR.format(valor)}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{nota}</p>

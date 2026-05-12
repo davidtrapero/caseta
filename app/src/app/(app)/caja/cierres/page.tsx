@@ -69,7 +69,7 @@ export default async function CierresPage() {
     <div>
       <SectionHeader
         title={`Cierres — ${edicion.nombre}`}
-        subtitle="Ingresos diarios por caseta. Una vez bloqueado, solo admin puede editar."
+        subtitle="Ingresos diarios por caseta. Bloqueado = solo admin edita."
         actionHref="/caja/cierres/nuevo"
         actionLabel="Nuevo cierre"
         canAct={puedeCrear}
@@ -110,9 +110,9 @@ export default async function CierresPage() {
                   </TableCell>
                   <TableCell>
                     {c.bloqueado ? (
-                      <Badge variant="default">Bloqueado</Badge>
+                      <Badge variant="warning">Bloqueado</Badge>
                     ) : (
-                      <Badge variant="outline">Abierto</Badge>
+                      <Badge variant="success">Abierto</Badge>
                     )}
                   </TableCell>
                   <TableCell>
