@@ -177,8 +177,11 @@ function ResumenCard({
   destacar?: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">
+    <div
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
+      <p className="text-xs uppercase tracking-wider text-primary">
         {label}
       </p>
       <p
