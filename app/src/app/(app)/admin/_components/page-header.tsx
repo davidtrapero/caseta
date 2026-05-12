@@ -65,7 +65,7 @@ export function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-10 text-center" style={{ boxShadow: "var(--surface-glass-shadow)" }}>
+    <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-10 text-center" style={{ boxShadow: "var(--surface-glass-shadow)" }}>
       <h3 className="text-base font-medium">{title}</h3>
       <p className="text-sm text-muted-foreground mt-1 mb-4">{description}</p>
       {actionHref && actionLabel ? (

@@ -22,7 +22,7 @@ export default async function AdminLayout({
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
         <p className="text-xs uppercase tracking-[0.2em] text-primary">
-          Administración
+          Datos maestros
         </p>
         <h1 className="text-3xl">Administración</h1>
       </header>
