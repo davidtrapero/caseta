@@ -872,35 +872,42 @@ async function validarYCopiarTurnos(args: {
     }
   }
 
+  // Pre-asignar IDs en memoria para poder batching los 3 createMany en lugar
+  // de N×3 round-trips dentro de la transacción interactiva (evita timeout 5s Neon).
+  const planConId = plan.map((p) => ({ ...p, id: crypto.randomUUID() }));
+
   await withAuditContext(userId, () =>
     prisma.$transaction(async (tx) => {
-      for (const p of plan) {
-        const nuevo = await tx.turno.create({
-          data: {
-            edicionId,
-            casetaId,
-            fechaInicio: p.fechaInicio,
-            fechaFin: p.fechaFin,
-          },
-        });
-        if (p.plazas.length > 0) {
-          await tx.turnoPlaza.createMany({
-            data: p.plazas.map((pl) => ({
-              turnoId: nuevo.id,
-              tipoEmpleadoId: pl.tipoEmpleadoId,
-              cantidad: pl.cantidad,
-            })),
-          });
-        }
-        if (p.empleadoIds.length > 0) {
-          await tx.turnoEmpleado.createMany({
-            data: p.empleadoIds.map((empleadoId) => ({
-              turnoId: nuevo.id,
-              empleadoId,
-              asistio: false,
-            })),
-          });
-        }
+      await tx.turno.createMany({
+        data: planConId.map((p) => ({
+          id: p.id,
+          edicionId,
+          casetaId,
+          fechaInicio: p.fechaInicio,
+          fechaFin: p.fechaFin,
+        })),
+      });
+
+      const plazasData = planConId.flatMap((p) =>
+        p.plazas.map((pl) => ({
+          turnoId: p.id,
+          tipoEmpleadoId: pl.tipoEmpleadoId,
+          cantidad: pl.cantidad,
+        }))
+      );
+      if (plazasData.length > 0) {
+        await tx.turnoPlaza.createMany({ data: plazasData });
+      }
+
+      const asignacionesData = planConId.flatMap((p) =>
+        p.empleadoIds.map((empleadoId) => ({
+          turnoId: p.id,
+          empleadoId,
+          asistio: false,
+        }))
+      );
+      if (asignacionesData.length > 0) {
+        await tx.turnoEmpleado.createMany({ data: asignacionesData });
       }
     })
   );
