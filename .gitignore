@@ -50,3 +50,10 @@ next-env.d.ts
 app/prisma/migrations/dev/
 .playwright-mcp/
 .claude/
+
+# QA E2E runs (informes generados por la skill qa-e2e)
+docs/qa-runs/
+
+# QA specs generados desde el catálogo (regenerados en cada run de qa-e2e)
+app/tests-e2e/qa-cases/
+.superpowers/

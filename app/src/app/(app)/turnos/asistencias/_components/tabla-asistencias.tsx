@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PERFIL_LABEL, PERFIL_COLORES, type PerfilEmpleado } from "../../_lib/perfiles";
+import { colorFor } from "../../_lib/perfiles";
 
 const FECHA_TURNO = new Intl.DateTimeFormat("es-ES", {
   weekday: "short",
@@ -27,7 +27,8 @@ const HORA = new Intl.DateTimeFormat("es-ES", {
 export type FilaEmpleado = {
   id: string;
   nombre: string;
-  perfil: PerfilEmpleado;
+  tipoLabel: string;
+  tipoColorHex: string;
   entidad: string | null;
   asistencias: Array<{
     id: string;
@@ -54,7 +55,7 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
-          <TableHead className="w-32">Perfil</TableHead>
+          <TableHead className="w-32">Tipo</TableHead>
           <TableHead>Entidad</TableHead>
           <TableHead className="w-28 text-right">Asistencias</TableHead>
         </TableRow>
@@ -62,7 +63,7 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
       <TableBody>
         {filas.map((f) => {
           const abierta = expandidas.has(f.id);
-          const colores = PERFIL_COLORES[f.perfil];
+          const colores = colorFor({ colorHex: f.tipoColorHex });
           return (
             <Fragment key={f.id}>
               <TableRow
@@ -85,7 +86,7 @@ export function TablaAsistencias({ filas }: { filas: FilaEmpleado[] }) {
                       color: colores.text,
                     }}
                   >
-                    {PERFIL_LABEL[f.perfil]}
+                    {f.tipoLabel}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

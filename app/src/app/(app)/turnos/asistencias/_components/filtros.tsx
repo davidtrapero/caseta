@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { PERFIL_ORDEN, PERFIL_LABEL, type PerfilEmpleado } from "../../_lib/perfiles";
+import type { TipoEmpleadoLite } from "../../_lib/perfiles";
 
 export function FiltrosAsistencias({
   ediciones,
@@ -10,7 +10,8 @@ export function FiltrosAsistencias({
   entidadId,
   casetas,
   casetaId,
-  perfilesActivos,
+  tiposEmpleado,
+  tiposActivos,
 }: {
   ediciones: Array<{ id: string; anio: number; nombre: string }>;
   edicionId: string;
@@ -18,7 +19,8 @@ export function FiltrosAsistencias({
   entidadId: string;
   casetas: Array<{ id: string; nombre: string }>;
   casetaId: string;
-  perfilesActivos: PerfilEmpleado[];
+  tiposEmpleado: TipoEmpleadoLite[];
+  tiposActivos: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -33,12 +35,12 @@ export function FiltrosAsistencias({
     router.push(`/turnos/asistencias?${params.toString()}`);
   }
 
-  function togglePerfil(p: PerfilEmpleado) {
-    const set = new Set(perfilesActivos);
-    if (set.has(p)) set.delete(p);
-    else set.add(p);
+  function toggleTipo(id: string) {
+    const set = new Set(tiposActivos);
+    if (set.has(id)) set.delete(id);
+    else set.add(id);
     const value = Array.from(set).join(",");
-    actualizar("perfiles", value);
+    actualizar("tipos", value);
   }
 
   return (
@@ -101,14 +103,14 @@ export function FiltrosAsistencias({
 
       <div>
         <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-          Perfiles
+          Tipo de empleado
         </p>
         <div className="flex flex-wrap gap-2">
-          {PERFIL_ORDEN.map((p) => {
-            const activo = perfilesActivos.includes(p);
+          {tiposEmpleado.map((t) => {
+            const activo = tiposActivos.includes(t.id);
             return (
               <label
-                key={p}
+                key={t.id}
                 className={`text-xs px-3 py-1 rounded-md border cursor-pointer ${
                   activo
                     ? "border-primary bg-primary/15"
@@ -118,10 +120,10 @@ export function FiltrosAsistencias({
                 <input
                   type="checkbox"
                   checked={activo}
-                  onChange={() => togglePerfil(p)}
+                  onChange={() => toggleTipo(t.id)}
                   className="sr-only"
                 />
-                {PERFIL_LABEL[p]}
+                {t.label}
               </label>
             );
           })}

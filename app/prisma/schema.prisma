@@ -19,12 +19,27 @@ enum Rol {
   cajero
 }
 
-enum PerfilEmpleado {
-  vigilante
-  coordinador
-  trabajador
-  voluntario
-  ayudante
+// Tipo de empleado — antes era enum PerfilEmpleado. Editable desde admin.
+// `slug` es la clave estable usada por el código (p.ej. "voluntario").
+// `colorHex` formato `#RRGGBB`. `esVoluntario` reemplaza la comparación
+// `perfil === 'voluntario'` (un solo tipo debería tener este flag a true).
+model TipoEmpleado {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  label        String
+  labelCorto   String
+  colorHex     String
+  orden        Int      @default(0)
+  esVoluntario Boolean  @default(false)
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  empleados    Empleado[]
+  plazas       TurnoPlaza[]
+  casetasDefecto Caseta[]
+
+  @@index([orden])
 }
 
 model User {
@@ -124,11 +139,12 @@ model Caseta {
   nombre               String          @unique
   ubicacion            String?
   activa               Boolean         @default(true)
-  jornalDiarioDefault  Decimal?        @db.Decimal(10, 2)
-  perfilDefecto        PerfilEmpleado?
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  jornalDiarioDefault     Decimal?      @db.Decimal(10, 2)
+  tipoEmpleadoDefectoId   String?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
+  tipoEmpleadoDefecto TipoEmpleado? @relation(fields: [tipoEmpleadoDefectoId], references: [id], onDelete: SetNull)
   turnos       Turno[]
   productos    Producto[]
   stock        Stock[]
@@ -139,23 +155,27 @@ model Caseta {
 }
 
 // Empleado — recurso laboral.
-// perfil=voluntario ⇔ jornalDiario IS NULL (validado en Zod + CHECK constraint en migración).
-// perfil=voluntario ⇔ entidadId NOT NULL (backfill en migración, refine en crearEmpleadoSchema).
+// tipoEmpleado.esVoluntario ⇔ jornalDiario IS NULL (validado en Zod + lookup en action).
+// tipoEmpleado.esVoluntario ⇔ entidadId NOT NULL (backfill en migración, refine en crearEmpleadoSchema).
 model Empleado {
   id                 String         @id @default(cuid())
   nombre             String
   dni                String?        @unique
   telefono           String?
+  email              String?
   jornalDiario       Decimal?       @db.Decimal(10, 2)
-  perfil             PerfilEmpleado @default(trabajador)
+  tipoEmpleadoId     String
   entidadId          String?
   activo             Boolean        @default(true)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
+  tipoEmpleado TipoEmpleado       @relation(fields: [tipoEmpleadoId], references: [id], onDelete: Restrict)
   entidad      EntidadVoluntario? @relation(fields: [entidadId], references: [id], onDelete: Restrict)
   asignaciones TurnoEmpleado[]
   nominas      Nomina[]
+
+  @@index([tipoEmpleadoId])
 }
 
 // Tramo de trabajo en una caseta. fechaInicio/fechaFin son timestamps reales —
@@ -186,14 +206,16 @@ model Turno {
 // Plazas esperadas por perfil en un turno (asignación diferida).
 // Permite planificar "necesito 1 vigilante + 4 trabajadores" antes de saber quién.
 model TurnoPlaza {
-  id       String         @id @default(cuid())
-  turnoId  String
-  perfil   PerfilEmpleado
-  cantidad Int
+  id             String @id @default(cuid())
+  turnoId        String
+  tipoEmpleadoId String
+  cantidad       Int
 
-  turno Turno @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  turno        Turno        @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  tipoEmpleado TipoEmpleado @relation(fields: [tipoEmpleadoId], references: [id], onDelete: Restrict)
 
-  @@unique([turnoId, perfil])
+  @@unique([turnoId, tipoEmpleadoId])
+  @@index([tipoEmpleadoId])
 }
 
 // Asignación N:M Turno ↔ Empleado. asistio es por-empleado.

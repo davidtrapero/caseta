@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { PERFIL_ORDEN } from "./_lib/perfiles";
 
 // Turno = tramo horario en una caseta, con 0..N empleados asignados (Fase 3).
 // fechaInicio y fechaFin son timestamps ISO (DateTime completos).
@@ -54,16 +53,12 @@ const baseTurnoRango = z
     { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
   );
 
-const perfilEnum = z.enum(
-  PERFIL_ORDEN as [string, ...string[]]
-);
-
-// Plazas esperadas por perfil: serializado como JSON en un campo hidden.
+// Plazas esperadas por tipo: serializado como JSON en un campo hidden.
 const plazasJson = z
   .string()
   .optional()
   .transform((v) => {
-    if (!v) return [] as { perfil: string; cantidad: number }[];
+    if (!v) return [] as { tipoEmpleadoId: string; cantidad: number }[];
     try {
       const parsed = JSON.parse(v);
       return Array.isArray(parsed) ? parsed : [];
@@ -74,7 +69,7 @@ const plazasJson = z
   .pipe(
     z.array(
       z.object({
-        perfil: perfilEnum,
+        tipoEmpleadoId: z.string().cuid("Tipo de empleado inválido"),
         cantidad: z.coerce.number().int().min(0).max(99),
       })
     )
@@ -121,40 +116,128 @@ export const toggleAsistenciaSchema = z.object({
   asistio: z.preprocess((v) => v === "on" || v === true || v === "true", z.boolean()),
 });
 
+// Checkbox HTML: cuando está marcado llega como "on"; desmarcado no llega.
+const checkboxFlag = z
+  .preprocess(
+    (v) => v === "on" || v === "true" || v === true,
+    z.boolean()
+  )
+  .optional()
+  .default(false);
+
 // Duplicar un día completo dentro de una caseta: copia todos los turnos
-// (con sus asignaciones) cuyo fechaInicio cae en el día origen al día destino.
+// (con sus plazas) cuyo fechaInicio cae en el día origen al día destino.
+// Las asignaciones de empleados se copian sólo si copiarAsignaciones=true.
 export const duplicarDiaSchema = z
   .object({
     casetaId: z.string().cuid(),
+    casetaIdOrigen: z.string().cuid().optional(),
     edicionId: z.string().cuid(),
     diaOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     diaDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+    copiarAsignaciones: checkboxFlag,
   })
-  .refine((d) => d.diaOrigen !== d.diaDestino, {
-    message: "El día origen y destino deben ser diferentes",
-    path: ["diaDestino"],
-  });
+  // Origen == destino solo es ilegal si además ambas casetas coinciden:
+  // cuando el origen es otra caseta, mismo día es un caso válido (replicar
+  // planificación del mismo día desde otra caseta).
+  .refine(
+    (d) =>
+      !(
+        d.diaOrigen === d.diaDestino &&
+        (d.casetaIdOrigen ?? d.casetaId) === d.casetaId
+      ),
+    {
+      message: "El día origen y destino deben ser diferentes",
+      path: ["diaDestino"],
+    }
+  );
 
-// Duplicar semana completa (incluye asignaciones).
+// Duplicar semana completa. Las asignaciones se copian sólo si el flag está activo.
 export const duplicarSemanaSchema = z
   .object({
     casetaId: z.string().cuid(),
+    casetaIdOrigen: z.string().cuid().optional(),
     edicionId: z.string().cuid(),
     lunesOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     lunesDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+    copiarAsignaciones: checkboxFlag,
   })
-  .refine((d) => d.lunesOrigen !== d.lunesDestino, {
-    message: "La semana origen y destino deben ser diferentes",
-    path: ["lunesDestino"],
-  });
+  .refine(
+    (d) =>
+      !(
+        d.lunesOrigen === d.lunesDestino &&
+        (d.casetaIdOrigen ?? d.casetaId) === d.casetaId
+      ),
+    {
+      message: "La semana origen y destino deben ser diferentes",
+      path: ["lunesDestino"],
+    }
+  );
 
 export const actualizarPlazasSchema = z.object({
   turnoId: z.string().cuid(),
   plazasJson,
 });
 
+// Rellenar plazas en turnos huérfanos (sin TurnoPlaza). Plantilla recibida
+// como JSON en `plazasJson`. `casetaId` opcional: si vacío, aplica a todas.
+const plazaPlantillaArrayJson = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v) return [] as { tipoEmpleadoId: string; cantidad: number }[];
+    try {
+      const parsed = JSON.parse(v);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })
+  .pipe(
+    z
+      .array(
+        z.object({
+          tipoEmpleadoId: z.string().min(1, "Tipo de empleado inválido"),
+          cantidad: z.coerce.number().int().min(1).max(99),
+        })
+      )
+      .min(1, "Define al menos una plaza")
+  );
+
+export const rellenarPlazasTurnosSinPlazasSchema = z.object({
+  casetaId: z.string().optional(),
+  plazasJson: plazaPlantillaArrayJson,
+});
+
+export type RellenarPlazasTurnosSinPlazasInput = z.infer<
+  typeof rellenarPlazasTurnosSinPlazasSchema
+>;
+
+// Wrapper que combina horario + plazas (Fase 4 evolutivo C):
+// permite editar el turno y sus plazas en una sola transacción.
+export const actualizarTurnoYPlazasSchema = z
+  .object({
+    edicionId: z.string().cuid("Edición inválida"),
+    casetaId: z.string().cuid("Caseta inválida"),
+    fechaInicio: isoDateTime,
+    fechaFin: isoDateTime,
+    plazasJson,
+  })
+  .refine(
+    (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
+    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+  )
+  .refine(
+    (d) => {
+      const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
+      return ms <= 24 * 60 * 60 * 1000;
+    },
+    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+  );
+
 export type CrearTurnoInput = z.infer<typeof crearTurnoSchema>;
 export type ActualizarTurnoInput = z.infer<typeof actualizarTurnoSchema>;
+export type ActualizarTurnoYPlazasInput = z.infer<typeof actualizarTurnoYPlazasSchema>;
 export type AsignarEmpleadoInput = z.infer<typeof asignarEmpleadoSchema>;
 export type DesasignarEmpleadoInput = z.infer<typeof desasignarEmpleadoSchema>;
 export type ToggleAsistenciaInput = z.infer<typeof toggleAsistenciaSchema>;

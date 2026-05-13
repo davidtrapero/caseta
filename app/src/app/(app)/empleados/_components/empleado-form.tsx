@@ -5,18 +5,17 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FieldError, FormError } from "../../_components/page-header";
+import { FieldError, FormError } from "../../admin/_components/page-header";
 import type { ActionResult } from "@/lib/action-result";
 import {
   crearEmpleadoAction,
   actualizarEmpleadoAction,
 } from "../actions";
 import {
-  PERFIL_ORDEN,
-  PERFIL_LABEL,
-  PERFIL_COLORES,
-  type PerfilEmpleado,
-} from "../../../turnos/_lib/perfiles";
+  colorFor,
+  ordenarTipos,
+  type TipoEmpleadoLite,
+} from "../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
 
@@ -26,52 +25,68 @@ type CasetaDefault = {
   id: string;
   nombre: string;
   jornalDiarioDefault: string | null;
-  perfilDefecto: string | null;
+  tipoEmpleadoDefectoId: string | null;
 };
 
 type EmpleadoFormProps = {
   modo: Modo;
   entidades: EntidadMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   casetasDefaults?: CasetaDefault[];
   initial?: {
     id: string;
     nombre: string;
     dni: string | null;
+    email: string | null;
     telefono: string | null;
     jornalDiario: string | null;
     entidadId: string | null;
-    perfil: string;
+    tipoEmpleadoId: string;
     activo: boolean;
   };
 };
 
-export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: EmpleadoFormProps) {
+export function EmpleadoForm({
+  modo,
+  entidades,
+  tiposEmpleado,
+  casetasDefaults,
+  initial,
+}: EmpleadoFormProps) {
   const action = modo === "crear" ? crearEmpleadoAction : actualizarEmpleadoAction;
   const [state, formAction, pending] = useActionState<
     ActionResult<{ id: string }> | null,
     FormData
   >(action, null);
 
-  const [perfil, setPerfil] = useState<PerfilEmpleado>(
-    (initial?.perfil as PerfilEmpleado) ?? "trabajador"
-  );
+  const tiposOrdenados = ordenarTipos(tiposEmpleado);
+  // Tipo por defecto: el inicial, o el primer no-voluntario, o el primero.
+  const tipoInicial =
+    initial?.tipoEmpleadoId ??
+    tiposOrdenados.find((t) => !t.esVoluntario)?.id ??
+    tiposOrdenados[0]?.id ??
+    "";
+
+  const [tipoEmpleadoId, setTipoEmpleadoId] = useState<string>(tipoInicial);
   const [jornalDiario, setJornalDiario] = useState(initial?.jornalDiario ?? "");
 
+  const tipoSeleccionado = tiposOrdenados.find((t) => t.id === tipoEmpleadoId);
+  const esVoluntario = tipoSeleccionado?.esVoluntario ?? false;
+
   useEffect(() => {
-    if (perfil === "voluntario") {
+    if (esVoluntario) {
       // queueMicrotask: evita setState síncrono en effect (react-hooks/set-state-in-effect)
       queueMicrotask(() => setJornalDiario(""));
     }
-  }, [perfil]);
+  }, [esVoluntario]);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
-  const esVoluntario = perfil === "voluntario";
 
   function precargarCaseta(casetaId: string) {
     const caseta = casetasDefaults?.find((c) => c.id === casetaId);
     if (!caseta) return;
-    if (caseta.perfilDefecto) {
-      setPerfil(caseta.perfilDefecto as PerfilEmpleado);
+    if (caseta.tipoEmpleadoDefectoId) {
+      setTipoEmpleadoId(caseta.tipoEmpleadoDefectoId);
     }
     if (caseta.jornalDiarioDefault) {
       setJornalDiario(caseta.jornalDiarioDefault);
@@ -103,7 +118,7 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
             ))}
           </select>
           <p className="text-xs text-muted-foreground mt-1">
-            Prerrellena jornal y perfil con los valores por defecto de la caseta.
+            Prerrellena jornal y tipo con los valores por defecto de la caseta.
           </p>
         </div>
       ) : null}
@@ -120,17 +135,69 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
         <FieldError messages={errors.nombre} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="dni">DNI / NIE</Label>
-          <Input
-            id="dni"
-            name="dni"
-            defaultValue={initial?.dni ?? ""}
-            placeholder="12345678A"
-          />
-          <FieldError messages={errors.dni} />
+      <div>
+        <Label htmlFor="tipoEmpleadoId">Tipo de empleado</Label>
+        <input type="hidden" name="tipoEmpleadoId" value={tipoEmpleadoId} />
+        <div
+          role="radiogroup"
+          aria-label="Tipo de empleado"
+          className="flex flex-wrap gap-2 mt-1.5"
+        >
+          {tiposOrdenados.map((t) => {
+            const colores = colorFor(t);
+            const sel = tipoEmpleadoId === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                role="radio"
+                aria-checked={sel}
+                onClick={() => setTipoEmpleadoId(t.id)}
+                className="inline-flex items-center gap-2 rounded-md border-2 px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                style={
+                  sel
+                    ? {
+                        background: t.colorHex,
+                        borderColor: t.colorHex,
+                        color: colores.text === "#fdf8ec" ? colores.text : "#ffffff",
+                        boxShadow: `0 1px 0 ${colores.border}55, 0 0 0 2px ${colores.bg}`,
+                      }
+                    : {
+                        background: "transparent",
+                        borderColor: t.colorHex,
+                        color: colores.border,
+                      }
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{
+                    background: sel ? "rgba(255,255,255,0.85)" : t.colorHex,
+                    boxShadow: sel ? "none" : `0 0 0 1px ${t.colorHex}`,
+                  }}
+                />
+                {t.label}
+              </button>
+            );
+          })}
         </div>
+        <FieldError messages={errors.tipoEmpleadoId} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {!esVoluntario && (
+          <div>
+            <Label htmlFor="dni">DNI / NIE</Label>
+            <Input
+              id="dni"
+              name="dni"
+              defaultValue={initial?.dni ?? ""}
+              placeholder="12345678A"
+            />
+            <FieldError messages={errors.dni} />
+          </div>
+        )}
         <div>
           <Label htmlFor="telefono">
             Teléfono{esVoluntario ? " *" : ""}
@@ -143,33 +210,17 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
           />
           <FieldError messages={errors.telefono} />
         </div>
-      </div>
-
-      <div>
-        <Label htmlFor="perfil">Perfil</Label>
-        <input type="hidden" name="perfil" value={perfil} />
-        <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5 mt-1">
-          {PERFIL_ORDEN.map((p) => {
-            const colores = PERFIL_COLORES[p];
-            const sel = perfil === p;
-            return (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPerfil(p)}
-                className="rounded-sm border px-2 py-1.5 text-xs font-medium transition-all"
-                style={
-                  sel
-                    ? { background: colores.border, borderColor: colores.border, color: "hsl(40 48% 97%)" }
-                    : { background: colores.bg, borderColor: colores.border, color: colores.text }
-                }
-              >
-                {PERFIL_LABEL[p]}
-              </button>
-            );
-          })}
+        <div className={esVoluntario ? "" : "sm:col-span-2"}>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            defaultValue={initial?.email ?? ""}
+            placeholder="nombre@ejemplo.com"
+          />
+          <FieldError messages={errors.email} />
         </div>
-        <FieldError messages={errors.perfil} />
       </div>
 
       {esVoluntario && (
@@ -208,7 +259,7 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
         <p className="text-xs text-muted-foreground mt-1">
           {esVoluntario
             ? "Los voluntarios no cobran jornal."
-            : "Dejar vacío si es voluntario (usa el perfil Voluntario)."}
+            : "Dejar vacío si es voluntario (selecciona el tipo Voluntario)."}
         </p>
         <FieldError messages={errors.jornalDiario} />
       </div>
@@ -228,7 +279,7 @@ export function EmpleadoForm({ modo, entidades, casetasDefaults, initial }: Empl
           {pending ? "Guardando…" : modo === "crear" ? "Crear empleado" : "Guardar cambios"}
         </Button>
         <Button type="button" variant="ghost" asChild>
-          <Link href="/admin/empleados">Cancelar</Link>
+          <Link href="/empleados">Cancelar</Link>
         </Button>
       </div>
     </form>

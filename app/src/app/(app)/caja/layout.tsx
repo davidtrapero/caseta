@@ -18,10 +18,10 @@ export default async function CajaLayout({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">
           Caja y contabilidad
         </p>
-        <h1 className="text-3xl">Ingresos, gastos y nóminas</h1>
+        <h1 className="text-3xl">Caja · ingresos y gastos</h1>
       </header>
 
       <nav

@@ -21,7 +21,7 @@ export function KpiCard({
 }) {
   const colorValor =
     tono === "neto-positivo"
-      ? "text-[hsl(var(--color-acento))]"
+      ? "text-[hsl(var(--accent))]"
       : tono === "neto-negativo"
         ? "text-destructive-foreground"
         : tono === "negativo"
@@ -33,8 +33,11 @@ export function KpiCard({
     : valor.toString();
 
   return (
-    <div className="rounded-lg border bg-card p-4 flex flex-col gap-1">
-      <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+    <div
+      className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 flex flex-col gap-1"
+      style={{ boxShadow: "var(--surface-glass-shadow)" }}
+    >
+      <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
         {etiqueta}
       </p>
       <p className={`font-mono text-2xl font-semibold tabular-nums leading-none ${colorValor}`}>

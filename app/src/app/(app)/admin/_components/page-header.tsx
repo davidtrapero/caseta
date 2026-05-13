@@ -17,7 +17,7 @@ export function SectionHeader({
   return (
     <div className="flex items-end justify-between gap-4 mb-6">
       <div>
-        <h2 className="text-xl">{title}</h2>
+        <h2 className="text-xl font-medium">{title}</h2>
         {subtitle ? (
           <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
         ) : null}
@@ -48,7 +48,7 @@ export function FormShell({
           <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
         ) : null}
       </div>
-      <div className="rounded-lg border bg-card p-6">{children}</div>
+      <div className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-6" style={{ boxShadow: "var(--surface-glass-shadow)" }}>{children}</div>
     </div>
   );
 }
@@ -65,7 +65,7 @@ export function EmptyState({
   actionLabel?: string;
 }) {
   return (
-    <div className="rounded-lg border border-dashed bg-card/40 p-10 text-center">
+    <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-10 text-center" style={{ boxShadow: "var(--surface-glass-shadow)" }}>
       <h3 className="text-base font-medium">{title}</h3>
       <p className="text-sm text-muted-foreground mt-1 mb-4">{description}</p>
       {actionHref && actionLabel ? (
@@ -92,5 +92,30 @@ export function FormError({ message }: { message?: string }) {
     <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground mb-4">
       {message}
     </div>
+  );
+}
+
+export function UnmappedFieldErrors({
+  fieldErrors,
+  excluded,
+}: {
+  fieldErrors?: Record<string, string[]>;
+  excluded: string[];
+}) {
+  if (!fieldErrors) return null;
+  const entries = Object.entries(fieldErrors).filter(
+    ([key]) => !excluded.includes(key) && !excluded.some((e) => key.startsWith(`${e}.`))
+  );
+  if (entries.length === 0) return null;
+  return (
+    <ul className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-foreground mb-2 list-disc list-inside space-y-0.5">
+      {entries.flatMap(([key, msgs]) =>
+        msgs.map((m, i) => (
+          <li key={`${key}-${i}`}>
+            <span className="font-mono text-[10px] text-muted-foreground">{key}:</span> {m}
+          </li>
+        ))
+      )}
+    </ul>
   );
 }

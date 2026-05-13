@@ -2,19 +2,22 @@
 // Los campos de fecha viajan como string ISO para evitar problemas de hydration
 // y permitir rehidratar con new Date() en cliente sin ambigüedad de zona.
 
-import type { PerfilEmpleado } from "./_lib/perfiles";
-export type { PerfilEmpleado };
+import type { TipoEmpleadoLite } from "./_lib/perfiles";
+export type { TipoEmpleadoLite };
 
 export type AsignacionSerializable = {
   empleadoId: string;
   empleadoNombre: string;
   esVoluntario: boolean;
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   asistio: boolean;
+  // Nombre de la EntidadVoluntario del empleado (hermandad/asociación).
+  // Solo poblado para voluntarios (esVoluntario === true). null en contratados.
+  entidadNombre: string | null;
 };
 
 export type TurnoPlazaSerializable = {
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   cantidad: number;
 };
 
@@ -39,7 +42,7 @@ export type EmpleadoMin = {
   nombre: string;
   activo: boolean;
   esVoluntario: boolean; // jornalDiario === null
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
 };
 
 export type EdicionMin = {
@@ -61,22 +64,24 @@ export type DiaTurnos = {
   fechaAnterior: string; // YYYY-MM-DD (para duplicar día anterior)
   turnos: TurnoSerializable[];
   empleados: EmpleadoMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
   readonly: boolean;
 };
 
 // Datos para la vista SEMANA (read-only Fase 3).
 export type DesglosePerfil = {
-  perfil: PerfilEmpleado;
+  tipoEmpleadoId: string;
   asignados: number;
-  plazas: number; // 0 si no hay TurnoPlaza para ese perfil
+  plazas: number; // 0 si no hay TurnoPlaza para ese tipo
 };
 
 export type ResumenDiaSemana = {
   fecha: string; // YYYY-MM-DD
   numTurnos: number;
   numPersonas: number; // empleados distintos asignados ese día
-  desglose: DesglosePerfil[]; // solo perfiles con asignados>0 o plazas>0
+  desglose: DesglosePerfil[]; // solo tipos con asignados>0 o plazas>0
+  turnos: TurnoSerializable[]; // turnos del día ordenados por fechaInicio
 };
 
 export type SemanaTurnos = {
@@ -89,8 +94,71 @@ export type SemanaTurnos = {
   dias: ResumenDiaSemana[];
   turnos: TurnoSerializable[]; // todos los de la semana, por si imprimir los necesita
   empleados: EmpleadoMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
   hoyIso: string;
   readonly: boolean;
+};
+
+// --- Export views ---
+
+export type VacanteTurno = {
+  tipoEmpleadoId: string;
+  faltan: number;
+};
+
+export type ResumenVacantes = {
+  totalFaltan: number;
+  porTipo: Array<{ tipoEmpleadoId: string; faltan: number }>;
+};
+
+export type ResumenAlcance = {
+  numTurnos: number;
+  numPersonas: number;
+  vacantes: ResumenVacantes;
+  // Plazas totales programadas en el alcance (suma de cantidad en TurnoPlaza).
+  plazasTotales: number;
+  // Plazas cubiertas (asignaciones que entran dentro de las plazas, sin sobre-asignaciones).
+  plazasCubiertas: number;
+};
+
+export type SemanaGlobalCelda = {
+  fecha: string;
+  numTurnos: number;
+  numPersonas: number;
+  totalVacantes: number;
+  turnos: TurnoSerializable[]; // turnos del día en esa caseta, ordenados por fechaInicio
+};
+
+export type SemanaGlobalCaseta = {
+  caseta: CasetaMin;
+  dias: SemanaGlobalCelda[];
+};
+
+export type SemanaGlobal = {
+  edicion: EdicionMin;
+  lunes: string;
+  domingo: string;
+  filas: SemanaGlobalCaseta[];
+  // Todas las casetas activas (sin filtrar) para el dropdown de filtro UI.
+  casetas: CasetaMin[];
+  tiposEmpleado: TipoEmpleadoLite[];
+  hoyIso: string;
+};
+
+export type TurnoEmpleadoExport = {
+  id: string;
+  fechaInicio: string;
+  fechaFin: string;
+  caseta: CasetaMin;
+  asistio: boolean;
+};
+
+export type TurnosEmpleado = {
+  edicion: EdicionMin;
+  empleado: EmpleadoMin & { tipoEmpleado: TipoEmpleadoLite | null };
+  desde: string;
+  hasta: string;
+  turnos: TurnoEmpleadoExport[];
 };
 
 // Resultado tipado de la detección de solape.

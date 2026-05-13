@@ -37,7 +37,7 @@ export default async function TurnosPage({
         <h1 className="text-2xl mb-2">Turnos</h1>
         <EmptyState
           title="Faltan datos base"
-          description="Necesitas al menos una edición y una caseta activa."
+          description="Crea una edición y caseta activas."
           actionHref="/admin/ediciones"
           actionLabel="Ir a ediciones"
         />
@@ -50,7 +50,7 @@ export default async function TurnosPage({
       <header className="flex flex-col gap-3 border-b border-border/60 pb-4">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs uppercase tracking-wider text-primary">
               Turnos · {dia.edicion.nombre}
             </div>
             <h1 className="text-2xl font-[var(--font-display)] mt-1">

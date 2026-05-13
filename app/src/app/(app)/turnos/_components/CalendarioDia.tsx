@@ -69,6 +69,7 @@ export function CalendarioDia({ dia, puedeEditar }: Props) {
               key={t.id}
               turno={t}
               empleadosDisponibles={dia.empleados}
+              tiposEmpleado={dia.tiposEmpleado}
               permiteAsistencia={permiteAsistencia}
               readonly={readonly}
               index={i}
@@ -85,6 +86,7 @@ export function CalendarioDia({ dia, puedeEditar }: Props) {
           casetaId={dia.casetaSeleccionada.id}
           fecha={dia.fecha}
           empleados={dia.empleados}
+          tiposEmpleado={dia.tiposEmpleado}
         />
       ) : null}
 
@@ -97,6 +99,7 @@ export function CalendarioDia({ dia, puedeEditar }: Props) {
           diaOrigen={dia.fecha}
           duplicarDesdeAnterior
           diaAnterior={dia.fechaAnterior}
+          casetas={dia.casetas}
         />
       ) : null}
     </div>

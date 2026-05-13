@@ -41,6 +41,7 @@ export default defineConfig({
       DATABASE_URL: process.env.DATABASE_URL ?? "",
       BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "",
       BETTER_AUTH_URL: `http://localhost:${PORT}`,
+      NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}`,
     },
   },
 

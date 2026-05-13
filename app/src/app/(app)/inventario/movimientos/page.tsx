@@ -127,7 +127,8 @@ export default async function MovimientosPage({
 
       <form
         method="GET"
-        className="mb-4 grid grid-cols-2 gap-3 rounded-lg border bg-card p-4 sm:grid-cols-5"
+        className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 sm:grid-cols-5"
+        style={{ boxShadow: "var(--surface-glass-shadow)" }}
       >
         <div>
           <Label htmlFor="caseta">Caseta</Label>

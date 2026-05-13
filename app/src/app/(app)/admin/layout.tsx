@@ -4,10 +4,11 @@ import { AdminTab } from "./_components/admin-tab";
 const TABS = [
   { href: "/admin/ediciones", label: "Ediciones" },
   { href: "/admin/casetas", label: "Casetas" },
-  { href: "/admin/empleados", label: "Empleados" },
+  { href: "/admin/tipos-empleado", label: "Tipos de empleado" },
   { href: "/admin/proveedores", label: "Proveedores" },
   { href: "/admin/entidades", label: "Entidades" },
   { href: "/admin/usuarios", label: "Usuarios" },
+  { href: "/admin/mantenimiento", label: "Mantenimiento" },
 ];
 
 export default async function AdminLayout({
@@ -20,10 +21,10 @@ export default async function AdminLayout({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-          Administración
+        <p className="text-xs uppercase tracking-[0.2em] text-primary">
+          Datos maestros
         </p>
-        <h1 className="text-3xl">Datos maestros de San Isidro</h1>
+        <h1 className="text-3xl">Administración</h1>
       </header>
 
       <nav

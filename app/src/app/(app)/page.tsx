@@ -23,12 +23,6 @@ function formatFechaLarga(ymd: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
-
 export default async function InicioPage() {
   const session = await getSession();
   if (!session?.user) redirect("/login");
@@ -47,10 +41,10 @@ export default async function InicioPage() {
         <h2 className="text-xl mb-1">Inicio</h2>
         <p className="text-sm text-muted-foreground mb-6">{fechaHoy}</p>
         <EmptyState
-          title="No hay edición activa"
-          description="Activa una edición en Administración para ver el dashboard."
-          actionHref="/admin/ediciones"
-          actionLabel="Ir a ediciones"
+          title="Sin edición activa"
+          description="Activa una edición desde administración para empezar."
+          actionHref="/admin"
+          actionLabel="Ir a administración"
         />
       </div>
     );
@@ -71,37 +65,37 @@ export default async function InicioPage() {
         <section>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <KpiCard
-              etiqueta="Ingresos hoy"
+              etiqueta="Ingresos · hoy"
               valor={kpis.ingresosHoy}
-              nota="Cierres registrados hoy"
+              nota="Cierres registrados"
               tono="positivo"
             />
             {esAdminOGerente ? (
               <>
                 <KpiCard
-                  etiqueta="Gastos edición"
+                  etiqueta="Gastos · edición"
                   valor={kpis.gastosEdicion}
-                  nota="Acumulado desde inicio"
+                  nota="Acumulado"
                   tono="negativo"
                 />
                 <KpiCard
-                  etiqueta="Resultado neto"
+                  etiqueta="Neto"
                   valor={kpis.resultadoNeto}
                   nota="Ingresos − gastos − nóminas"
                   tono={kpis.resultadoNeto >= 0 ? "neto-positivo" : "neto-negativo"}
                 />
                 <KpiCard
-                  etiqueta="Nóminas pendientes"
+                  etiqueta="Nóminas · pendientes"
                   valor={kpis.nominasPendientesTotal}
-                  nota={`${kpis.nominasPendientesCount} empleado${kpis.nominasPendientesCount !== 1 ? "s" : ""} sin pagar`}
+                  nota={`${kpis.nominasPendientesCount} sin pagar`}
                   tono={kpis.nominasPendientesCount > 0 ? "negativo" : "neutro"}
                 />
               </>
             ) : (
               <KpiCard
-                etiqueta="Ingresos edición"
+                etiqueta="Ingresos · edición"
                 valor={kpis.ingresosEdicion}
-                nota="Acumulado desde inicio"
+                nota="Acumulado"
                 tono="positivo"
               />
             )}
@@ -114,9 +108,12 @@ export default async function InicioPage() {
         <section>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* Cobertura de turnos */}
-            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
-              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Cobertura turnos
+            <div
+              className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 flex flex-col gap-2"
+              style={{ boxShadow: "var(--surface-glass-shadow)" }}
+            >
+              <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
+                Cobertura · turnos
               </p>
               <p className="font-mono text-2xl font-semibold tabular-nums leading-none">
                 {operativo.plazasOcupadas}
@@ -124,7 +121,7 @@ export default async function InicioPage() {
                   {" "}/ {operativo.plazasEsperadas}
                 </span>
               </p>
-              <p className="text-xs text-muted-foreground">plazas asignadas</p>
+              <p className="text-xs text-muted-foreground">asignadas</p>
               {operativo.plazasEsperadas > 0 && (
                 <div
                   className="h-1.5 w-full rounded-full overflow-hidden mt-1"
@@ -145,9 +142,12 @@ export default async function InicioPage() {
             </div>
 
             {/* Voluntarios */}
-            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
+            <div
+              className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 flex flex-col gap-2"
+              style={{ boxShadow: "var(--surface-glass-shadow)" }}
+            >
               <div className="flex items-center justify-between">
-                <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
                   Voluntarios
                 </p>
                 {operativo.voluntariosPendientes > 0 && (
@@ -175,9 +175,12 @@ export default async function InicioPage() {
             </div>
 
             {/* Pedidos pendientes */}
-            <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
-              <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                Pedidos pendientes
+            <div
+              className="rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md p-4 flex flex-col gap-2"
+              style={{ boxShadow: "var(--surface-glass-shadow)" }}
+            >
+              <p className="text-[10px] font-medium uppercase tracking-widest text-primary">
+                Pedidos · pendientes
               </p>
               <p
                 className="font-mono text-2xl font-semibold tabular-nums leading-none"
@@ -209,13 +212,13 @@ export default async function InicioPage() {
       {esAdminOGerente && (
         <section className="grid gap-6 md:grid-cols-2">
           <div>
-            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-              Turnos de hoy
+            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
+              Turnos · hoy
             </h3>
             <TurnosHoy turnos={turnosHoy} />
           </div>
           <div>
-            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+            <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
               Alertas
             </h3>
             <AlertasPanel alertas={alertas} />
@@ -226,7 +229,7 @@ export default async function InicioPage() {
       {/* Cajero: solo alertas de cierres */}
       {!esAdminOGerente && alertas.length > 0 && (
         <section>
-          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
             Pendiente
           </h3>
           <AlertasPanel alertas={alertas} />
@@ -236,8 +239,8 @@ export default async function InicioPage() {
       {/* Actividad reciente */}
       {esAdminOGerente && (
         <section>
-          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-            Actividad reciente
+          <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
+            Actividad
           </h3>
           <ActividadFeed actividad={actividad} />
         </section>

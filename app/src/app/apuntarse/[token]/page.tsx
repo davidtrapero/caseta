@@ -32,7 +32,12 @@ export default async function ApuntarsePage({
       where: {
         edicionId: edicion.id,
         fechaInicio: { gte: ahora },
-        plazas: { some: { perfil: "voluntario", cantidad: { gt: 0 } } },
+        plazas: {
+          some: {
+            tipoEmpleado: { esVoluntario: true },
+            cantidad: { gt: 0 },
+          },
+        },
       },
       select: {
         id: true,
@@ -47,7 +52,7 @@ export default async function ApuntarsePage({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
     }),
-    prisma.$transaction(async (tx) => calcularHuecosVoluntario(tx, edicion.id)),
+    calcularHuecosVoluntario(prisma, edicion.id),
   ]);
 
   const turnosDisponibles = turnos.filter((t) => (huecos.get(t.id) ?? 0) > 0);
@@ -82,7 +87,7 @@ export default async function ApuntarsePage({
   }));
 
   return (
-    <main className="min-h-screen bg-background py-10 px-4">
+    <main className="min-h-screen py-10 px-4">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
           <h1 className="text-2xl font-semibold">Apuntarse como voluntario</h1>
@@ -92,7 +97,7 @@ export default async function ApuntarsePage({
         </header>
 
         {dias.length === 0 ? (
-          <div className="rounded-lg border bg-card p-8 text-center">
+          <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-8 text-center">
             <p className="text-base">No hay turnos disponibles ahora mismo.</p>
             <p className="text-sm text-muted-foreground mt-2">
               Vuelve a abrir el enlace cuando se publiquen nuevos turnos.

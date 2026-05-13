@@ -11,23 +11,27 @@ import {
   crearCasetaAction,
   actualizarCasetaAction,
 } from "../actions";
-import { PERFIL_ORDEN, PERFIL_LABEL } from "../../../turnos/_lib/perfiles";
+import {
+  ordenarTipos,
+  type TipoEmpleadoLite,
+} from "../../../turnos/_lib/perfiles";
 
 type Modo = "crear" | "editar";
 
 type CasetaFormProps = {
   modo: Modo;
+  tiposEmpleado: TipoEmpleadoLite[];
   initial?: {
     id: string;
     nombre: string;
     ubicacion: string | null;
     activa: boolean;
     jornalDiarioDefault: string | null;
-    perfilDefecto: string | null;
+    tipoEmpleadoDefectoId: string | null;
   };
 };
 
-export function CasetaForm({ modo, initial }: CasetaFormProps) {
+export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
   const action = modo === "crear" ? crearCasetaAction : actualizarCasetaAction;
   const [state, formAction, pending] = useActionState<
     ActionResult<{ id: string }> | null,
@@ -35,6 +39,7 @@ export function CasetaForm({ modo, initial }: CasetaFormProps) {
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const tiposOrdenados = ordenarTipos(tiposEmpleado);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -96,21 +101,21 @@ export function CasetaForm({ modo, initial }: CasetaFormProps) {
           <FieldError messages={errors.jornalDiarioDefault} />
         </div>
         <div>
-          <Label htmlFor="perfilDefecto">Perfil por defecto</Label>
+          <Label htmlFor="tipoEmpleadoDefectoId">Tipo por defecto</Label>
           <select
-            id="perfilDefecto"
-            name="perfilDefecto"
-            defaultValue={initial?.perfilDefecto ?? ""}
+            id="tipoEmpleadoDefectoId"
+            name="tipoEmpleadoDefectoId"
+            defaultValue={initial?.tipoEmpleadoDefectoId ?? ""}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">— Sin defecto —</option>
-            {PERFIL_ORDEN.map((p) => (
-              <option key={p} value={p}>
-                {PERFIL_LABEL[p]}
+            {tiposOrdenados.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
               </option>
             ))}
           </select>
-          <FieldError messages={errors.perfilDefecto} />
+          <FieldError messages={errors.tipoEmpleadoDefectoId} />
         </div>
       </div>
 

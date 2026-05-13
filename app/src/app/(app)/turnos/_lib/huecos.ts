@@ -1,5 +1,5 @@
 import "server-only";
-import type { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
 type Tx = Parameters<Parameters<(typeof prisma)["$transaction"]>[0]>[0];
 
@@ -20,16 +20,29 @@ export async function calcularHuecosVoluntario(
 ): Promise<Map<string, number>> {
   const filtroTurnos = opts?.turnoIds ? { id: { in: opts.turnoIds } } : {};
 
+  // Resolver el (los) tipo(s) marcados como esVoluntario. Asumimos que en la
+  // práctica solo hay uno (slug='voluntario'), pero soportamos N por seguridad.
+  const tiposVoluntario = await tx.tipoEmpleado.findMany({
+    where: { esVoluntario: true },
+    select: { id: true },
+  });
+  const tipoVoluntarioIds = tiposVoluntario.map((t) => t.id);
+
+  if (tipoVoluntarioIds.length === 0) {
+    // Sin tipo voluntario configurado, no hay huecos posibles.
+    return new Map();
+  }
+
   const turnos = await tx.turno.findMany({
     where: { edicionId, ...filtroTurnos },
     select: {
       id: true,
       plazas: {
-        where: { perfil: "voluntario" },
+        where: { tipoEmpleadoId: { in: tipoVoluntarioIds } },
         select: { cantidad: true },
       },
       asignaciones: {
-        where: { empleado: { perfil: "voluntario" } },
+        where: { empleado: { tipoEmpleadoId: { in: tipoVoluntarioIds } } },
         select: { empleadoId: true },
       },
       solicitudesVoluntario: {
@@ -48,7 +61,7 @@ export async function calcularHuecosVoluntario(
 
   const result = new Map<string, number>();
   for (const t of turnos) {
-    const plazas = t.plazas[0]?.cantidad ?? 0;
+    const plazas = t.plazas.reduce((acc, p) => acc + p.cantidad, 0);
     const asignados = t.asignaciones.length;
     const pendientes = t.solicitudesVoluntario.length;
     result.set(t.id, Math.max(0, plazas - asignados - pendientes));

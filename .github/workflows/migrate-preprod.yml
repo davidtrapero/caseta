@@ -1,0 +1,36 @@
+name: migrate-preprod
+
+on:
+  push:
+    branches: [preprod]
+    paths:
+      - 'app/prisma/migrations/**'
+      - '.github/workflows/migrate-preprod.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: migrate-preprod
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prisma migrate deploy
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PREPROD }}

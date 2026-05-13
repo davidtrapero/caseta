@@ -6,28 +6,35 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { asignarEmpleadoAction } from "../actions";
 import type { ActionResult } from "@/lib/action-result";
 import { useToast } from "@/components/ui/toaster";
-import type { EmpleadoMin, TurnoPlazaSerializable } from "../types";
-import {
-  PERFIL_ORDEN,
-  PERFIL_LABEL,
-  PERFIL_COLORES,
-} from "../_lib/perfiles";
+import type {
+  EmpleadoMin,
+  TipoEmpleadoLite,
+  TurnoPlazaSerializable,
+} from "../types";
+import { colorFor, ordenarTipos } from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 type Props = {
   turnoId: string;
   empleados: EmpleadoMin[];
   yaAsignados: Set<string>;
+  tiposEmpleado: TipoEmpleadoLite[];
   plazas?: TurnoPlazaSerializable[];
-  asignadosPorPerfil?: Record<string, number>;
+  asignadosPorTipo?: Record<string, number>;
 };
 
 export function AsignarEmpleado({
   turnoId,
   empleados,
   yaAsignados,
+  tiposEmpleado,
   plazas = [],
-  asignadosPorPerfil = {},
+  asignadosPorTipo = {},
 }: Props) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<
@@ -52,44 +59,47 @@ export function AsignarEmpleado({
   const disponibles = empleados.filter((e) => !yaAsignados.has(e.id));
   if (disponibles.length === 0) return null;
 
-  const plazasMap = new Map(plazas.map((p) => [p.perfil, p.cantidad]));
+  const plazasMap = new Map(plazas.map((p) => [p.tipoEmpleadoId, p.cantidad]));
 
-  // Agrupar disponibles por perfil en PERFIL_ORDEN.
-  const grupos = PERFIL_ORDEN.map((perfil) => ({
-    perfil,
-    empleados: disponibles.filter((e) => e.perfil === perfil),
-    plazas: plazasMap.get(perfil) ?? 0,
-    asignados: asignadosPorPerfil[perfil] ?? 0,
-  })).filter((g) => g.empleados.length > 0);
+  // Agrupar disponibles por tipo, en el orden definido por TipoEmpleado.orden.
+  const grupos = ordenarTipos(tiposEmpleado)
+    .map((tipo) => ({
+      tipo,
+      empleados: disponibles.filter((e) => e.tipoEmpleadoId === tipo.id),
+      plazas: plazasMap.get(tipo.id) ?? 0,
+      asignados: asignadosPorTipo[tipo.id] ?? 0,
+    }))
+    .filter((g) => g.empleados.length > 0);
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-sm border border-dashed border-border/80 px-2 py-1 text-xs text-muted-foreground",
-          "hover:border-primary hover:text-foreground transition-colors"
-        )}
-        aria-label="Añadir empleado"
-      >
-        <Plus className="h-3 w-3" /> empleado
-      </button>
-      {open ? (
-        <div
-          className="absolute z-30 top-full left-0 mt-1 w-64 max-h-72 overflow-auto rounded-md border border-border bg-popover shadow-xl p-1"
-          onMouseLeave={() => setOpen(false)}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "inline-flex items-center gap-1 rounded-sm border border-dashed border-border/80 px-2 py-1 text-xs text-muted-foreground",
+            "hover:border-primary hover:text-foreground transition-colors"
+          )}
+          aria-label="Añadir empleado"
         >
-          {grupos.map((g) => {
-            const colores = PERFIL_COLORES[g.perfil];
+          <Plus className="h-3 w-3" /> empleado
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-64 max-h-72 overflow-auto p-1"
+        align="start"
+        sideOffset={4}
+      >
+        {grupos.map((g) => {
+            const colores = colorFor(g.tipo);
             const pendientes = Math.max(0, g.plazas - g.asignados);
             return (
-              <div key={g.perfil} className="mb-1 last:mb-0">
+              <div key={g.tipo.id} className="mb-1 last:mb-0">
                 <div
                   className="flex items-center justify-between px-2 py-0.5 rounded-sm text-[10px] font-semibold uppercase tracking-wider"
                   style={{ background: colores.bg, color: colores.text }}
                 >
-                  <span>{PERFIL_LABEL[g.perfil]}</span>
+                  <span>{g.tipo.label}</span>
                   {g.plazas > 0 ? (
                     <span
                       className={cn(
@@ -120,10 +130,9 @@ export function AsignarEmpleado({
                   </form>
                 ))}
               </div>
-            );
-          })}
-        </div>
-      ) : null}
-    </div>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
   );
 }

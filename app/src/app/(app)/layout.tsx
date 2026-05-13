@@ -6,12 +6,14 @@ import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
 import { ToastProvider } from "@/components/ui/toaster";
 import { EdicionBanner } from "@/components/edicion-banner";
 import type { Rol } from "@prisma/client";
+import { getTheme } from "@/lib/theme";
 
 const NAV: (NavItem & { roles?: Rol[] })[] = [
   { href: "/", label: "Inicio" },
   { href: "/turnos", label: "Turnos" },
   { href: "/turnos/asistencias", label: "Asistencias", roles: ["admin", "gerente"] },
   { href: "/admin/solicitudes", label: "Solicitudes", roles: ["admin", "gerente"] },
+  { href: "/empleados", label: "Empleados", roles: ["admin", "gerente"] },
   { href: "/inventario", label: "Inventario" },
   { href: "/caja", label: "Caja" },
   { href: "/admin", label: "Administración" },
@@ -27,6 +29,7 @@ export default async function AppLayout({
     redirect("/login");
   }
   const user = session.user as typeof session.user & { rol: Rol };
+  const theme = await getTheme();
 
   const navItems: NavItem[] = NAV
     .filter(({ roles }) => !roles || roles.includes(user.rol))
@@ -34,13 +37,14 @@ export default async function AppLayout({
 
   return (
     <ToastProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen">
         <SidebarNav
           items={navItems}
           userName={user.name}
           userEmail={user.email}
           userRol={user.rol}
           logoutButton={<LogOutButton />}
+          theme={theme}
         />
         <div className="flex-1 flex flex-col overflow-auto">
           <div className="pt-16 md:pt-0">

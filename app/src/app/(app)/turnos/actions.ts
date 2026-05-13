@@ -6,16 +6,18 @@ import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
-import type { PerfilEmpleado as PrismaPerfilEmpleado } from "@prisma/client";
+import { obtenerEdicionActiva } from "@/lib/edicion";
 import {
   crearTurnoSchema,
   actualizarTurnoSchema,
   actualizarPlazasSchema,
+  actualizarTurnoYPlazasSchema,
   asignarEmpleadoSchema,
   desasignarEmpleadoSchema,
   toggleAsistenciaSchema,
   duplicarDiaSchema,
   duplicarSemanaSchema,
+  rellenarPlazasTurnosSinPlazasSchema,
 } from "./schema";
 
 // ---------- helpers ----------
@@ -166,7 +168,7 @@ export async function crearTurnoAction(
           await tx.turnoPlaza.createMany({
             data: plazasFiltradas.map((p) => ({
               turnoId: t.id,
-              perfil: p.perfil as PrismaPerfilEmpleado,
+              tipoEmpleadoId: p.tipoEmpleadoId,
               cantidad: p.cantidad,
             })),
           });
@@ -377,6 +379,47 @@ export async function desasignarEmpleadoAction(
   }
 }
 
+// ---------- desasignar empleado desde la página del empleado ----------
+//
+// Misma lógica que `desasignarEmpleadoAction` pero revalidando además
+// `/empleados/[id]`. Mantiene el original intacto para no acoplar las dos
+// vistas (turnos vs empleado).
+
+export async function desasignarTurnoDesdeEmpleadoAction(
+  _prev: ActionResult<{ turnoId: string; empleadoId: string }> | null,
+  formData: FormData
+): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const data = parseForm(desasignarEmpleadoSchema, formData);
+
+    const fila = await prisma.turnoEmpleado.findUnique({
+      where: {
+        turnoId_empleadoId: {
+          turnoId: data.turnoId,
+          empleadoId: data.empleadoId,
+        },
+      },
+    });
+    if (!fila) {
+      return { ok: false, error: "Asignación no encontrada." };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.turnoEmpleado.delete({ where: { id: fila.id } })
+    );
+
+    revalidatePath("/turnos");
+    revalidatePath(`/empleados/${data.empleadoId}`);
+    return {
+      ok: true,
+      data: { turnoId: data.turnoId, empleadoId: data.empleadoId },
+    };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
 // ---------- toggle asistencia ----------
 
 export async function toggleAsistenciaAction(
@@ -446,6 +489,10 @@ export async function duplicarDiaAction(
     if (edErr) return { ok: false, error: edErr };
     const casErr = await validarCasetaActiva(data.casetaId);
     if (casErr) return { ok: false, error: casErr };
+    if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
+      const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
+      if (casOrigErr) return { ok: false, error: casOrigErr };
+    }
 
     const origenIni = ymdToUtcDate(data.diaOrigen);
     const origenFin = new Date(origenIni.getTime() + 24 * 60 * 60 * 1000);
@@ -454,11 +501,14 @@ export async function duplicarDiaAction(
 
     const origenes = await prisma.turno.findMany({
       where: {
-        casetaId: data.casetaId,
+        casetaId: data.casetaIdOrigen ?? data.casetaId,
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
-      include: { asignaciones: { select: { empleadoId: true } } },
+      include: {
+        asignaciones: { select: { empleadoId: true } },
+        plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
+      },
       orderBy: { fechaInicio: "asc" },
     });
 
@@ -472,6 +522,7 @@ export async function duplicarDiaAction(
       casetaId: data.casetaId,
       edicionId: data.edicionId,
       userId: user.id,
+      copiarAsignaciones: data.copiarAsignaciones,
     });
     if ("error" in resultado) return { ok: false, error: resultado.error };
 
@@ -496,6 +547,10 @@ export async function duplicarSemanaAction(
     if (edErr) return { ok: false, error: edErr };
     const casErr = await validarCasetaActiva(data.casetaId);
     if (casErr) return { ok: false, error: casErr };
+    if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
+      const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
+      if (casOrigErr) return { ok: false, error: casOrigErr };
+    }
 
     const origenIni = ymdToUtcDate(data.lunesOrigen);
     const origenFin = new Date(origenIni.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -504,11 +559,14 @@ export async function duplicarSemanaAction(
 
     const origenes = await prisma.turno.findMany({
       where: {
-        casetaId: data.casetaId,
+        casetaId: data.casetaIdOrigen ?? data.casetaId,
         edicionId: data.edicionId,
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
-      include: { asignaciones: { select: { empleadoId: true } } },
+      include: {
+        asignaciones: { select: { empleadoId: true } },
+        plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
+      },
       orderBy: { fechaInicio: "asc" },
     });
 
@@ -522,6 +580,7 @@ export async function duplicarSemanaAction(
       casetaId: data.casetaId,
       edicionId: data.edicionId,
       userId: user.id,
+      copiarAsignaciones: data.copiarAsignaciones,
     });
     if ("error" in resultado) return { ok: false, error: resultado.error };
 
@@ -533,6 +592,86 @@ export async function duplicarSemanaAction(
 }
 
 // ---------- actualizar plazas esperadas ----------
+
+/**
+ * Valida que las nuevas plazas cubran al menos los empleados ya asignados de
+ * cada tipo. Devuelve null si todo OK, o un mensaje de error si alguna plaza
+ * queda por debajo del número de asignados de ese tipo en el turno.
+ */
+async function validarPlazasVsAsignados(
+  turnoId: string,
+  plazasNuevas: { tipoEmpleadoId: string; cantidad: number }[]
+): Promise<string | null> {
+  const asignaciones = await prisma.turnoEmpleado.findMany({
+    where: { turnoId },
+    include: {
+      empleado: {
+        select: {
+          tipoEmpleadoId: true,
+          tipoEmpleado: { select: { label: true } },
+        },
+      },
+    },
+  });
+  if (asignaciones.length === 0) return null;
+
+  const asignadosPorTipo = new Map<string, { count: number; label: string }>();
+  for (const a of asignaciones) {
+    const prev = asignadosPorTipo.get(a.empleado.tipoEmpleadoId);
+    asignadosPorTipo.set(a.empleado.tipoEmpleadoId, {
+      count: (prev?.count ?? 0) + 1,
+      label: a.empleado.tipoEmpleado.label,
+    });
+  }
+
+  const cantidadPorTipo = new Map(
+    plazasNuevas.map((p) => [p.tipoEmpleadoId, p.cantidad])
+  );
+
+  for (const [tipoId, { count, label }] of asignadosPorTipo) {
+    const nueva = cantidadPorTipo.get(tipoId) ?? 0;
+    if (nueva < count) {
+      return `No puedes reducir las plazas de ${label} por debajo de ${count} (ya tienes ${count} asignado${count === 1 ? "" : "s"}).`;
+    }
+  }
+  return null;
+}
+
+/**
+ * Aplica el diff de plazas dentro de una transacción ya abierta. No hace
+ * validaciones: se asume que el caller ya las hizo (existencia del turno,
+ * plazas vs asignados, etc).
+ */
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+async function aplicarPlazasEnTx(
+  tx: Tx,
+  turnoId: string,
+  plazas: { tipoEmpleadoId: string; cantidad: number }[]
+) {
+  const tiposActivos = plazas
+    .filter((p) => p.cantidad > 0)
+    .map((p) => p.tipoEmpleadoId);
+  await tx.turnoPlaza.deleteMany({
+    where: {
+      turnoId,
+      tipoEmpleadoId: tiposActivos.length > 0 ? { notIn: tiposActivos } : undefined,
+    },
+  });
+  for (const p of plazas.filter((p) => p.cantidad > 0)) {
+    await tx.turnoPlaza.upsert({
+      where: {
+        turnoId_tipoEmpleadoId: { turnoId, tipoEmpleadoId: p.tipoEmpleadoId },
+      },
+      update: { cantidad: p.cantidad },
+      create: {
+        turnoId,
+        tipoEmpleadoId: p.tipoEmpleadoId,
+        cantidad: p.cantidad,
+      },
+    });
+  }
+}
 
 export async function actualizarPlazasAction(
   _prev: ActionResult<undefined> | null,
@@ -550,31 +689,89 @@ export async function actualizarPlazasAction(
 
     const plazas = data.plazasJson;
 
+    const errPlazas = await validarPlazasVsAsignados(data.turnoId, plazas);
+    if (errPlazas) return { ok: false, error: errPlazas };
+
     await withAuditContext(user.id, () =>
-      prisma.$transaction(async (tx) => {
-        // Eliminar plazas con cantidad 0 o ausentes en el nuevo payload.
-        const perfilesActivos = plazas
-          .filter((p) => p.cantidad > 0)
-          .map((p) => p.perfil as PrismaPerfilEmpleado);
-        await tx.turnoPlaza.deleteMany({
-          where: {
-            turnoId: data.turnoId,
-            perfil: { notIn: perfilesActivos },
-          },
-        });
-        // Upsert para perfiles con cantidad > 0.
-        for (const p of plazas.filter((p) => p.cantidad > 0)) {
-          await tx.turnoPlaza.upsert({
-            where: { turnoId_perfil: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado } },
-            update: { cantidad: p.cantidad },
-            create: { turnoId: data.turnoId, perfil: p.perfil as PrismaPerfilEmpleado, cantidad: p.cantidad },
-          });
-        }
-      })
+      prisma.$transaction((tx) => aplicarPlazasEnTx(tx, data.turnoId, plazas))
     );
 
     revalidatePath("/turnos");
     return { ok: true, data: undefined };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+// ---------- actualizar turno + plazas (Fase 4 evolutivo C) ----------
+
+export async function actualizarTurnoYPlazasAction(
+  _prev: ActionResult<{ id: string }> | null,
+  formData: FormData
+): Promise<ActionResult<{ id: string }>> {
+  const id = formData.get("_id");
+  if (typeof id !== "string" || !id) {
+    return { ok: false, error: "Identificador inválido." };
+  }
+
+  try {
+    const { user } = await requireRole(["admin", "gerente"]);
+    const data = parseForm(actualizarTurnoYPlazasSchema, formData);
+
+    const edErr = await validarEdicionActiva(data.edicionId);
+    if (edErr) return { ok: false, error: edErr };
+    const casErr = await validarCasetaActiva(data.casetaId);
+    if (casErr) return { ok: false, error: casErr };
+
+    const existente = await prisma.turno.findUnique({
+      where: { id },
+      include: { asignaciones: { select: { empleadoId: true } } },
+    });
+    if (!existente) return { ok: false, error: "Turno no encontrado." };
+
+    const inicio = new Date(data.fechaInicio);
+    const fin = new Date(data.fechaFin);
+    const empleadoIds = existente.asignaciones.map((a) => a.empleadoId);
+
+    // Solape contra el nuevo horario, excluyendo este turno.
+    if (empleadoIds.length > 0) {
+      const { gte, lt } = ventanaAmpliada(inicio, fin);
+      const existentes = await cargarTurnosEmpleadoEnVentana(empleadoIds, gte, lt);
+      for (const empleadoId of empleadoIds) {
+        const res = detectarSolape(
+          existentes,
+          { empleadoId, fechaInicio: inicio, fechaFin: fin },
+          { excluirTurnoId: id }
+        );
+        if (res.solapa) {
+          return {
+            ok: false,
+            error: `Solape detectado tras mover el horario (${res.conflictos.length} conflicto(s)).`,
+          };
+        }
+      }
+    }
+
+    const errPlazas = await validarPlazasVsAsignados(id, data.plazasJson);
+    if (errPlazas) return { ok: false, error: errPlazas };
+
+    await withAuditContext(user.id, () =>
+      prisma.$transaction(async (tx) => {
+        await tx.turno.update({
+          where: { id },
+          data: {
+            edicionId: data.edicionId,
+            casetaId: data.casetaId,
+            fechaInicio: inicio,
+            fechaFin: fin,
+          },
+        });
+        await aplicarPlazasEnTx(tx, id, data.plazasJson);
+      })
+    );
+
+    revalidatePath("/turnos");
+    return { ok: true, data: { id } };
   } catch (err) {
     return toActionError(err);
   }
@@ -589,6 +786,7 @@ type TurnoConAsignaciones = {
   fechaInicio: Date;
   fechaFin: Date;
   asignaciones: { empleadoId: string }[];
+  plazas: { tipoEmpleadoId: string; cantidad: number }[];
 };
 
 async function validarYCopiarTurnos(args: {
@@ -597,26 +795,40 @@ async function validarYCopiarTurnos(args: {
   casetaId: string;
   edicionId: string;
   userId: string;
+  copiarAsignaciones: boolean;
 }): Promise<{ copiados: number } | { error: string }> {
-  const { origenes, desplazamientoMs, casetaId, edicionId, userId } = args;
+  const {
+    origenes,
+    desplazamientoMs,
+    casetaId,
+    edicionId,
+    userId,
+    copiarAsignaciones,
+  } = args;
 
-  // Empleados involucrados en destino + ventana temporal.
-  const empleadoIds = Array.from(
-    new Set(origenes.flatMap((t) => t.asignaciones.map((a) => a.empleadoId)))
-  );
+  // Empleados involucrados (sólo si vamos a copiar asignaciones).
+  const empleadoIds = copiarAsignaciones
+    ? Array.from(
+        new Set(origenes.flatMap((t) => t.asignaciones.map((a) => a.empleadoId)))
+      )
+    : [];
 
-  // Plan: lista de turnos nuevos (fechas desplazadas).
+  // Plan: lista de turnos nuevos (fechas desplazadas). Las plazas se copian
+  // siempre; los empleados sólo si copiarAsignaciones=true.
   const plan = origenes.map((t) => ({
     fechaInicio: new Date(t.fechaInicio.getTime() + desplazamientoMs),
     fechaFin: new Date(t.fechaFin.getTime() + desplazamientoMs),
-    empleadoIds: t.asignaciones.map((a) => a.empleadoId),
+    empleadoIds: copiarAsignaciones
+      ? t.asignaciones.map((a) => a.empleadoId)
+      : [],
+    plazas: t.plazas.filter((p) => p.cantidad > 0),
   }));
 
-  // Validar: empleados activos.
-  const empErr = await validarEmpleadosActivos(empleadoIds);
-  if (empErr) return { error: empErr };
+  if (copiarAsignaciones && empleadoIds.length > 0) {
+    // Validar: empleados activos.
+    const empErr = await validarEmpleadosActivos(empleadoIds);
+    if (empErr) return { error: empErr };
 
-  if (empleadoIds.length > 0) {
     const minInicio = plan.reduce(
       (m, p) => (p.fechaInicio < m ? p.fechaInicio : m),
       plan[0].fechaInicio
@@ -660,29 +872,163 @@ async function validarYCopiarTurnos(args: {
     }
   }
 
+  // Pre-asignar IDs en memoria para poder batching los 3 createMany en lugar
+  // de N×3 round-trips dentro de la transacción interactiva (evita timeout 5s Neon).
+  const planConId = plan.map((p) => ({ ...p, id: crypto.randomUUID() }));
+
   await withAuditContext(userId, () =>
     prisma.$transaction(async (tx) => {
-      for (const p of plan) {
-        const nuevo = await tx.turno.create({
-          data: {
-            edicionId,
-            casetaId,
-            fechaInicio: p.fechaInicio,
-            fechaFin: p.fechaFin,
-          },
-        });
-        if (p.empleadoIds.length > 0) {
-          await tx.turnoEmpleado.createMany({
-            data: p.empleadoIds.map((empleadoId) => ({
-              turnoId: nuevo.id,
-              empleadoId,
-              asistio: false,
-            })),
-          });
-        }
+      await tx.turno.createMany({
+        data: planConId.map((p) => ({
+          id: p.id,
+          edicionId,
+          casetaId,
+          fechaInicio: p.fechaInicio,
+          fechaFin: p.fechaFin,
+        })),
+      });
+
+      const plazasData = planConId.flatMap((p) =>
+        p.plazas.map((pl) => ({
+          turnoId: p.id,
+          tipoEmpleadoId: pl.tipoEmpleadoId,
+          cantidad: pl.cantidad,
+        }))
+      );
+      if (plazasData.length > 0) {
+        await tx.turnoPlaza.createMany({ data: plazasData });
+      }
+
+      const asignacionesData = planConId.flatMap((p) =>
+        p.empleadoIds.map((empleadoId) => ({
+          turnoId: p.id,
+          empleadoId,
+          asistio: false,
+        }))
+      );
+      if (asignacionesData.length > 0) {
+        await tx.turnoEmpleado.createMany({ data: asignacionesData });
       }
     })
   );
 
   return { copiados: plan.length };
+}
+
+// ---------- mantenimiento: rellenar plazas en turnos huérfanos ----------
+
+type ContadorTurnosSinPlazas = {
+  total: number;
+  porCaseta: { casetaId: string; casetaNombre: string; total: number }[];
+};
+
+export async function contarTurnosSinPlazasAction(): Promise<
+  ActionResult<ContadorTurnosSinPlazas>
+> {
+  try {
+    await requireRole(["admin"]);
+
+    const ed = await obtenerEdicionActiva();
+    if (!ed) {
+      return { ok: true, data: { total: 0, porCaseta: [] } };
+    }
+
+    const turnos = await prisma.turno.findMany({
+      where: { edicionId: ed.id, plazas: { none: {} } },
+      select: {
+        casetaId: true,
+        caseta: { select: { nombre: true } },
+      },
+    });
+
+    const acc = new Map<string, { casetaId: string; casetaNombre: string; total: number }>();
+    for (const t of turnos) {
+      const prev = acc.get(t.casetaId);
+      if (prev) {
+        prev.total += 1;
+      } else {
+        acc.set(t.casetaId, {
+          casetaId: t.casetaId,
+          casetaNombre: t.caseta.nombre,
+          total: 1,
+        });
+      }
+    }
+
+    const porCaseta = Array.from(acc.values()).sort((a, b) =>
+      a.casetaNombre.localeCompare(b.casetaNombre, "es")
+    );
+
+    return { ok: true, data: { total: turnos.length, porCaseta } };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function rellenarPlazasTurnosSinPlazasAction(
+  _prev: ActionResult<{ rellenados: number }> | null,
+  formData: FormData
+): Promise<ActionResult<{ rellenados: number }>> {
+  try {
+    const { user } = await requireRole(["admin"]);
+    const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
+
+    const ed = await obtenerEdicionActiva();
+    if (!ed) return { ok: false, error: "No hay edición activa." };
+
+    const tipoIds = data.plazasJson.map((p) => p.tipoEmpleadoId);
+    const tiposUnicos = new Set(tipoIds);
+    if (tiposUnicos.size !== tipoIds.length) {
+      return { ok: false, error: "No puedes repetir el mismo tipo de empleado." };
+    }
+
+    const tipos = await prisma.tipoEmpleado.findMany({
+      where: { id: { in: tipoIds } },
+      select: { id: true, activo: true },
+    });
+    if (tipos.length !== tipoIds.length) {
+      return { ok: false, error: "Algún tipo de empleado no existe." };
+    }
+    if (tipos.some((t) => !t.activo)) {
+      return { ok: false, error: "Algún tipo de empleado no está activo." };
+    }
+
+    if (data.casetaId) {
+      const casErr = await validarCasetaActiva(data.casetaId);
+      if (casErr) return { ok: false, error: casErr };
+    }
+
+    const turnos = await prisma.turno.findMany({
+      where: {
+        edicionId: ed.id,
+        plazas: { none: {} },
+        ...(data.casetaId ? { casetaId: data.casetaId } : {}),
+      },
+      select: { id: true },
+    });
+
+    if (turnos.length === 0) {
+      return { ok: true, data: { rellenados: 0 } };
+    }
+
+    await withAuditContext(user.id, () =>
+      prisma.$transaction(async (tx) => {
+        for (const t of turnos) {
+          await tx.turnoPlaza.createMany({
+            data: data.plazasJson.map((p) => ({
+              turnoId: t.id,
+              tipoEmpleadoId: p.tipoEmpleadoId,
+              cantidad: p.cantidad,
+            })),
+          });
+        }
+      })
+    );
+
+    revalidatePath("/turnos");
+    revalidatePath("/admin/mantenimiento");
+    return { ok: true, data: { rellenados: turnos.length } };
+  } catch (err) {
+    return toActionError(err);
+  }
 }

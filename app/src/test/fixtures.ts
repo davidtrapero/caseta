@@ -6,7 +6,15 @@
 // 3 usuarios (admin/gerente/cajero) con passwords conocidos.
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import type { Prisma, Rol, PerfilEmpleado } from "@prisma/client";
+import type { Rol } from "@prisma/client";
+
+// Slugs estables conocidos (deben existir en TipoEmpleado tras la migración).
+export type SlugTipoEmpleado =
+  | "vigilante"
+  | "coordinador"
+  | "trabajador"
+  | "voluntario"
+  | "ayudante";
 
 export const TEST_PASSWORD = "test1234!";
 
@@ -87,23 +95,29 @@ export async function crearEmpleado(params: {
   nombre: string;
   dni?: string | null;
   telefono?: string | null;
-  perfil?: PerfilEmpleado;
+  perfil?: SlugTipoEmpleado;
   jornalDiario?: number | null;
   activo?: boolean;
 }) {
-  const perfil = params.perfil ?? "trabajador";
+  const slug: SlugTipoEmpleado = params.perfil ?? "trabajador";
   // Invariante: voluntario ⇔ jornalDiario null.
   const jornal =
-    perfil === "voluntario"
-      ? null
-      : (params.jornalDiario ?? 70);
+    slug === "voluntario" ? null : (params.jornalDiario ?? 70);
+
+  const tipo = await prisma.tipoEmpleado.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  if (!tipo) {
+    throw new Error(`TipoEmpleado con slug '${slug}' no existe en la BD de test.`);
+  }
 
   return prisma.empleado.create({
     data: {
       nombre: params.nombre,
       dni: params.dni ?? null,
       telefono: params.telefono ?? null,
-      perfil,
+      tipoEmpleadoId: tipo.id,
       jornalDiario: jornal,
       activo: params.activo ?? true,
     },

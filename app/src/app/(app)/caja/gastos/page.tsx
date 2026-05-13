@@ -77,7 +77,7 @@ export default async function GastosPage({
     <div>
       <SectionHeader
         title={`Gastos — ${edicion.nombre}`}
-        subtitle="Registro de gastos operativos. Los gastos sin caseta son transversales a la edición."
+        subtitle="Gastos de la edición. Sin caseta = transversales."
         actionHref="/caja/gastos/nuevo"
         actionLabel="Nuevo gasto"
       />
@@ -174,8 +174,8 @@ function FiltroChip({
       href={href}
       className={
         activo
-          ? "inline-flex items-center rounded-sm border border-primary/50 bg-primary/20 px-2 py-0.5 text-xs font-medium"
-          : "inline-flex items-center rounded-sm border border-border bg-transparent px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+          ? "inline-flex items-center rounded-full border border-[var(--surface-glass-border)] bg-[hsl(var(--primary)/0.2)] px-2 py-0.5 text-xs font-medium text-primary"
+          : "inline-flex items-center rounded-full border border-[var(--surface-glass-border)] bg-transparent px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
       }
     >
       {label}

@@ -17,11 +17,19 @@ type Props = {
   casetaId: string;
   edicionId: string;
   lunesActual: string;
+  casetas: { id: string; nombre: string }[];
 };
 
-export function BotonDuplicarSemana({ casetaId, edicionId, lunesActual }: Props) {
+export function BotonDuplicarSemana({
+  casetaId,
+  edicionId,
+  lunesActual,
+  casetas,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [destino, setDestino] = useState(addDays(lunesActual, 7));
+  const [casetaOrigen, setCasetaOrigen] = useState(casetaId);
+  const [copiarAsig, setCopiarAsig] = useState(false);
 
   const [state, action, pending] = useActionState<
     ActionResult<{ copiados: number }> | null,
@@ -56,8 +64,26 @@ export function BotonDuplicarSemana({ casetaId, edicionId, lunesActual }: Props)
           <form action={action} className="flex flex-col gap-4">
             {state && !state.ok ? <FormError message={state.error} /> : null}
             <input type="hidden" name="casetaId" value={casetaId} />
+            <input type="hidden" name="casetaIdOrigen" value={casetaOrigen} />
             <input type="hidden" name="edicionId" value={edicionId} />
             <input type="hidden" name="lunesOrigen" value={lunesActual} />
+
+            <div>
+              <Label htmlFor="casetaIdOrigenSelSem">Copiar desde la caseta…</Label>
+              <select
+                id="casetaIdOrigenSelSem"
+                value={casetaOrigen}
+                onChange={(e) => setCasetaOrigen(e.target.value)}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {casetas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                    {c.id === casetaId ? " (esta caseta)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div>
               <Label htmlFor="lunesDestino">Lunes de la semana destino</Label>
@@ -73,6 +99,33 @@ export function BotonDuplicarSemana({ casetaId, edicionId, lunesActual }: Props)
                 Se copiarán 7 días desde el lunes indicado.
               </p>
             </div>
+
+            <div className="flex items-start gap-2">
+              <input
+                id="copiarAsignaciones"
+                name="copiarAsignaciones"
+                type="checkbox"
+                className="mt-1"
+                checked={copiarAsig}
+                onChange={(e) => setCopiarAsig(e.target.checked)}
+              />
+              <div className="flex flex-col">
+                <Label htmlFor="copiarAsignaciones" className="font-normal">
+                  Copiar también asignaciones de empleados
+                </Label>
+                <span className="text-xs text-muted-foreground">
+                  Si lo dejas desmarcado se copian solo los turnos y sus plazas,
+                  sin asignar empleados.
+                </span>
+              </div>
+            </div>
+
+            {casetaOrigen !== casetaId && copiarAsig ? (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                Las asignaciones se replicarán; revisa que los empleados sigan
+                dados de alta para la caseta destino.
+              </p>
+            ) : null}
 
             <div className="flex items-center gap-2 pt-2">
               <Button type="submit" disabled={pending}>
