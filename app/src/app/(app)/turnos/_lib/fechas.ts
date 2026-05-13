@@ -166,13 +166,13 @@ export type FranjaHoraria = "manana" | "tarde" | "noche";
 
 /**
  * Clasifica un turno por la hora UTC de inicio (reloj de pared, ver TZ_TURNOS).
- * - inicio < 16h → mañana (apertura/comida).
- * - 16h ≤ inicio < 22h → tarde.
- * - resto → noche (incluye turnos que arrancan tras las 22h).
+ * - inicio < 15h → mañana (apertura/comida hasta las 15h).
+ * - 15h ≤ inicio < 22h → tarde.
+ * - resto → noche (desde las 22h, incluye madrugada).
  */
 export function franjaHoraria(inicioIso: string): FranjaHoraria {
   const h = new Date(inicioIso).getUTCHours();
-  if (h < 16) return "manana";
+  if (h < 15) return "manana";
   if (h < 22) return "tarde";
   return "noche";
 }
