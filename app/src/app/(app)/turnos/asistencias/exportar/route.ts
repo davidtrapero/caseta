@@ -1,21 +1,9 @@
 import { NextResponse } from "next/server";
+import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { obtenerEdicionActiva } from "@/lib/edicion";
-import { BOM, toCsvRow } from "@/lib/csv";
 import { cargarAsistencias } from "../_lib/query";
-
-const FECHA_ISO = new Intl.DateTimeFormat("sv-SE", {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-function formatFecha(d: Date): string {
-  return FECHA_ISO.format(d).replace(" ", " ");
-}
 
 function parseTipos(raw: string | null): string[] {
   if (!raw) return [];
@@ -60,45 +48,56 @@ export async function GET(req: Request) {
     casetaId,
   });
 
-  const lineas: string[] = [];
-  lineas.push(
-    toCsvRow([
-      "nombre",
-      "tipo",
-      "entidad",
-      "dni",
-      "telefono",
-      "caseta",
-      "fecha_inicio",
-      "fecha_fin",
-    ])
-  );
+  const workbook = new ExcelJS.Workbook();
+  const ws = workbook.addWorksheet("Asistencias");
+
+  ws.columns = [
+    { header: "Nombre", key: "nombre", width: 28 },
+    { header: "Tipo", key: "tipo", width: 14 },
+    { header: "Entidad", key: "entidad", width: 22 },
+    { header: "DNI", key: "dni", width: 12 },
+    { header: "Teléfono", key: "telefono", width: 14 },
+    { header: "Caseta", key: "caseta", width: 18 },
+    { header: "Inicio", key: "fechaInicio", width: 18 },
+    { header: "Fin", key: "fechaFin", width: 18 },
+  ];
+
+  ws.getRow(1).font = { bold: true };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
 
   for (const e of empleados) {
     for (const a of e.asignaciones) {
-      lineas.push(
-        toCsvRow([
-          e.nombre,
-          e.tipoEmpleado.label,
-          e.entidad?.nombre ?? "",
-          e.dni ?? "",
-          e.telefono ?? "",
-          a.turno.caseta.nombre,
-          formatFecha(a.turno.fechaInicio),
-          formatFecha(a.turno.fechaFin),
-        ])
-      );
+      ws.addRow({
+        nombre: e.nombre,
+        tipo: e.tipoEmpleado.label,
+        entidad: e.entidad?.nombre ?? "",
+        dni: e.dni ?? "",
+        telefono: e.telefono ?? "",
+        caseta: a.turno.caseta.nombre,
+        fechaInicio: a.turno.fechaInicio,
+        fechaFin: a.turno.fechaFin,
+      });
     }
   }
 
-  const cuerpo = BOM + lineas.join("\r\n") + "\r\n";
-  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
-  const filename = `asistencias-${edicion.anio}-${ts}.csv`;
+  ws.getColumn("fechaInicio").numFmt = "yyyy-mm-dd hh:mm";
+  ws.getColumn("fechaFin").numFmt = "yyyy-mm-dd hh:mm";
 
-  return new NextResponse(cuerpo, {
+  ws.autoFilter = {
+    from: { row: 1, column: 1 },
+    to: { row: 1, column: ws.columns.length },
+  };
+
+  const buffer = await workbook.xlsx.writeBuffer();
+
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const filename = `asistencias-${edicion.anio}-${ts}.xlsx`;
+
+  return new NextResponse(buffer, {
     status: 200,
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`,
       "Cache-Control": "no-store",
     },

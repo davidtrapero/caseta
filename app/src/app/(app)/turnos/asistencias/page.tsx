@@ -110,7 +110,7 @@ export default async function AsistenciasPage({
             href={`/turnos/asistencias/exportar?${exportParams.toString()}`}
             prefetch={false}
           >
-            Exportar CSV
+            Exportar Excel
           </Link>
         </Button>
       </div>
