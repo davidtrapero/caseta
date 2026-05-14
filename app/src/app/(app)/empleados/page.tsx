@@ -28,7 +28,7 @@ export default async function EmpleadosPage({
 
   const where: Prisma.EmpleadoWhereInput = {
     ...(soloActivos ? { activo: true } : {}),
-    ...(tipoId ? { tipoEmpleadoId: tipoId } : {}),
+    ...(tipoId ? { tipos: { some: { tipoEmpleadoId: tipoId } } } : {}),
     ...(q
       ? {
           OR: [
@@ -49,7 +49,7 @@ export default async function EmpleadosPage({
       where,
       orderBy: [{ activo: "desc" }, { nombre: "asc" }],
       include: {
-        tipoEmpleado: true,
+        tipos: { include: { tipoEmpleado: true } },
         asignaciones: {
           where: {
             turno: {
@@ -131,15 +131,15 @@ export default async function EmpleadosPage({
                 email: e.email,
                 jornalDiario: e.jornalDiario ? Number(e.jornalDiario) : null,
                 activo: e.activo,
-                tipoEmpleado: {
-                  id: e.tipoEmpleado.id,
-                  slug: e.tipoEmpleado.slug,
-                  label: e.tipoEmpleado.label,
-                  labelCorto: e.tipoEmpleado.labelCorto,
-                  colorHex: e.tipoEmpleado.colorHex,
-                  esVoluntario: e.tipoEmpleado.esVoluntario,
-                  orden: e.tipoEmpleado.orden,
-                },
+                tipos: e.tipos.map((et) => ({
+                  id: et.tipoEmpleado.id,
+                  slug: et.tipoEmpleado.slug,
+                  label: et.tipoEmpleado.label,
+                  labelCorto: et.tipoEmpleado.labelCorto,
+                  colorHex: et.tipoEmpleado.colorHex,
+                  esVoluntario: et.tipoEmpleado.esVoluntario,
+                  orden: et.tipoEmpleado.orden,
+                })),
                 turnos: e.asignaciones.map((a) => ({
                   id: a.turno.id,
                   fechaInicio: a.turno.fechaInicio,

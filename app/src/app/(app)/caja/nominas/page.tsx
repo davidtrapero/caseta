@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import {
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   SectionHeader,
   EmptyState,
@@ -78,10 +80,17 @@ export default async function NominasPage() {
 
   return (
     <div>
-      <SectionHeader
-        title={`Nóminas — ${edicion.nombre}`}
-        subtitle="Nóminas de la edición."
-      />
+      <div className="flex items-end justify-between gap-4">
+        <SectionHeader
+          title={`Nóminas — ${edicion.nombre}`}
+          subtitle="Nóminas de la edición."
+        />
+        <Button asChild variant="outline">
+          <Link href="/caja/nominas/exportar" prefetch={false}>
+            Exportar Excel
+          </Link>
+        </Button>
+      </div>
 
       {puedeCalcular ? (
         <div className="mb-6 rounded-lg border bg-card p-4">

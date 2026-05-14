@@ -35,7 +35,7 @@ export type EmpleadoCardData = {
   email: string | null;
   jornalDiario: number | null;
   activo: boolean;
-  tipoEmpleado: TipoEmpleadoLite;
+  tipos: TipoEmpleadoLite[];
   turnos: TurnoLite[];
 };
 
@@ -46,7 +46,6 @@ export function EmpleadoCard({
   empleado: EmpleadoCardData;
   puedeEditar: boolean;
 }) {
-  const colores = colorFor(empleado.tipoEmpleado);
   const turnos = empleado.turnos;
   const tieneTurnos = turnos.length > 0;
 
@@ -61,16 +60,18 @@ export function EmpleadoCard({
             <h3 className="text-base font-medium leading-tight">
               {empleado.nombre}
             </h3>
-            <span
-              className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
-              style={{
-                background: colores.bg,
-                color: colores.text,
-                border: `1px solid ${colores.border}`,
-              }}
-            >
-              {empleado.tipoEmpleado.label}
-            </span>
+            {empleado.tipos.map((t) => {
+              const c = colorFor(t);
+              return (
+                <span
+                  key={t.id}
+                  className="inline-flex items-center rounded px-2 py-0.5 text-xs font-medium"
+                  style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}
+                >
+                  {t.label}
+                </span>
+              );
+            })}
           </div>
           <div className="grid grid-cols-[auto_1fr] sm:grid-cols-[auto_1fr_auto_1fr] items-baseline gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="text-muted-foreground/70">DNI:</span>

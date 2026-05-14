@@ -8,6 +8,7 @@ const ENTIDADES_EXCLUIDAS = new Set([
   "Session",
   "Account",
   "Verification",
+  "Nomina",
 ]);
 
 /**

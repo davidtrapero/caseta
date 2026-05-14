@@ -10,7 +10,6 @@ import { BandaResumen } from "../../_components/BandaResumen";
 import {
   formatFechaLarga,
   horaDe,
-  duracionHoras,
 } from "../../_lib/fechas";
 import { agruparPorRol, nombreCorto } from "../../_lib/perfiles";
 
@@ -64,7 +63,6 @@ export default async function ExportarDiaPage({
           <thead>
             <tr>
               <th style={{ width: 130 }}>Horario</th>
-              <th style={{ width: 80 }}>Duración</th>
               <th>Empleados</th>
               <th style={{ width: 200 }}>Vacantes</th>
             </tr>
@@ -148,9 +146,6 @@ export default async function ExportarDiaPage({
                 <tr key={t.id}>
                   <td className={`export-mono franja-cell franja-${franja}`}>
                     {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
-                  </td>
-                  <td className="export-mono">
-                    {duracionHoras(t.fechaInicio, t.fechaFin)}h
                   </td>
                   <td>
                     {t.asignaciones.length === 0 ? (

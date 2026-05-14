@@ -103,7 +103,6 @@ export default async function ExportarEmpleadoPage({
               <th>Fecha</th>
               <th>Caseta</th>
               <th style={{ width: 120 }}>Horario</th>
-              <th style={{ width: 80 }}>Duración</th>
               <th style={{ width: 90 }}>Asistencia</th>
             </tr>
           </thead>
@@ -117,7 +116,6 @@ export default async function ExportarEmpleadoPage({
                 <td style={{ fontFamily: "monospace" }}>
                   {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
                 </td>
-                <td>{duracionHoras(t.fechaInicio, t.fechaFin)}h</td>
                 <td
                   style={{
                     color: t.asistio ? "#5e7040" : "#5b4a36",

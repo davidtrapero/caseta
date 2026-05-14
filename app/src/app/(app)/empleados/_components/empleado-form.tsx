@@ -41,7 +41,8 @@ type EmpleadoFormProps = {
     telefono: string | null;
     jornalDiario: string | null;
     entidadId: string | null;
-    tipoEmpleadoId: string;
+    tipoIds: string[];
+    esVoluntario: boolean;
     activo: boolean;
   };
 };
@@ -60,18 +61,18 @@ export function EmpleadoForm({
   >(action, null);
 
   const tiposOrdenados = ordenarTipos(tiposEmpleado);
-  // Tipo por defecto: el inicial, o el primer no-voluntario, o el primero.
-  const tipoInicial =
-    initial?.tipoEmpleadoId ??
-    tiposOrdenados.find((t) => !t.esVoluntario)?.id ??
-    tiposOrdenados[0]?.id ??
-    "";
+  // Tipo por defecto: los iniciales, o el primer no-voluntario, o el primero.
+  const tipoIdsPorDefecto = initial?.tipoIds?.length
+    ? initial.tipoIds
+    : [
+        tiposOrdenados.find((t) => !t.esVoluntario)?.id ??
+          tiposOrdenados[0]?.id ??
+          "",
+      ].filter(Boolean);
 
-  const [tipoEmpleadoId, setTipoEmpleadoId] = useState<string>(tipoInicial);
+  const [selectedTipoIds, setSelectedTipoIds] = useState<string[]>(tipoIdsPorDefecto);
+  const [esVoluntario, setEsVoluntario] = useState<boolean>(initial?.esVoluntario ?? false);
   const [jornalDiario, setJornalDiario] = useState(initial?.jornalDiario ?? "");
-
-  const tipoSeleccionado = tiposOrdenados.find((t) => t.id === tipoEmpleadoId);
-  const esVoluntario = tipoSeleccionado?.esVoluntario ?? false;
 
   useEffect(() => {
     if (esVoluntario) {
@@ -86,7 +87,7 @@ export function EmpleadoForm({
     const caseta = casetasDefaults?.find((c) => c.id === casetaId);
     if (!caseta) return;
     if (caseta.tipoEmpleadoDefectoId) {
-      setTipoEmpleadoId(caseta.tipoEmpleadoDefectoId);
+      setSelectedTipoIds([caseta.tipoEmpleadoDefectoId]);
     }
     if (caseta.jornalDiarioDefault) {
       setJornalDiario(caseta.jornalDiarioDefault);
@@ -136,23 +137,26 @@ export function EmpleadoForm({
       </div>
 
       <div>
-        <Label htmlFor="tipoEmpleadoId">Tipo de empleado</Label>
-        <input type="hidden" name="tipoEmpleadoId" value={tipoEmpleadoId} />
+        <Label>Tipo de empleado</Label>
         <div
-          role="radiogroup"
-          aria-label="Tipo de empleado"
+          role="group"
+          aria-label="Tipos de empleado"
           className="flex flex-wrap gap-2 mt-1.5"
         >
           {tiposOrdenados.map((t) => {
             const colores = colorFor(t);
-            const sel = tipoEmpleadoId === t.id;
+            const sel = selectedTipoIds.includes(t.id);
             return (
               <button
                 key={t.id}
                 type="button"
-                role="radio"
+                role="checkbox"
                 aria-checked={sel}
-                onClick={() => setTipoEmpleadoId(t.id)}
+                onClick={() =>
+                  setSelectedTipoIds((prev) =>
+                    sel ? prev.filter((id) => id !== t.id) : [...prev, t.id]
+                  )
+                }
                 className="inline-flex items-center gap-2 rounded-md border-2 px-3.5 py-2 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 style={
                   sel
@@ -182,7 +186,22 @@ export function EmpleadoForm({
             );
           })}
         </div>
-        <FieldError messages={errors.tipoEmpleadoId} />
+        {/* Hidden inputs: uno por tipo seleccionado */}
+        {selectedTipoIds.map((id) => (
+          <input key={id} type="hidden" name="tipoIds" value={id} />
+        ))}
+        <FieldError messages={errors.tipoIds} />
+
+        <label className="flex items-center gap-2 text-sm mt-2">
+          <input
+            type="checkbox"
+            name="esVoluntario"
+            checked={esVoluntario}
+            onChange={(e) => setEsVoluntario(e.target.checked)}
+            className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
+          />
+          <span>Voluntario (sin jornal, requiere entidad y teléfono)</span>
+        </label>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

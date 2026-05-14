@@ -81,14 +81,8 @@ export default async function InicioPage() {
                 <KpiCard
                   etiqueta="Neto"
                   valor={kpis.resultadoNeto}
-                  nota="Ingresos − gastos − nóminas"
+                  nota="Ingresos − gastos"
                   tono={kpis.resultadoNeto >= 0 ? "neto-positivo" : "neto-negativo"}
-                />
-                <KpiCard
-                  etiqueta="Nóminas · pendientes"
-                  valor={kpis.nominasPendientesTotal}
-                  nota={`${kpis.nominasPendientesCount} sin pagar`}
-                  tono={kpis.nominasPendientesCount > 0 ? "negativo" : "neutro"}
                 />
               </>
             ) : (

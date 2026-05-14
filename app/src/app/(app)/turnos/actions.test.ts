@@ -168,6 +168,7 @@ describe("asignar/desasignar empleado", () => {
   let seed: MinimalSeed;
   let empleadoId: string;
   let turnoId: string;
+  let tipoImputadoId: string;
 
   beforeEach(async () => {
     seed = await resetAndSeed();
@@ -181,6 +182,14 @@ describe("asignar/desasignar empleado", () => {
     });
     empleadoId = emp.id;
     turnoId = turno.id;
+    // Resolver tipoImputadoId desde EmpleadoTipo (primer tipo del empleado).
+    const et = await prisma.empleadoTipo.findFirst({
+      where: { empleadoId: emp.id },
+      orderBy: { createdAt: "asc" },
+      select: { tipoEmpleadoId: true },
+    });
+    if (!et) throw new Error("Empleado sin tipo asignado en test");
+    tipoImputadoId = et.tipoEmpleadoId;
   });
 
   afterAll(async () => {
@@ -190,7 +199,7 @@ describe("asignar/desasignar empleado", () => {
   it("asigna y luego desasigna", async () => {
     const r1 = await asignarEmpleadoAction(
       null,
-      formData({ turnoId, empleadoId })
+      formData({ turnoId, empleadoId, tipoImputadoId })
     );
     expect(r1.ok).toBe(true);
     expect(await prisma.turnoEmpleado.count()).toBe(1);
@@ -204,10 +213,10 @@ describe("asignar/desasignar empleado", () => {
   });
 
   it("asignar dos veces el mismo empleado → error", async () => {
-    await asignarEmpleadoAction(null, formData({ turnoId, empleadoId }));
+    await asignarEmpleadoAction(null, formData({ turnoId, empleadoId, tipoImputadoId }));
     const r2 = await asignarEmpleadoAction(
       null,
-      formData({ turnoId, empleadoId })
+      formData({ turnoId, empleadoId, tipoImputadoId })
     );
     expect(r2.ok).toBe(false);
     if (!r2.ok) expect(r2.error).toMatch(/ya está asignado/i);

@@ -6,7 +6,6 @@ import { BandaResumen } from "../../_components/BandaResumen";
 import {
   formatFechaCorta,
   horaDe,
-  duracionHoras,
   DIAS_SEMANA_CORTOS,
   semanaIsoToLunes,
 } from "../../_lib/fechas";
@@ -91,7 +90,6 @@ export default async function ExportarSemanaPage({
         <thead>
           <tr>
             <th style={{ width: 110 }}>Horario</th>
-            <th style={{ width: 80 }}>Duración</th>
             <th>Asignados</th>
             <th style={{ width: 200 }}>Vacantes</th>
           </tr>
@@ -105,7 +103,7 @@ export default async function ExportarSemanaPage({
             if (turnos.length === 0) {
               return (
                 <tr key={fecha} className="dia-sin-turnos">
-                  <td colSpan={4}>{etiquetaDia} — Sin turnos programados</td>
+                  <td colSpan={3}>{etiquetaDia} — Sin turnos programados</td>
                 </tr>
               );
             }
@@ -118,7 +116,7 @@ export default async function ExportarSemanaPage({
             return (
               <Fragment key={fecha}>
                 <tr className="dia-header">
-                  <td colSpan={4}>
+                  <td colSpan={3}>
                     <div className="dia-header-row">
                       <span>{etiquetaDia}</span>
                       <span className="dia-header-resumen">
@@ -145,9 +143,6 @@ export default async function ExportarSemanaPage({
                     <tr key={t.id}>
                       <td className="export-mono">
                         {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
-                      </td>
-                      <td className="export-mono">
-                        {duracionHoras(t.fechaInicio, t.fechaFin)}h
                       </td>
                       <td>
                         {t.asignaciones.length === 0 ? (

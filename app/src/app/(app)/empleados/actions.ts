@@ -24,24 +24,25 @@ function resolverDni(
   return { ok: true, valor: parsed.data };
 }
 
-// Valida la regla "voluntario ⇒ jornal NULL + entidad NOT NULL" según el
-// flag esVoluntario del TipoEmpleado seleccionado.
+// Valida la regla "voluntario ⇒ jornal NULL + entidad NOT NULL" usando
+// esVoluntario recibido directamente. Comprueba que todos los tipos existen.
 async function validarReglaVoluntario(data: {
-  tipoEmpleadoId: string;
+  tipoIds: string[];
+  esVoluntario: boolean;
   jornalDiario: number | undefined;
   entidadId: string | undefined;
   telefono: string | undefined;
   exigirContacto: boolean;
 }): Promise<{ esVoluntario: boolean } | ActionResult<unknown>> {
-  const tipo = await prisma.tipoEmpleado.findUnique({
-    where: { id: data.tipoEmpleadoId },
-    select: { esVoluntario: true, activo: true },
+  const tipos = await prisma.tipoEmpleado.findMany({
+    where: { id: { in: data.tipoIds }, activo: true },
+    select: { id: true },
   });
-  if (!tipo || !tipo.activo) {
-    return { ok: false, error: "Tipo de empleado no válido o inactivo." };
+  if (tipos.length !== data.tipoIds.length) {
+    return { ok: false, error: "Uno o más tipos de empleado no válidos o inactivos." };
   }
 
-  if (tipo.esVoluntario) {
+  if (data.esVoluntario) {
     if (data.jornalDiario !== undefined) {
       return {
         ok: false,
@@ -72,7 +73,7 @@ async function validarReglaVoluntario(data: {
       };
     }
   }
-  return { esVoluntario: tipo.esVoluntario };
+  return { esVoluntario: data.esVoluntario };
 }
 
 function esActionResult(
@@ -90,7 +91,8 @@ export async function crearEmpleadoAction(
     const data = parseForm(crearEmpleadoSchema, formData);
 
     const reglaRes = await validarReglaVoluntario({
-      tipoEmpleadoId: data.tipoEmpleadoId,
+      tipoIds: data.tipoIds,
+      esVoluntario: data.esVoluntario,
       jornalDiario: data.jornalDiario,
       entidadId: data.entidadId,
       telefono: data.telefono,
@@ -116,8 +118,11 @@ export async function crearEmpleadoAction(
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
           entidadId: data.entidadId ?? null,
-          tipoEmpleadoId: data.tipoEmpleadoId,
+          esVoluntario: reglaRes.esVoluntario,
           activo: data.activo,
+          tipos: {
+            create: data.tipoIds.map((tipoEmpleadoId) => ({ tipoEmpleadoId })),
+          },
         },
       })
     );
@@ -144,7 +149,8 @@ export async function actualizarEmpleadoAction(
 
     // Al actualizar no exigimos teléfono — coherente con baseline previo.
     const reglaRes = await validarReglaVoluntario({
-      tipoEmpleadoId: data.tipoEmpleadoId,
+      tipoIds: data.tipoIds,
+      esVoluntario: data.esVoluntario,
       jornalDiario: data.jornalDiario,
       entidadId: data.entidadId,
       telefono: data.telefono,
@@ -171,8 +177,12 @@ export async function actualizarEmpleadoAction(
           telefono: data.telefono ?? null,
           jornalDiario: data.jornalDiario ?? null,
           entidadId: data.entidadId ?? null,
-          tipoEmpleadoId: data.tipoEmpleadoId,
+          esVoluntario: reglaRes.esVoluntario,
           activo: data.activo,
+          tipos: {
+            deleteMany: {},
+            create: data.tipoIds.map((tipoEmpleadoId) => ({ tipoEmpleadoId })),
+          },
         },
       })
     );

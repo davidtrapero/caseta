@@ -35,9 +35,10 @@ model TipoEmpleado {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  empleados    Empleado[]
-  plazas       TurnoPlaza[]
-  casetasDefecto Caseta[]
+  empleadoTipos          EmpleadoTipo[]
+  plazas                 TurnoPlaza[]
+  casetasDefecto         Caseta[]
+  asignacionesImputadas  TurnoEmpleado[] @relation("TurnoEmpleadoTipoImputado")
 
   @@index([orden])
 }
@@ -157,8 +158,8 @@ model Caseta {
 }
 
 // Empleado — recurso laboral.
-// tipoEmpleado.esVoluntario ⇔ jornalDiario IS NULL (validado en Zod + lookup en action).
-// tipoEmpleado.esVoluntario ⇔ entidadId NOT NULL (backfill en migración, refine en crearEmpleadoSchema).
+// esVoluntario ⇔ jornalDiario IS NULL (validado en Zod + lookup en action).
+// esVoluntario ⇔ entidadId NOT NULL (backfill en migración, refine en crearEmpleadoSchema).
 model Empleado {
   id                 String         @id @default(cuid())
   nombre             String
@@ -166,18 +167,16 @@ model Empleado {
   telefono           String?
   email              String?
   jornalDiario       Decimal?       @db.Decimal(10, 2)
-  tipoEmpleadoId     String
+  esVoluntario       Boolean        @default(false)
   entidadId          String?
   activo             Boolean        @default(true)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
 
-  tipoEmpleado TipoEmpleado       @relation(fields: [tipoEmpleadoId], references: [id], onDelete: Restrict)
+  tipos        EmpleadoTipo[]
   entidad      EntidadVoluntario? @relation(fields: [entidadId], references: [id], onDelete: Restrict)
   asignaciones TurnoEmpleado[]
   nominas      Nomina[]
-
-  @@index([tipoEmpleadoId])
 }
 
 // Tramo de trabajo en una caseta. fechaInicio/fechaFin son timestamps reales —
@@ -221,18 +220,36 @@ model TurnoPlaza {
 }
 
 // Asignación N:M Turno ↔ Empleado. asistio es por-empleado.
+// tipoImputadoId registra el tipo bajo el que se imputa el turno (puede diferir de los tipos actuales del empleado).
 model TurnoEmpleado {
-  id         String   @id @default(cuid())
-  turnoId    String
-  empleadoId String
-  asistio    Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id              String   @id @default(cuid())
+  turnoId         String
+  empleadoId      String
+  tipoImputadoId  String
+  asistio         Boolean  @default(false)
+  createdAt       DateTime @default(now())
 
-  turno    Turno    @relation(fields: [turnoId], references: [id], onDelete: Cascade)
-  empleado Empleado @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  turno         Turno        @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  empleado      Empleado     @relation(fields: [empleadoId], references: [id], onDelete: Restrict)
+  tipoImputado  TipoEmpleado @relation("TurnoEmpleadoTipoImputado", fields: [tipoImputadoId], references: [id], onDelete: Restrict)
 
   @@unique([turnoId, empleadoId])
   @@index([empleadoId])
+  @@index([tipoImputadoId])
+}
+
+// Tabla intermedia N:M Empleado ↔ TipoEmpleado. Un empleado puede tener varios tipos simultáneos.
+model EmpleadoTipo {
+  id             String   @id @default(cuid())
+  empleadoId     String
+  tipoEmpleadoId String
+  createdAt      DateTime @default(now())
+
+  empleado     Empleado     @relation(fields: [empleadoId], references: [id], onDelete: Cascade)
+  tipoEmpleado TipoEmpleado @relation(fields: [tipoEmpleadoId], references: [id], onDelete: Restrict)
+
+  @@unique([empleadoId, tipoEmpleadoId])
+  @@index([tipoEmpleadoId])
 }
 
 // Catálogo por caseta.

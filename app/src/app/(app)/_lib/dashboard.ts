@@ -24,9 +24,6 @@ export type KpiData = {
   ingresosHoy: number;
   ingresosEdicion: number;
   gastosEdicion: number;
-  nominasEdicion: number;
-  nominasPendientesCount: number;
-  nominasPendientesTotal: number;
   resultadoNeto: number;
 };
 
@@ -118,8 +115,6 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     ingresosHoyAgg,
     ingresosEdicionAgg,
     gastosEdicionAgg,
-    nominasAgg,
-    nominasPendientes,
     turnosHoyRaw,
     solicitudesPendientes,
     cierresExistentes,
@@ -145,17 +140,6 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     prisma.gasto.aggregate({
       where: { edicionId: edicion.id },
       _sum: { monto: true },
-    }),
-    // KPI: nóminas totales
-    prisma.nomina.aggregate({
-      where: { edicionId: edicion.id },
-      _sum: { total: true },
-    }),
-    // KPI: nóminas pendientes
-    prisma.nomina.aggregate({
-      where: { edicionId: edicion.id, pagada: false },
-      _sum: { total: true },
-      _count: { _all: true },
     }),
     // Turnos de hoy (todas las casetas)
     esAdminOGerente
@@ -232,17 +216,12 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
   const ingresosHoy = Number(ingresosHoyAgg._sum.ingresosTotales ?? 0);
   const ingresosEdicion = Number(ingresosEdicionAgg._sum.ingresosTotales ?? 0);
   const gastosEdicion = Number(gastosEdicionAgg._sum.monto ?? 0);
-  const nominasEdicion = Number(nominasAgg._sum.total ?? 0);
-  const nominasPendientesTotal = Number(nominasPendientes._sum.total ?? 0);
-  const resultadoNeto = ingresosEdicion - gastosEdicion - nominasEdicion;
+  const resultadoNeto = ingresosEdicion - gastosEdicion;
 
   const kpis: KpiData = {
     ingresosHoy,
     ingresosEdicion,
     gastosEdicion,
-    nominasEdicion,
-    nominasPendientesCount: nominasPendientes._count._all,
-    nominasPendientesTotal,
     resultadoNeto,
   };
 

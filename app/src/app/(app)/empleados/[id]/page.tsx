@@ -13,7 +13,10 @@ export default async function EditarEmpleadoPage({
   await requireRole(["admin", "gerente"]);
   const { id } = await params;
 
-  const empleado = await prisma.empleado.findUnique({ where: { id } });
+  const empleado = await prisma.empleado.findUnique({
+    where: { id },
+    include: { tipos: { include: { tipoEmpleado: true } } },
+  });
   if (!empleado) notFound();
 
   // Turnos del empleado a partir de hoy (00:00 UTC) y dentro de la edición activa.
@@ -34,7 +37,10 @@ export default async function EditarEmpleadoPage({
     }),
     prisma.tipoEmpleado.findMany({
       where: {
-        OR: [{ activo: true }, { id: empleado.tipoEmpleadoId }],
+        OR: [
+          { activo: true },
+          ...empleado.tipos.map((et) => ({ id: et.tipoEmpleadoId })),
+        ],
       },
       orderBy: { orden: "asc" },
     }),
@@ -82,7 +88,8 @@ export default async function EditarEmpleadoPage({
             ? empleado.jornalDiario.toString()
             : null,
           entidadId: empleado.entidadId,
-          tipoEmpleadoId: empleado.tipoEmpleadoId,
+          tipoIds: empleado.tipos.map((et) => et.tipoEmpleadoId),
+          esVoluntario: empleado.esVoluntario,
           activo: empleado.activo,
         }}
       />

@@ -22,12 +22,10 @@ const jornalSchema = z.preprocess(
     .optional()
 );
 
-// Tipo de empleado: id de la tabla TipoEmpleado. La regla
-// "voluntario ⇒ jornal NULL + entidad NOT NULL" se valida en la action,
-// donde se hace el lookup del tipo (esVoluntario).
+// Tipos de empleado: array de ids de la tabla TipoEmpleado. La regla
+// "voluntario ⇒ jornal NULL + entidad NOT NULL" se valida en la action.
 // DNI: sólo opcional en Zod (sin validación de formato aquí). La regla
-// "obligatorio si no voluntario" se evalúa en la action tras lookup del
-// TipoEmpleado, donde sí podemos llamar a dniNieSchema para validar formato.
+// "obligatorio si no voluntario" se evalúa en la action.
 const baseEmpleado = z.object({
   nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
   dni: opcionalString(20),
@@ -35,7 +33,11 @@ const baseEmpleado = z.object({
   telefono: opcionalString(40),
   jornalDiario: jornalSchema,
   entidadId: opcionalString(40),
-  tipoEmpleadoId: z.string().min(1, "Tipo de empleado obligatorio"),
+  tipoIds: z.preprocess(
+    (v) => (Array.isArray(v) ? v : typeof v === "string" ? [v] : []),
+    z.array(z.string().min(1)).min(1, "Selecciona al menos un tipo")
+  ),
+  esVoluntario: z.preprocess((v) => v === "on" || v === true, z.boolean()),
   activo: z.preprocess((v) => v === "on" || v === true, z.boolean()),
 });
 

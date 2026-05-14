@@ -67,13 +67,20 @@ export default async function CierresPage() {
 
   return (
     <div>
-      <SectionHeader
-        title={`Cierres — ${edicion.nombre}`}
-        subtitle="Ingresos diarios por caseta. Bloqueado = solo admin edita."
-        actionHref="/caja/cierres/nuevo"
-        actionLabel="Nuevo cierre"
-        canAct={puedeCrear}
-      />
+      <div className="flex items-end justify-between gap-4">
+        <SectionHeader
+          title={`Cierres — ${edicion.nombre}`}
+          subtitle="Ingresos diarios por caseta. Bloqueado = solo admin edita."
+          actionHref="/caja/cierres/nuevo"
+          actionLabel="Nuevo cierre"
+          canAct={puedeCrear}
+        />
+        <Button asChild variant="outline">
+          <Link href="/caja/cierres/exportar" prefetch={false}>
+            Exportar Excel
+          </Link>
+        </Button>
+      </div>
 
       {cierres.length === 0 ? (
         <EmptyState

@@ -75,12 +75,22 @@ export default async function GastosPage({
 
   return (
     <div>
-      <SectionHeader
-        title={`Gastos — ${edicion.nombre}`}
-        subtitle="Gastos de la edición. Sin caseta = transversales."
-        actionHref="/caja/gastos/nuevo"
-        actionLabel="Nuevo gasto"
-      />
+      <div className="flex items-end justify-between gap-4">
+        <SectionHeader
+          title={`Gastos — ${edicion.nombre}`}
+          subtitle="Gastos de la edición. Sin caseta = transversales."
+          actionHref="/caja/gastos/nuevo"
+          actionLabel="Nuevo gasto"
+        />
+        <Button asChild variant="outline">
+          <Link
+            href={filtroCaseta ? `/caja/gastos/exportar?caseta=${filtroCaseta}` : "/caja/gastos/exportar"}
+            prefetch={false}
+          >
+            Exportar Excel
+          </Link>
+        </Button>
+      </div>
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
