@@ -100,6 +100,13 @@ export function SidebarNav({ items, userName, userEmail, userRol, logoutButton, 
           <p className="font-medium truncate">{userName}</p>
           <p className="text-muted-foreground truncate">{userEmail}</p>
           <p className="text-muted-foreground mt-1 uppercase">{userRol}</p>
+          <Link
+            href="/cuenta/password"
+            onClick={() => setOpen(false)}
+            className="mt-1 inline-block text-xs text-muted-foreground hover:text-foreground"
+          >
+            Cambiar contraseña
+          </Link>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle theme={theme} />

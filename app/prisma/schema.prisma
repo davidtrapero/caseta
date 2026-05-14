@@ -50,6 +50,7 @@ model User {
   image         String?
   rol           Rol       @default(cajero)
   activo        Boolean   @default(true)
+  debeCambiarPassword Boolean @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SectionHeader, EmptyState } from "../_components/page-header";
 import { ToggleActivoUsuarioForm } from "./_components/toggle-activo";
+import { DialogoResetearPassword } from "./_components/DialogoResetearPassword";
 
 const ROL_ETIQUETA: Record<string, string> = {
   admin: "Admin",
@@ -60,7 +61,7 @@ export default async function UsuariosPage() {
               <TableHead>Nombre</TableHead>
               <TableHead className="w-28">Rol</TableHead>
               <TableHead className="w-32">Estado</TableHead>
-              <TableHead className="w-28 text-right">Acciones</TableHead>
+              <TableHead className="w-64 text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -88,9 +89,17 @@ export default async function UsuariosPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     {puedeEditar ? (
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={`/admin/usuarios/${u.id}`}>Editar</Link>
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        {u.activo ? (
+                          <DialogoResetearPassword
+                            userId={u.id}
+                            userName={u.name}
+                          />
+                        ) : null}
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={`/admin/usuarios/${u.id}`}>Editar</Link>
+                        </Button>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">Solo lectura</span>
                     )}

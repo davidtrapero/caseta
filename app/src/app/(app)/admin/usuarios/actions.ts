@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { requireRole } from "@/lib/authz";
@@ -55,7 +56,7 @@ export async function crearUsuarioAction(
       }
       await prisma.user.update({
         where: { id: result.user.id },
-        data: { rol: data.rol, activo: data.activo },
+        data: { rol: data.rol, activo: data.activo, debeCambiarPassword: true },
       });
     });
   } catch (err) {
@@ -177,6 +178,47 @@ export async function reactivarUsuarioAction(
 
     revalidatePath("/admin/usuarios");
     return { ok: true, data: { id } };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+const resetearPasswordSchema = z.object({
+  userId: z.string().min(1),
+  nuevaPassword: z.string().min(8, "Mínimo 8 caracteres."),
+});
+
+/**
+ * Reset admin: hashea con auth.$context.password.hash y escribe directamente
+ * en account.password (providerId="credential"). No usamos el plugin admin()
+ * de Better Auth para evitar columnas extra y la divergencia con el campo
+ * `rol` (en vez de `role`). Marca debeCambiarPassword=true para que el
+ * usuario reciba la pantalla forzada en su próximo acceso.
+ */
+export async function resetearPasswordAction(
+  _prev: ActionResult<{ id: string }> | null,
+  formData: FormData
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const { user } = await requireRole(["admin"]);
+    const data = parseForm(resetearPasswordSchema, formData);
+
+    const ctx = await auth.$context;
+    const hash = await ctx.password.hash(data.nuevaPassword);
+
+    await withAuditContext(user.id, async () => {
+      await prisma.account.updateMany({
+        where: { userId: data.userId, providerId: "credential" },
+        data: { password: hash },
+      });
+      await prisma.user.update({
+        where: { id: data.userId },
+        data: { debeCambiarPassword: true },
+      });
+    });
+
+    revalidatePath("/admin/usuarios");
+    return { ok: true, data: { id: data.userId } };
   } catch (err) {
     return toActionError(err);
   }

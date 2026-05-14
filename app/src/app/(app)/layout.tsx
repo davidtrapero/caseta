@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { LogOutButton } from "./_components/logout-button";
 import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
+import { EnforcePasswordChange } from "./_components/EnforcePasswordChange";
 import { ToastProvider } from "@/components/ui/toaster";
 import { EdicionBanner } from "@/components/edicion-banner";
 import type { Rol } from "@prisma/client";
@@ -31,12 +33,22 @@ export default async function AppLayout({
   const user = session.user as typeof session.user & { rol: Rol };
   const theme = await getTheme();
 
+  // La sesión de Better Auth no incluye debeCambiarPassword (no está marcada
+  // como additionalField en auth.ts). Lo consultamos directamente para que el
+  // EnforcePasswordChange pueda forzar el redirect tras alta/reset admin.
+  const flagRow = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { debeCambiarPassword: true },
+  });
+  const debeCambiar = flagRow?.debeCambiarPassword ?? false;
+
   const navItems: NavItem[] = NAV
     .filter(({ roles }) => !roles || roles.includes(user.rol))
     .map(({ href, label }) => ({ href, label }));
 
   return (
     <ToastProvider>
+      <EnforcePasswordChange debeCambiar={debeCambiar} />
       <div className="flex min-h-screen">
         <SidebarNav
           items={navItems}
