@@ -13,6 +13,8 @@ import type {
 } from "../types";
 import { colorFor, ordenarTipos } from "../_lib/perfiles";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { normalizar } from "@/lib/text-normalize";
 import {
   Popover,
   PopoverContent,
@@ -37,6 +39,7 @@ export function AsignarEmpleado({
   asignadosPorTipo = {},
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [state, action, pending] = useActionState<
     ActionResult<{ turnoId: string; empleadoId: string }> | null,
     FormData
@@ -61,18 +64,35 @@ export function AsignarEmpleado({
 
   const plazasMap = new Map(plazas.map((p) => [p.tipoEmpleadoId, p.cantidad]));
 
+  // Filtrado client-side por nombre, ignorando tildes/case. ≤30 empleados
+  // típicos: sin debounce.
+  const queryNorm = normalizar(query.trim());
+  const disponiblesFiltrados = queryNorm
+    ? disponibles.filter((e) => normalizar(e.nombre).includes(queryNorm))
+    : disponibles;
+
   // Agrupar disponibles por tipo, en el orden definido por TipoEmpleado.orden.
   const grupos = ordenarTipos(tiposEmpleado)
     .map((tipo) => ({
       tipo,
-      empleados: disponibles.filter((e) => e.tipoEmpleadoId === tipo.id),
+      empleados: disponiblesFiltrados.filter((e) => e.tipoEmpleadoId === tipo.id),
       plazas: plazasMap.get(tipo.id) ?? 0,
       asignados: asignadosPorTipo[tipo.id] ?? 0,
     }))
     .filter((g) => g.empleados.length > 0);
 
+  const sinResultados = queryNorm !== "" && grupos.length === 0;
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        // Resetea el query al abrir y al cerrar para que no persista la
+        // búsqueda anterior entre aperturas.
+        setQuery("");
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -90,6 +110,21 @@ export function AsignarEmpleado({
         align="start"
         sideOffset={4}
       >
+        <div className="p-1 mb-1">
+          <Input
+            type="search"
+            placeholder="Buscar..."
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-8 text-sm"
+          />
+        </div>
+        {sinResultados ? (
+          <div className="px-2 py-3 text-center text-xs text-muted-foreground">
+            Sin coincidencias
+          </div>
+        ) : null}
         {grupos.map((g) => {
             const colores = colorFor(g.tipo);
             const pendientes = Math.max(0, g.plazas - g.asignados);
