@@ -18,14 +18,24 @@ import {
   CATEGORIA_LABEL,
   type CategoriaGasto,
 } from "../gastos/_lib/categorias";
+import { construirSerieDiaria } from "./_lib/series";
+import { SelectorCasetaBalance } from "./_components/SelectorCasetaBalance";
+import { GraficoDiario } from "./_components/GraficoDiario";
 
 const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
 });
 
-export default async function BalancePage() {
+export default async function BalancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ casetaId?: string }>;
+}) {
   await requireRole(["admin", "gerente", "cajero"]);
+
+  const sp = await searchParams;
+  const casetaIdSeleccionada = sp.casetaId ?? "";
 
   const edicion = await obtenerEdicionActiva();
   if (!edicion) {
@@ -42,6 +52,17 @@ export default async function BalancePage() {
     );
   }
 
+  const whereCierres = {
+    edicionId: edicion.id,
+    ...(casetaIdSeleccionada ? { casetaId: casetaIdSeleccionada } : {}),
+  };
+  const whereGastos = {
+    edicionId: edicion.id,
+    ...(casetaIdSeleccionada
+      ? { OR: [{ casetaId: casetaIdSeleccionada }, { casetaId: null }] }
+      : {}),
+  };
+
   const [
     ingresosAgg,
     gastosAgg,
@@ -49,14 +70,17 @@ export default async function BalancePage() {
     gastosPorCategoria,
     ingresosPorCaseta,
     nominasDetalle,
+    cierresParaSerie,
+    gastosParaSerie,
+    casetasTodas,
   ] = await Promise.all([
     prisma.cierreDiario.aggregate({
-      where: { edicionId: edicion.id },
+      where: whereCierres,
       _sum: { ingresosTotales: true },
       _count: { _all: true },
     }),
     prisma.gasto.aggregate({
-      where: { edicionId: edicion.id },
+      where: whereGastos,
       _sum: { monto: true },
       _count: { _all: true },
     }),
@@ -67,7 +91,7 @@ export default async function BalancePage() {
     }),
     prisma.gasto.groupBy({
       by: ["categoria"],
-      where: { edicionId: edicion.id },
+      where: whereGastos,
       _sum: { monto: true },
       _count: { _all: true },
     }),
@@ -83,12 +107,26 @@ export default async function BalancePage() {
       },
       orderBy: { total: "desc" },
     }),
+    prisma.cierreDiario.findMany({
+      where: whereCierres,
+      select: { fecha: true, ingresosTotales: true },
+    }),
+    prisma.gasto.findMany({
+      where: whereGastos,
+      select: { fecha: true, monto: true },
+    }),
+    prisma.caseta.findMany({
+      orderBy: { nombre: "asc" },
+      select: { id: true, nombre: true },
+    }),
   ]);
 
   const ingresos = Number(ingresosAgg._sum.ingresosTotales ?? 0);
   const gastos = Number(gastosAgg._sum.monto ?? 0);
   const nominas = Number(nominasAgg._sum.total ?? 0);
   const resultado = ingresos - gastos - nominas;
+
+  const serieDiaria = construirSerieDiaria(cierresParaSerie, gastosParaSerie);
 
   // Mapa de casetas para el desglose por caseta.
   const casetaIds = ingresosPorCaseta
@@ -102,12 +140,27 @@ export default async function BalancePage() {
     : [];
   const nombreCaseta = new Map(casetas.map((c) => [c.id, c.nombre]));
 
+  const hayFiltro = casetaIdSeleccionada !== "";
+
   return (
     <div>
-      <SectionHeader
-        title={`Balance — ${edicion.nombre}`}
-        subtitle="Cierres, gastos y nóminas acumulados."
-      />
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <SectionHeader
+            title={`Balance — ${edicion.nombre}`}
+            subtitle="Cierres, gastos y nóminas acumulados."
+          />
+          {hayFiltro ? (
+            <Badge variant="muted" className="mt-1">
+              incluye gastos generales
+            </Badge>
+          ) : null}
+        </div>
+        <SelectorCasetaBalance
+          casetas={casetasTodas}
+          casetaId={casetaIdSeleccionada}
+        />
+      </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <BalanceCard
@@ -135,6 +188,13 @@ export default async function BalancePage() {
           tono={resultado >= 0 ? "destacado" : "alerta"}
         />
       </div>
+
+      <section className="mb-6">
+        <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
+          Movimiento diario
+        </h3>
+        <GraficoDiario data={serieDiaria} />
+      </section>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section>
@@ -228,6 +288,11 @@ export default async function BalancePage() {
         <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
           Nóminas por empleado
         </h3>
+        {hayFiltro ? (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Total nóminas (no filtra por caseta)
+          </p>
+        ) : null}
         {nominasDetalle.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-6 text-center text-sm text-muted-foreground">
             Sin nóminas calculadas.
