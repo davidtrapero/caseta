@@ -11,6 +11,7 @@ import { ChipEmpleado } from "./ChipEmpleado";
 import { AsignarEmpleado } from "./AsignarEmpleado";
 import { DialogoEditarTurno } from "./DialogoEditarTurno";
 import { duracionHoras, horaDe } from "../_lib/fechas";
+import { coloresFranja } from "../_lib/franja-color";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -62,13 +63,20 @@ export function BloqueTurno({
     0
   );
 
+  const colores = coloresFranja(turno.franja);
+
   return (
     <article
       className={cn(
-        "rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] backdrop-blur-md",
+        "rounded-xl border border-l-4 border-[var(--surface-glass-border)] backdrop-blur-md",
         "animate-stagger"
       )}
-      style={{ animationDelay: `${index * 60}ms`, boxShadow: "var(--surface-glass-shadow)" }}
+      style={{
+        animationDelay: `${index * 60}ms`,
+        boxShadow: "var(--surface-glass-shadow)",
+        borderLeftColor: colores.barra,
+        background: `linear-gradient(135deg, ${colores.bg}, var(--surface-glass))`,
+      }}
     >
       <header className="flex items-center justify-between gap-3 border-b border-[var(--surface-glass-border)] px-4 py-2.5">
         <button

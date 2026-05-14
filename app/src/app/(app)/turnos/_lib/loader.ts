@@ -21,7 +21,7 @@ import type {
   TurnosEmpleado,
   TurnoEmpleadoExport,
 } from "../types";
-import { addDays, hoyIso, lunesDe } from "./fechas";
+import { addDays, franjaHoraria, hoyIso, lunesDe } from "./fechas";
 
 export function vacantesDeTurno(t: TurnoSerializable): VacanteTurno[] {
   const asignadasPorTipo = new Map<string, number>();
@@ -195,6 +195,7 @@ function turnoSerializable(t: TurnoRaw): TurnoSerializable {
     casetaId: t.casetaId,
     fechaInicio: t.fechaInicio.toISOString(),
     fechaFin: t.fechaFin.toISOString(),
+    franja: franjaHoraria(t.fechaInicio.toISOString()),
     asignaciones,
     plazas,
   };

@@ -3,6 +3,7 @@
 // y permitir rehidratar con new Date() en cliente sin ambigüedad de zona.
 
 import type { TipoEmpleadoLite } from "./_lib/perfiles";
+import type { FranjaHoraria } from "./_lib/fechas";
 export type { TipoEmpleadoLite };
 
 export type AsignacionSerializable = {
@@ -27,6 +28,7 @@ export type TurnoSerializable = {
   casetaId: string;
   fechaInicio: string; // ISO 8601
   fechaFin: string; // ISO 8601
+  franja: FranjaHoraria;
   asignaciones: AsignacionSerializable[];
   plazas: TurnoPlazaSerializable[];
 };
