@@ -14,7 +14,7 @@ const baseCaseta = z.object({
   ),
   tipoEmpleadoDefectoId: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? null : v),
-    z.string().cuid("Tipo de empleado inválido").optional().nullable()
+    z.string().min(1, "Tipo de empleado inválido").optional().nullable()
   ),
 });
 

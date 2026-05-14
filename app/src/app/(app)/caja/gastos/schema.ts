@@ -27,7 +27,7 @@ const casetaOpcional = z.preprocess(
     if (t === "" || t === "__central__") return undefined;
     return t;
   },
-  z.string().cuid("Caseta inválida").optional()
+  z.string().min(1, "Caseta inválida").optional()
 );
 
 export const crearGastoSchema = z.object({

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const arrayDeIds = z
-  .array(z.cuid())
+  .array(z.string().min(1))
   .min(1, "Selecciona al menos un turno")
   .max(20, "Máximo 20 turnos por solicitud")
   .refine(
@@ -28,7 +28,7 @@ export const crearSolicitudSchema = z
       (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
       z.string().trim().email("Email inválido").optional()
     ),
-    entidadId: z.cuid({ error: "Selecciona una entidad" }),
+    entidadId: z.string().min(1, "Selecciona una entidad"),
     observaciones: z.preprocess(
       (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
       z.string().trim().max(500).optional()

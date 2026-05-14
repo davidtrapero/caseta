@@ -16,7 +16,7 @@ const lineasJson = z
     z
       .array(
         z.object({
-          productoId: z.string().cuid("Producto inválido"),
+          productoId: z.string().min(1, "Producto inválido"),
           cantidad: z.coerce
             .number({ error: "Cantidad inválida" })
             .positive("La cantidad debe ser mayor que 0")
@@ -31,8 +31,8 @@ const lineasJson = z
   );
 
 const baseProducto = z.object({
-  proveedorId: z.string().cuid("Proveedor inválido"),
-  casetaId: z.string().cuid("Caseta inválida"),
+  proveedorId: z.string().min(1, "Proveedor inválido"),
+  casetaId: z.string().min(1, "Caseta inválida"),
   lineasJson,
 });
 

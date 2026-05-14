@@ -32,12 +32,12 @@ const empleadoIdsJson = z
       return [];
     }
   })
-  .pipe(z.array(z.string().cuid("Empleado inválido")));
+  .pipe(z.array(z.string().min(1, "Empleado inválido")));
 
 const baseTurnoRango = z
   .object({
-    edicionId: z.string().cuid("Edición inválida"),
-    casetaId: z.string().cuid("Caseta inválida"),
+    edicionId: z.string().min(1, "Edición inválida"),
+    casetaId: z.string().min(1, "Caseta inválida"),
     fechaInicio: isoDateTime,
     fechaFin: isoDateTime,
   })
@@ -69,7 +69,7 @@ const plazasJson = z
   .pipe(
     z.array(
       z.object({
-        tipoEmpleadoId: z.string().cuid("Tipo de empleado inválido"),
+        tipoEmpleadoId: z.string().min(1, "Tipo de empleado inválido"),
         cantidad: z.coerce.number().int().min(0).max(99),
       })
     )
@@ -78,8 +78,8 @@ const plazasJson = z
 // Crear: rango + lista opcional de empleados (0..N).
 export const crearTurnoSchema = z
   .object({
-    edicionId: z.string().cuid("Edición inválida"),
-    casetaId: z.string().cuid("Caseta inválida"),
+    edicionId: z.string().min(1, "Edición inválida"),
+    casetaId: z.string().min(1, "Caseta inválida"),
     fechaInicio: isoDateTime,
     fechaFin: isoDateTime,
     empleadoIdsJson,
@@ -101,19 +101,19 @@ export const crearTurnoSchema = z
 export const actualizarTurnoSchema = baseTurnoRango;
 
 export const asignarEmpleadoSchema = z.object({
-  turnoId: z.string().cuid(),
-  empleadoId: z.string().cuid(),
-  tipoImputadoId: z.string().cuid(),
+  turnoId: z.string().min(1),
+  empleadoId: z.string().min(1),
+  tipoImputadoId: z.string().min(1),
 });
 
 export const desasignarEmpleadoSchema = z.object({
-  turnoId: z.string().cuid(),
-  empleadoId: z.string().cuid(),
+  turnoId: z.string().min(1),
+  empleadoId: z.string().min(1),
 });
 
 export const toggleAsistenciaSchema = z.object({
-  turnoId: z.string().cuid(),
-  empleadoId: z.string().cuid(),
+  turnoId: z.string().min(1),
+  empleadoId: z.string().min(1),
   asistio: z.preprocess((v) => v === "on" || v === true || v === "true", z.boolean()),
 });
 
@@ -131,9 +131,9 @@ const checkboxFlag = z
 // Las asignaciones de empleados se copian sólo si copiarAsignaciones=true.
 export const duplicarDiaSchema = z
   .object({
-    casetaId: z.string().cuid(),
-    casetaIdOrigen: z.string().cuid().optional(),
-    edicionId: z.string().cuid(),
+    casetaId: z.string().min(1),
+    casetaIdOrigen: z.string().min(1).optional(),
+    edicionId: z.string().min(1),
     diaOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     diaDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     copiarAsignaciones: checkboxFlag,
@@ -156,9 +156,9 @@ export const duplicarDiaSchema = z
 // Duplicar semana completa. Las asignaciones se copian sólo si el flag está activo.
 export const duplicarSemanaSchema = z
   .object({
-    casetaId: z.string().cuid(),
-    casetaIdOrigen: z.string().cuid().optional(),
-    edicionId: z.string().cuid(),
+    casetaId: z.string().min(1),
+    casetaIdOrigen: z.string().min(1).optional(),
+    edicionId: z.string().min(1),
     lunesOrigen: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     lunesDestino: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
     copiarAsignaciones: checkboxFlag,
@@ -176,7 +176,7 @@ export const duplicarSemanaSchema = z
   );
 
 export const actualizarPlazasSchema = z.object({
-  turnoId: z.string().cuid(),
+  turnoId: z.string().min(1),
   plazasJson,
 });
 
@@ -218,8 +218,8 @@ export type RellenarPlazasTurnosSinPlazasInput = z.infer<
 // permite editar el turno y sus plazas en una sola transacción.
 export const actualizarTurnoYPlazasSchema = z
   .object({
-    edicionId: z.string().cuid("Edición inválida"),
-    casetaId: z.string().cuid("Caseta inválida"),
+    edicionId: z.string().min(1, "Edición inválida"),
+    casetaId: z.string().min(1, "Caseta inválida"),
     fechaInicio: isoDateTime,
     fechaFin: isoDateTime,
     plazasJson,

@@ -14,8 +14,8 @@ const notaOpcional = z.preprocess(
 );
 
 export const ajustarStockSchema = z.object({
-  casetaId: z.string().cuid("Caseta inválida"),
-  productoId: z.string().cuid("Producto inválido"),
+  casetaId: z.string().min(1, "Caseta inválida"),
+  productoId: z.string().min(1, "Producto inválido"),
   nuevaCantidad: cantidadDecimal,
   nota: notaOpcional,
 });

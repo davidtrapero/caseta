@@ -341,9 +341,25 @@ export async function asignarEmpleadoAction(
       { excluirTurnoId: turno.id }
     );
     if (res.solapa) {
+      const casetaIds = Array.from(new Set(res.conflictos.map((c) => c.casetaId)));
+      const casetas = await prisma.caseta.findMany({
+        where: { id: { in: casetaIds } },
+        select: { id: true, nombre: true },
+      });
+      const nombrePorId = new Map(casetas.map((c) => [c.id, c.nombre]));
+      const detalle = res.conflictos
+        .map((c) => {
+          const ini = new Date(c.fechaInicio);
+          const fin = new Date(c.fechaFin);
+          const hh = (d: Date) =>
+            `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+          const dia = `${String(ini.getUTCDate()).padStart(2, "0")}/${String(ini.getUTCMonth() + 1).padStart(2, "0")}`;
+          return `${nombrePorId.get(c.casetaId) ?? "?"} ${dia} ${hh(ini)}–${hh(fin)}`;
+        })
+        .join("; ");
       return {
         ok: false,
-        error: "Solape con otro turno del empleado.",
+        error: `Solape con otro turno del empleado: ${detalle}.`,
       };
     }
 

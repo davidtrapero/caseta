@@ -16,14 +16,14 @@ const notasOpcional = z.preprocess(
 );
 
 export const crearCierreSchema = z.object({
-  casetaId: z.string().cuid("Caseta inválida"),
+  casetaId: z.string().min(1, "Caseta inválida"),
   fecha: fechaYmd,
   ingresosTotales: montoDecimal,
   notas: notasOpcional,
 });
 
 export const actualizarCierreSchema = z.object({
-  casetaId: z.string().cuid("Caseta inválida"),
+  casetaId: z.string().min(1, "Caseta inválida"),
   fecha: fechaYmd,
   ingresosTotales: montoDecimal,
   notas: notasOpcional,
