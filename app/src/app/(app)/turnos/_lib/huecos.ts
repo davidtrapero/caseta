@@ -42,7 +42,7 @@ export async function calcularHuecosVoluntario(
         select: { cantidad: true },
       },
       asignaciones: {
-        where: { empleado: { tipoEmpleadoId: { in: tipoVoluntarioIds } } },
+        where: { tipoImputadoId: { in: tipoVoluntarioIds } },
         select: { empleadoId: true },
       },
       solicitudesVoluntario: {

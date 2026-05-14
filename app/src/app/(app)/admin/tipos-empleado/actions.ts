@@ -103,7 +103,7 @@ export async function eliminarTipoEmpleadoAction(
     const tipo = await prisma.tipoEmpleado.findUnique({
       where: { id },
       include: {
-        _count: { select: { empleados: true, plazas: true } },
+        _count: { select: { empleadoTipos: true, plazas: true } },
       },
     });
 
@@ -111,7 +111,7 @@ export async function eliminarTipoEmpleadoAction(
       return { ok: false, error: "El tipo de empleado no existe." };
     }
 
-    const enUso = tipo._count.empleados > 0 || tipo._count.plazas > 0;
+    const enUso = tipo._count.empleadoTipos > 0 || tipo._count.plazas > 0;
 
     if (enUso) {
       await withAuditContext(user.id, () =>

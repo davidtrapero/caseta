@@ -69,7 +69,7 @@ export async function GET(req: Request) {
     for (const a of e.asignaciones) {
       ws.addRow({
         nombre: e.nombre,
-        tipo: e.tipoEmpleado.label,
+        tipo: e.tipos[0]?.tipoEmpleado.label ?? "—",
         entidad: e.entidad?.nombre ?? "",
         dni: e.dni ?? "",
         telefono: e.telefono ?? "",

@@ -146,6 +146,21 @@ export async function crearTurnoAction(
 
     const plazasFiltradas = data.plazasJson.filter((p) => p.cantidad > 0);
 
+    // Resolver tipoImputadoId por empleado (primer tipo del empleado).
+    const tiposEmpleadoMap = new Map<string, string>();
+    if (data.empleadoIdsJson.length > 0) {
+      const empleadoTipos = await prisma.empleadoTipo.findMany({
+        where: { empleadoId: { in: data.empleadoIdsJson } },
+        select: { empleadoId: true, tipoEmpleadoId: true },
+        orderBy: { createdAt: "asc" },
+      });
+      for (const et of empleadoTipos) {
+        if (!tiposEmpleadoMap.has(et.empleadoId)) {
+          tiposEmpleadoMap.set(et.empleadoId, et.tipoEmpleadoId);
+        }
+      }
+    }
+
     const turno = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         const t = await tx.turno.create({
@@ -161,6 +176,7 @@ export async function crearTurnoAction(
             data: data.empleadoIdsJson.map((empleadoId) => ({
               turnoId: t.id,
               empleadoId,
+              tipoImputadoId: tiposEmpleadoMap.get(empleadoId) ?? "",
             })),
           });
         }
@@ -305,6 +321,13 @@ export async function asignarEmpleadoAction(
     const empErr = await validarEmpleadosActivos([data.empleadoId]);
     if (empErr) return { ok: false, error: empErr };
 
+    const tieneEseTipo = await prisma.empleadoTipo.findFirst({
+      where: { empleadoId: data.empleadoId, tipoEmpleadoId: data.tipoImputadoId },
+    });
+    if (!tieneEseTipo) {
+      return { ok: false, error: "Tipo imputado no pertenece al empleado" };
+    }
+
     const { gte, lt } = ventanaAmpliada(turno.fechaInicio, turno.fechaFin);
     const existentes = await cargarTurnosEmpleadoEnVentana(
       [data.empleadoId],
@@ -329,7 +352,7 @@ export async function asignarEmpleadoAction(
 
     await withAuditContext(user.id, () =>
       prisma.turnoEmpleado.create({
-        data: { turnoId: data.turnoId, empleadoId: data.empleadoId },
+        data: { turnoId: data.turnoId, empleadoId: data.empleadoId, tipoImputadoId: data.tipoImputadoId },
       })
     );
 
@@ -506,7 +529,7 @@ export async function duplicarDiaAction(
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
       include: {
-        asignaciones: { select: { empleadoId: true } },
+        asignaciones: { select: { empleadoId: true, tipoImputadoId: true } },
         plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
       },
       orderBy: { fechaInicio: "asc" },
@@ -564,7 +587,7 @@ export async function duplicarSemanaAction(
         fechaInicio: { gte: origenIni, lt: origenFin },
       },
       include: {
-        asignaciones: { select: { empleadoId: true } },
+        asignaciones: { select: { empleadoId: true, tipoImputadoId: true } },
         plazas: { select: { tipoEmpleadoId: true, cantidad: true } },
       },
       orderBy: { fechaInicio: "asc" },
@@ -605,22 +628,17 @@ async function validarPlazasVsAsignados(
   const asignaciones = await prisma.turnoEmpleado.findMany({
     where: { turnoId },
     include: {
-      empleado: {
-        select: {
-          tipoEmpleadoId: true,
-          tipoEmpleado: { select: { label: true } },
-        },
-      },
+      tipoImputado: { select: { label: true } },
     },
   });
   if (asignaciones.length === 0) return null;
 
   const asignadosPorTipo = new Map<string, { count: number; label: string }>();
   for (const a of asignaciones) {
-    const prev = asignadosPorTipo.get(a.empleado.tipoEmpleadoId);
-    asignadosPorTipo.set(a.empleado.tipoEmpleadoId, {
+    const prev = asignadosPorTipo.get(a.tipoImputadoId);
+    asignadosPorTipo.set(a.tipoImputadoId, {
       count: (prev?.count ?? 0) + 1,
-      label: a.empleado.tipoEmpleado.label,
+      label: a.tipoImputado.label,
     });
   }
 
@@ -785,7 +803,7 @@ type TurnoConAsignaciones = {
   edicionId: string;
   fechaInicio: Date;
   fechaFin: Date;
-  asignaciones: { empleadoId: string }[];
+  asignaciones: { empleadoId: string; tipoImputadoId: string }[];
   plazas: { tipoEmpleadoId: string; cantidad: number }[];
 };
 
@@ -818,8 +836,8 @@ async function validarYCopiarTurnos(args: {
   const plan = origenes.map((t) => ({
     fechaInicio: new Date(t.fechaInicio.getTime() + desplazamientoMs),
     fechaFin: new Date(t.fechaFin.getTime() + desplazamientoMs),
-    empleadoIds: copiarAsignaciones
-      ? t.asignaciones.map((a) => a.empleadoId)
+    asignaciones: copiarAsignaciones
+      ? t.asignaciones.map((a) => ({ empleadoId: a.empleadoId, tipoImputadoId: a.tipoImputadoId }))
       : [],
     plazas: t.plazas.filter((p) => p.cantidad > 0),
   }));
@@ -848,7 +866,7 @@ async function validarYCopiarTurnos(args: {
     // lista para detectar solapes entre los propios duplicados.
     const acumulado: TurnoRango[] = [...baseExistentes];
     for (const [idx, p] of plan.entries()) {
-      for (const empleadoId of p.empleadoIds) {
+      for (const { empleadoId } of p.asignaciones) {
         const res = detectarSolape(acumulado, {
           empleadoId,
           fechaInicio: p.fechaInicio,
@@ -860,7 +878,7 @@ async function validarYCopiarTurnos(args: {
           };
         }
       }
-      for (const empleadoId of p.empleadoIds) {
+      for (const { empleadoId } of p.asignaciones) {
         acumulado.push({
           id: `__plan_${idx}`,
           empleadoId,
@@ -900,9 +918,10 @@ async function validarYCopiarTurnos(args: {
       }
 
       const asignacionesData = planConId.flatMap((p) =>
-        p.empleadoIds.map((empleadoId) => ({
+        p.asignaciones.map(({ empleadoId, tipoImputadoId }) => ({
           turnoId: p.id,
           empleadoId,
+          tipoImputadoId,
           asistio: false,
         }))
       );

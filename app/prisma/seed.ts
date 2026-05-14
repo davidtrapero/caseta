@@ -101,16 +101,22 @@ async function main() {
   for (const e of empleados) {
     const tipoId = tiposPorSlug.get(e.perfil);
     if (!tipoId) throw new Error(`Tipo no encontrado: ${e.perfil}`);
-    await prisma.empleado.upsert({
+    const emp = await prisma.empleado.upsert({
       where: { dni: e.dni },
-      update: { tipoEmpleadoId: tipoId },
+      update: {},
       create: {
         nombre: e.nombre,
         dni: e.dni,
         jornalDiario: e.jornalDiario,
-        tipoEmpleadoId: tipoId,
+        esVoluntario: e.jornalDiario === null,
         activo: true,
       },
+    });
+    // Asegurar que el EmpleadoTipo existe (upsert para idempotencia).
+    await prisma.empleadoTipo.upsert({
+      where: { empleadoId_tipoEmpleadoId: { empleadoId: emp.id, tipoEmpleadoId: tipoId } },
+      update: {},
+      create: { empleadoId: emp.id, tipoEmpleadoId: tipoId },
     });
   }
   console.log(`✓ ${empleados.length} empleados listos`);

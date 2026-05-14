@@ -10,7 +10,7 @@ import type {
 import { ChipEmpleado } from "./ChipEmpleado";
 import { AsignarEmpleado } from "./AsignarEmpleado";
 import { DialogoEditarTurno } from "./DialogoEditarTurno";
-import { duracionHoras, horaDe } from "../_lib/fechas";
+import { horaDe } from "../_lib/fechas";
 import { coloresFranja } from "../_lib/franja-color";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,6 @@ export function BloqueTurno({
   const [editando, setEditando] = useState(false);
 
   const yaAsignados = new Set(turno.asignaciones.map((a) => a.empleadoId));
-  const duracion = duracionHoras(turno.fechaInicio, turno.fechaFin);
   const inicio = horaDe(turno.fechaInicio);
   const fin = horaDe(turno.fechaFin);
 
@@ -43,7 +42,7 @@ export function BloqueTurno({
 
   // Ordenar asignaciones según orden del TipoEmpleado.
   const asignacionesOrdenadas = [...turno.asignaciones].sort(
-    (a, b) => ordenDe(a.tipoEmpleadoId) - ordenDe(b.tipoEmpleadoId)
+    (a, b) => ordenDe(a.tipoImputadoId) - ordenDe(b.tipoImputadoId)
   );
 
   // Plazas pendientes por tipo (plazas - asignados del mismo tipo).
@@ -53,8 +52,8 @@ export function BloqueTurno({
   const asignadosPorTipo = new Map<string, number>();
   for (const a of turno.asignaciones) {
     asignadosPorTipo.set(
-      a.tipoEmpleadoId,
-      (asignadosPorTipo.get(a.tipoEmpleadoId) ?? 0) + 1
+      a.tipoImputadoId,
+      (asignadosPorTipo.get(a.tipoImputadoId) ?? 0) + 1
     );
   }
   const plazasPendientes = Array.from(plazasPorTipo.entries()).reduce(
@@ -92,7 +91,7 @@ export function BloqueTurno({
             {inicio}–{fin}
           </span>
           <span className="text-xs text-muted-foreground">
-            {duracion}h · {turno.asignaciones.length}{" "}
+            {turno.asignaciones.length}{" "}
             {turno.asignaciones.length === 1 ? "persona" : "personas"}
           </span>
           {plazasPendientes > 0 ? (
@@ -121,7 +120,7 @@ export function BloqueTurno({
           </p>
         ) : (
           asignacionesOrdenadas.map((a) => {
-            const tipo = tiposPorId.get(a.tipoEmpleadoId);
+            const tipo = tiposPorId.get(a.tipoImputadoId);
             if (!tipo) return null;
             return (
               <ChipEmpleado

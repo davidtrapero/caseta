@@ -103,6 +103,7 @@ export const actualizarTurnoSchema = baseTurnoRango;
 export const asignarEmpleadoSchema = z.object({
   turnoId: z.string().cuid(),
   empleadoId: z.string().cuid(),
+  tipoImputadoId: z.string().min(1),
 });
 
 export const desasignarEmpleadoSchema = z.object({

@@ -10,7 +10,7 @@ export type AsignacionSerializable = {
   empleadoId: string;
   empleadoNombre: string;
   esVoluntario: boolean;
-  tipoEmpleadoId: string;
+  tipoImputadoId: string;
   asistio: boolean;
   // Nombre de la EntidadVoluntario del empleado (hermandad/asociación).
   // Solo poblado para voluntarios (esVoluntario === true). null en contratados.
@@ -44,7 +44,7 @@ export type EmpleadoMin = {
   nombre: string;
   activo: boolean;
   esVoluntario: boolean; // jornalDiario === null
-  tipoEmpleadoId: string;
+  tipoEmpleadoIds: string[];
 };
 
 export type EdicionMin = {

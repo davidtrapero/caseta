@@ -13,10 +13,9 @@ export async function cargarAsistencias(filtros: AsistenciasFiltros) {
 
   return prisma.empleado.findMany({
     where: {
-      tipoEmpleadoId:
-        tipoEmpleadoIds && tipoEmpleadoIds.length > 0
-          ? { in: tipoEmpleadoIds }
-          : undefined,
+      ...(tipoEmpleadoIds && tipoEmpleadoIds.length > 0
+        ? { tipos: { some: { tipoEmpleadoId: { in: tipoEmpleadoIds } } } }
+        : {}),
       entidadId: entidadId || undefined,
       asignaciones: {
         some: {
@@ -29,7 +28,7 @@ export async function cargarAsistencias(filtros: AsistenciasFiltros) {
       },
     },
     include: {
-      tipoEmpleado: true,
+      tipos: { include: { tipoEmpleado: true } },
       entidad: { select: { nombre: true } },
       asignaciones: {
         where: {

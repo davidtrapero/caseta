@@ -81,8 +81,8 @@ export default async function AsistenciasPage({
   const filas: FilaEmpleado[] = empleados.map((e) => ({
     id: e.id,
     nombre: e.nombre,
-    tipoLabel: e.tipoEmpleado.label,
-    tipoColorHex: e.tipoEmpleado.colorHex,
+    tipoLabel: e.tipos[0]?.tipoEmpleado.label ?? "—",
+    tipoColorHex: e.tipos[0]?.tipoEmpleado.colorHex ?? "#888888",
     entidad: e.entidad?.nombre ?? null,
     asistencias: e.asignaciones.map((a) => ({
       id: a.id,

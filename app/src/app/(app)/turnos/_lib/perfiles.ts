@@ -105,7 +105,7 @@ export type AsignacionConRol = {
   empleadoId: string;
   empleadoNombre: string;
   esVoluntario: boolean;
-  tipoEmpleadoId: string;
+  tipoImputadoId: string;
 };
 
 export type GruposAsignaciones<A extends AsignacionConRol> = {
@@ -140,7 +140,7 @@ export function agruparPorRol<A extends AsignacionConRol>(
     otros: [],
   };
   for (const a of asignaciones) {
-    const tipo = tipoById.get(a.tipoEmpleadoId);
+    const tipo = tipoById.get(a.tipoImputadoId);
     if (a.esVoluntario) {
       grupos.voluntarios.push(a);
     } else if (esCoordinador(tipo)) {
@@ -208,9 +208,9 @@ export function agruparPorTipo<A extends AsignacionConRol>(
 ): GrupoTipo<A>[] {
   const porTipo = new Map<string, A[]>();
   for (const a of asignaciones) {
-    const arr = porTipo.get(a.tipoEmpleadoId) ?? [];
+    const arr = porTipo.get(a.tipoImputadoId) ?? [];
     arr.push(a);
-    porTipo.set(a.tipoEmpleadoId, arr);
+    porTipo.set(a.tipoImputadoId, arr);
   }
   return ordenarTipos(tipos)
     .filter((t) => porTipo.has(t.id))

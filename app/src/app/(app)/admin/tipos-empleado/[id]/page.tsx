@@ -15,7 +15,7 @@ export default async function EditarTipoEmpleadoPage({
   const tipo = await prisma.tipoEmpleado.findUnique({
     where: { id },
     include: {
-      _count: { select: { empleados: true, plazas: true } },
+      _count: { select: { empleadoTipos: true, plazas: true } },
     },
   });
   if (!tipo) notFound();
@@ -36,7 +36,7 @@ export default async function EditarTipoEmpleadoPage({
           orden: tipo.orden,
           esVoluntario: tipo.esVoluntario,
           activo: tipo.activo,
-          empleadosCount: tipo._count.empleados,
+          empleadosCount: tipo._count.empleadoTipos,
           plazasCount: tipo._count.plazas,
         }}
       />

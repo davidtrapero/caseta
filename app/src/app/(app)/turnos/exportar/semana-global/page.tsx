@@ -28,7 +28,7 @@ function CeldaTurno({
   // Conteo de asignados por tipo.
   const asigPorTipo = new Map<string, number>();
   for (const a of turno.asignaciones) {
-    asigPorTipo.set(a.tipoEmpleadoId, (asigPorTipo.get(a.tipoEmpleadoId) ?? 0) + 1);
+    asigPorTipo.set(a.tipoImputadoId, (asigPorTipo.get(a.tipoImputadoId) ?? 0) + 1);
   }
   const tipoIds = new Set<string>([
     ...turno.plazas.map((p) => p.tipoEmpleadoId),

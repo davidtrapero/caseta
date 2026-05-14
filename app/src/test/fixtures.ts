@@ -117,7 +117,8 @@ export async function crearEmpleado(params: {
       nombre: params.nombre,
       dni: params.dni ?? null,
       telefono: params.telefono ?? null,
-      tipoEmpleadoId: tipo.id,
+      esVoluntario: slug === "voluntario",
+      tipos: { create: [{ tipoEmpleadoId: tipo.id }] },
       jornalDiario: jornal,
       activo: params.activo ?? true,
     },
@@ -175,6 +176,19 @@ export async function crearTurno(params: {
   fechaFin: Date;
   empleadoIds?: string[];
 }) {
+  // Resolver tipoImputadoId por empleado (primer tipo registrado).
+  const tiposMap = new Map<string, string>();
+  if (params.empleadoIds && params.empleadoIds.length > 0) {
+    const ets = await prisma.empleadoTipo.findMany({
+      where: { empleadoId: { in: params.empleadoIds } },
+      select: { empleadoId: true, tipoEmpleadoId: true },
+      orderBy: { createdAt: "asc" },
+    });
+    for (const et of ets) {
+      if (!tiposMap.has(et.empleadoId)) tiposMap.set(et.empleadoId, et.tipoEmpleadoId);
+    }
+  }
+
   return prisma.turno.create({
     data: {
       edicionId: params.edicionId,
@@ -183,7 +197,10 @@ export async function crearTurno(params: {
       fechaFin: params.fechaFin,
       asignaciones: params.empleadoIds
         ? {
-            create: params.empleadoIds.map((empleadoId) => ({ empleadoId })),
+            create: params.empleadoIds.map((empleadoId) => ({
+              empleadoId,
+              tipoImputadoId: tiposMap.get(empleadoId) ?? "",
+            })),
           }
         : undefined,
     },

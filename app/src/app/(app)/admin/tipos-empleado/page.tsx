@@ -20,7 +20,7 @@ export default async function TiposEmpleadoPage() {
   const tipos = await prisma.tipoEmpleado.findMany({
     orderBy: { orden: "asc" },
     include: {
-      _count: { select: { empleados: true, plazas: true } },
+      _count: { select: { empleadoTipos: true, plazas: true } },
     },
   });
 
@@ -97,7 +97,7 @@ export default async function TiposEmpleadoPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
-                    {t._count.empleados}
+                    {t._count.empleadoTipos}
                   </TableCell>
                   <TableCell className="text-right font-mono text-xs">
                     {t._count.plazas}

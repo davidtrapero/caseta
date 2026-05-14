@@ -75,7 +75,7 @@ export function AsignarEmpleado({
   const grupos = ordenarTipos(tiposEmpleado)
     .map((tipo) => ({
       tipo,
-      empleados: disponiblesFiltrados.filter((e) => e.tipoEmpleadoId === tipo.id),
+      empleados: disponiblesFiltrados.filter((e) => e.tipoEmpleadoIds.includes(tipo.id)),
       plazas: plazasMap.get(tipo.id) ?? 0,
       asignados: asignadosPorTipo[tipo.id] ?? 0,
     }))
@@ -150,6 +150,7 @@ export function AsignarEmpleado({
                   <form key={e.id} action={action}>
                     <input type="hidden" name="turnoId" value={turnoId} />
                     <input type="hidden" name="empleadoId" value={e.id} />
+                    <input type="hidden" name="tipoImputadoId" value={g.tipo.id} />
                     <button
                       type="submit"
                       disabled={pending}

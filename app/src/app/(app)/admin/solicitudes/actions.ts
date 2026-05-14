@@ -95,7 +95,7 @@ export async function aprobarTurnosAction(
           ? await tx.empleado.findFirst({
               where: {
                 telefono: solicitud.telefono,
-                tipoEmpleadoId: tipoVoluntario.id,
+                tipos: { some: { tipoEmpleadoId: tipoVoluntario.id } },
               },
               select: { id: true, entidadId: true, activo: true, email: true },
             })
@@ -105,7 +105,8 @@ export async function aprobarTurnosAction(
           empleado = await tx.empleado.create({
             data: {
               nombre: solicitud.nombre,
-              tipoEmpleadoId: tipoVoluntario.id,
+              esVoluntario: true,
+              tipos: { create: [{ tipoEmpleadoId: tipoVoluntario.id }] },
               telefono: solicitud.telefono,
               email: solicitud.email ?? null,
               entidadId: solicitud.entidadId,
@@ -220,6 +221,7 @@ export async function aprobarTurnosAction(
           data: turnoIds.map((turnoId) => ({
             turnoId,
             empleadoId: empleado!.id,
+            tipoImputadoId: tipoVoluntario.id,
             asistio: false,
           })),
           skipDuplicates: true,

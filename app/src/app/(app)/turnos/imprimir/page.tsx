@@ -3,7 +3,6 @@ import { loadDiaTurnos, resumenAlcance, vacantesDeTurno } from "../_lib/loader";
 import {
   formatFechaLarga,
   horaDe,
-  duracionHoras,
 } from "../_lib/fechas";
 import {
   agruparPorRol,
@@ -83,7 +82,6 @@ export default async function ImprimirPage({
           <thead>
             <tr>
               <th style={{ width: 110 }}>Horario</th>
-              <th style={{ width: 60 }}>Duración</th>
               <th>Empleados y asistencia</th>
               <th style={{ width: 160 }}>Vacantes</th>
             </tr>
@@ -108,7 +106,6 @@ export default async function ImprimirPage({
                   <td className={`mono franja-cell franja-${franja}`}>
                     {horaDe(t.fechaInicio)}–{horaDe(t.fechaFin)}
                   </td>
-                  <td className="mono">{duracionHoras(t.fechaInicio, t.fechaFin)}h</td>
                   <td>
                     {t.asignaciones.length === 0 ? (
                       <em className="muted">Sin asignar</em>
@@ -235,7 +232,7 @@ function BloqueRol({
         {titulo} <span className="bloque-rol-count">({asignaciones.length})</span>
       </div>
       {asignaciones.map((a) => {
-        const tipo = tipos.find((te) => te.id === a.tipoEmpleadoId);
+        const tipo = tipos.find((te) => te.id === a.tipoImputadoId);
         return (
           <CheckLinea
             key={a.empleadoId}
@@ -269,7 +266,7 @@ function BloqueVoluntarios({
             {g.entidadNombre}
           </div>
           {g.asignaciones.map((a) => {
-            const tipo = tipos.find((te) => te.id === a.tipoEmpleadoId);
+            const tipo = tipos.find((te) => te.id === a.tipoImputadoId);
             return (
               <CheckLinea
                 key={a.empleadoId}
