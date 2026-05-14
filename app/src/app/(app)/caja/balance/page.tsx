@@ -97,7 +97,7 @@ export default async function BalancePage({
     }),
     prisma.cierreDiario.groupBy({
       by: ["casetaId"],
-      where: { edicionId: edicion.id },
+      where: whereCierres,
       _sum: { ingresosTotales: true },
     }),
     prisma.nomina.findMany({

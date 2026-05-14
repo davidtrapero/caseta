@@ -11,7 +11,6 @@ import {
   formatFechaLarga,
   horaDe,
   duracionHoras,
-  franjaHoraria,
 } from "../../_lib/fechas";
 import { agruparPorRol, nombreCorto } from "../../_lib/perfiles";
 
@@ -72,7 +71,7 @@ export default async function ExportarDiaPage({
           </thead>
           <tbody>
             {dia.turnos.map((t) => {
-              const franja = franjaHoraria(t.fechaInicio);
+              const franja = t.franja;
               const grupos = agruparPorRol(t.asignaciones, dia.tiposEmpleado);
 
               const bloquesGrupo: Array<{

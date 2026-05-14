@@ -32,6 +32,12 @@ export const auth = betterAuth({
         defaultValue: true,
         input: false,
       },
+      debeCambiarPassword: {
+        type: "boolean",
+        required: false,
+        defaultValue: false,
+        input: false,
+      },
     },
   },
   session: {

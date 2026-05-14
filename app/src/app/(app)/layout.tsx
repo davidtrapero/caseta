@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { LogOutButton } from "./_components/logout-button";
 import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
 import { EnforcePasswordChange } from "./_components/EnforcePasswordChange";
@@ -30,17 +29,23 @@ export default async function AppLayout({
   if (!session?.user) {
     redirect("/login");
   }
-  const user = session.user as typeof session.user & { rol: Rol };
+  const user = session.user as typeof session.user & {
+    rol: Rol;
+    debeCambiarPassword?: boolean;
+  };
   const theme = await getTheme();
+  const debeCambiar = user.debeCambiarPassword ?? false;
 
-  // La sesión de Better Auth no incluye debeCambiarPassword (no está marcada
-  // como additionalField en auth.ts). Lo consultamos directamente para que el
-  // EnforcePasswordChange pueda forzar el redirect tras alta/reset admin.
-  const flagRow = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { debeCambiarPassword: true },
-  });
-  const debeCambiar = flagRow?.debeCambiarPassword ?? false;
+  // Bloqueo server-side: si el usuario debe cambiar la contraseña y no está
+  // ya en /cuenta/password-inicial, redirigimos antes de renderizar nada.
+  // EnforcePasswordChange (cliente) cubre las navegaciones client-side.
+  if (debeCambiar) {
+    const hdrs = await headers();
+    const path = hdrs.get("x-pathname") ?? hdrs.get("next-url") ?? "";
+    if (!path.startsWith("/cuenta/password-inicial")) {
+      redirect("/cuenta/password-inicial");
+    }
+  }
 
   const navItems: NavItem[] = NAV
     .filter(({ roles }) => !roles || roles.includes(user.rol))
