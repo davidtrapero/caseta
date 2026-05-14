@@ -172,11 +172,15 @@ export async function crearTurnoAction(
           },
         });
         if (data.empleadoIdsJson.length > 0) {
+          for (const empleadoId of data.empleadoIdsJson) {
+            const tipoImputadoId = tiposEmpleadoMap.get(empleadoId);
+            if (!tipoImputadoId) throw new Error("El empleado no tiene tipo asignado.");
+          }
           await tx.turnoEmpleado.createMany({
             data: data.empleadoIdsJson.map((empleadoId) => ({
               turnoId: t.id,
               empleadoId,
-              tipoImputadoId: tiposEmpleadoMap.get(empleadoId) ?? "",
+              tipoImputadoId: tiposEmpleadoMap.get(empleadoId)!,
             })),
           });
         }
@@ -321,13 +325,6 @@ export async function asignarEmpleadoAction(
     const empErr = await validarEmpleadosActivos([data.empleadoId]);
     if (empErr) return { ok: false, error: empErr };
 
-    const tieneEseTipo = await prisma.empleadoTipo.findFirst({
-      where: { empleadoId: data.empleadoId, tipoEmpleadoId: data.tipoImputadoId },
-    });
-    if (!tieneEseTipo) {
-      return { ok: false, error: "Tipo imputado no pertenece al empleado" };
-    }
-
     const { gte, lt } = ventanaAmpliada(turno.fechaInicio, turno.fechaFin);
     const existentes = await cargarTurnosEmpleadoEnVentana(
       [data.empleadoId],
@@ -351,8 +348,15 @@ export async function asignarEmpleadoAction(
     }
 
     await withAuditContext(user.id, () =>
-      prisma.turnoEmpleado.create({
-        data: { turnoId: data.turnoId, empleadoId: data.empleadoId, tipoImputadoId: data.tipoImputadoId },
+      prisma.$transaction(async (tx) => {
+        const tieneEseTipo = await tx.empleadoTipo.findFirst({
+          where: { empleadoId: data.empleadoId, tipoEmpleadoId: data.tipoImputadoId },
+        });
+        if (!tieneEseTipo) throw new Error("Tipo imputado no pertenece al empleado");
+
+        await tx.turnoEmpleado.create({
+          data: { turnoId: data.turnoId, empleadoId: data.empleadoId, tipoImputadoId: data.tipoImputadoId },
+        });
       })
     );
 

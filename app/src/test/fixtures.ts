@@ -197,10 +197,11 @@ export async function crearTurno(params: {
       fechaFin: params.fechaFin,
       asignaciones: params.empleadoIds
         ? {
-            create: params.empleadoIds.map((empleadoId) => ({
-              empleadoId,
-              tipoImputadoId: tiposMap.get(empleadoId) ?? "",
-            })),
+            create: params.empleadoIds.map((empleadoId) => {
+              const tipoImputadoId = tiposMap.get(empleadoId);
+              if (!tipoImputadoId) throw new Error(`Empleado ${empleadoId} no tiene tipo asignado — usa crearEmpleado() para crear empleados con tipo`);
+              return { empleadoId, tipoImputadoId };
+            }),
           }
         : undefined,
     },
