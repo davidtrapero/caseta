@@ -61,6 +61,7 @@ model User {
   auditLogs              AuditLog[]
   solicitudesDecididas   SolicitudVoluntario[]
   turnosSolicitudDecididos SolicitudVoluntarioTurno[] @relation("DecididasTurno")
+  plantillasActualizadas PlantillaMensaje[]
 
   @@map("user")
 }
@@ -466,6 +467,24 @@ model SolicitudVoluntarioTurno {
 
   @@unique([solicitudId, turnoId])
   @@index([turnoId])
+}
+
+// Plantillas editables de mensajes (email, WhatsApp).
+// `clave` es la clave estable usada por el código (p.ej. "rechazo_voluntario_email").
+// `variables` contiene los placeholders permitidos {clave}; se valida en la action.
+model PlantillaMensaje {
+  id          String   @id @default(cuid())
+  clave       String   @unique
+  asunto      String?
+  cuerpo      String   @db.Text
+  descripcion String?
+  variables   String[]
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  updatedBy User? @relation(fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("plantilla_mensaje")
 }
 
 // Auditoría universal — escrita automáticamente por extensión Prisma.

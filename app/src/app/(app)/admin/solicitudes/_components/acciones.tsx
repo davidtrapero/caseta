@@ -7,7 +7,6 @@ import { Modal } from "@/components/ui/modal";
 import { Badge } from "@/components/ui/badge";
 import type { ActionResult } from "@/lib/action-result";
 import { aprobarTurnosAction, rechazarTurnosAction } from "../actions";
-import { construirMailto, construirWhatsapp } from "@/lib/voluntario-aviso";
 import { formatRangoTurno } from "@/app/(app)/turnos/_lib/fechas";
 import type { EstadoSolicitudTurno } from "@prisma/client";
 
@@ -32,6 +31,9 @@ type RechazarOk = {
   telefono: string | null;
   motivo: string;
   rechazados: number;
+  emailEnviado: boolean;
+  mailto: string | null;
+  whatsappUrl: string | null;
 };
 
 const FECHA_DIA = new Intl.DateTimeFormat("es-ES", {
@@ -296,35 +298,39 @@ function ModalAviso({
   data: RechazarOk;
   onClose: () => void;
 }) {
-  const mailtoUrl = data.email
-    ? construirMailto(data.nombre, data.email, data.motivo)
-    : null;
-  const whatsappUrl = data.telefono
-    ? construirWhatsapp(data.telefono, data.nombre, data.motivo)
-    : null;
-
   return (
     <Modal
       open
       onClose={onClose}
       title={`${data.rechazados} turno(s) rechazado(s)`}
-      description={`Puedes notificar a ${data.nombre} por los siguientes canales:`}
+      description={`Notifica a ${data.nombre} por los siguientes canales:`}
     >
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          {mailtoUrl ? (
-            <a
-              href={mailtoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
-            >
-              Enviar por email
-            </a>
+          {data.email && data.emailEnviado ? (
+            <p className="rounded-md border border-emerald-600/40 bg-emerald-600/10 px-3 py-2 text-sm">
+              Email enviado a {data.email}.
+            </p>
           ) : null}
-          {whatsappUrl ? (
+          {data.email && !data.emailEnviado && data.mailto ? (
+            <>
+              <p className="rounded-md border border-amber-600/40 bg-amber-600/10 px-3 py-2 text-sm">
+                No se pudo enviar el email automáticamente. Usa el botón para
+                abrirlo en tu cliente.
+              </p>
+              <a
+                href={data.mailto}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
+              >
+                Enviar email
+              </a>
+            </>
+          ) : null}
+          {data.whatsappUrl ? (
             <a
-              href={whatsappUrl}
+              href={data.whatsappUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border px-4 py-2 text-sm font-medium hover:bg-accent transition-colors"
@@ -332,7 +338,7 @@ function ModalAviso({
               Enviar por WhatsApp
             </a>
           ) : null}
-          {!mailtoUrl && !whatsappUrl ? (
+          {!data.email && !data.whatsappUrl ? (
             <p className="text-sm text-muted-foreground">
               Esta solicitud no tiene email ni teléfono registrados.
             </p>

@@ -127,6 +127,34 @@ async function main() {
     console.log(`✓ Entidades de voluntarios ya existían (${existenEntidades})`);
   }
 
+  // ---- Plantillas de mensajes de rechazo de voluntarios ----
+  await prisma.plantillaMensaje.upsert({
+    where: { clave: "rechazo_voluntario_email" },
+    update: {},
+    create: {
+      clave: "rechazo_voluntario_email",
+      asunto: "Tu solicitud de voluntario",
+      cuerpo:
+        "Hola {nombre},\n\nLamentablemente tu solicitud ha sido rechazada por el siguiente motivo:\n\n{motivo}\n\nSi tienes dudas, contacta con el equipo organizador.",
+      descripcion: "Email enviado al voluntario cuando se rechazan sus turnos.",
+      variables: ["nombre", "motivo", "turnos", "caseta", "fechas"],
+    },
+  });
+
+  await prisma.plantillaMensaje.upsert({
+    where: { clave: "rechazo_voluntario_whatsapp" },
+    update: {},
+    create: {
+      clave: "rechazo_voluntario_whatsapp",
+      asunto: null,
+      cuerpo:
+        "Hola {nombre}, lamentablemente tu solicitud de voluntario ha sido rechazada. Motivo: {motivo}",
+      descripcion: "Texto pre-rellenado en WhatsApp para notificar el rechazo.",
+      variables: ["nombre", "motivo", "turnos", "caseta", "fechas"],
+    },
+  });
+  console.log("✓ Plantillas de rechazo voluntario listas");
+
   await prisma.$disconnect();
 }
 

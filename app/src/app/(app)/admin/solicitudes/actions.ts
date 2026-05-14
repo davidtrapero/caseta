@@ -7,6 +7,8 @@ import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
 import { calcularHuecosVoluntario } from "@/app/(app)/turnos/_lib/huecos";
+import { construirAvisoRechazo } from "@/lib/voluntario-aviso";
+import { enviarEmail } from "@/lib/email";
 import { aprobarTurnosSchema, rechazarTurnosSchema } from "./schema";
 // El cliente Prisma de este proyecto va extendido (extensión de auditoría),
 // así que `Prisma.TransactionClient` no encaja. Inferimos el tipo del callback
@@ -251,6 +253,9 @@ type RechazarResult = {
   telefono: string | null;
   motivo: string;
   rechazados: number;
+  emailEnviado: boolean;
+  mailto: string | null;
+  whatsappUrl: string | null;
 };
 
 export async function rechazarTurnosAction(
@@ -296,7 +301,29 @@ export async function rechazarTurnosAction(
           },
         });
 
+        // Detalle de los turnos rechazados para enriquecer las plantillas.
+        const detalle = await tx.solicitudVoluntarioTurno.findMany({
+          where: { id: { in: aRechazar.map((t) => t.id) } },
+          include: {
+            turno: {
+              select: {
+                fechaInicio: true,
+                caseta: { select: { nombre: true } },
+              },
+            },
+          },
+        });
+
         await recalcularEstadoSolicitud(tx, solicitud.id, user.id);
+
+        const fechasArr = [
+          ...new Set(
+            detalle.map((d) => d.turno.fechaInicio.toISOString().slice(0, 10))
+          ),
+        ].sort();
+        const casetasArr = [
+          ...new Set(detalle.map((d) => d.turno.caseta.nombre)),
+        ];
 
         return {
           solicitudId: solicitud.id,
@@ -305,15 +332,55 @@ export async function rechazarTurnosAction(
           telefono: solicitud.telefono,
           motivo: data.motivo,
           rechazados: aRechazar.length,
+          casetas: casetasArr.join(", "),
+          fechas: fechasArr.join(", "),
         };
       })
     );
+
+    // Construir aviso (mailto + wa.me) con plantillas de BD para devolver al
+    // cliente. Si hay email, intenta enviar automáticamente — el fallo NO
+    // aborta el rechazo (la transacción ya se cerró).
+    const aviso = await construirAvisoRechazo({
+      email: result.email,
+      telefono: result.telefono,
+      vars: {
+        nombre: result.nombre,
+        motivo: result.motivo,
+        turnos: String(result.rechazados),
+        caseta: result.casetas,
+        fechas: result.fechas,
+      },
+    });
+
+    let emailEnviado = false;
+    if (result.email) {
+      const env = await enviarEmail({
+        to: result.email,
+        subject: aviso.asunto,
+        text: aviso.cuerpoEmail,
+      });
+      emailEnviado = env.ok;
+    }
 
     // Nota: NO revalidamos aquí. El cliente abre un aviso post-rechazo con
     // botones de WhatsApp/email; si revalidamos, este componente se desmonta
     // antes de que el aviso aparezca. La revalidación se dispara desde el
     // cliente al cerrar el aviso (router.refresh()).
-    return { ok: true, data: result };
+    return {
+      ok: true,
+      data: {
+        solicitudId: result.solicitudId,
+        nombre: result.nombre,
+        email: result.email,
+        telefono: result.telefono,
+        motivo: result.motivo,
+        rechazados: result.rechazados,
+        emailEnviado,
+        mailto: aviso.mailto,
+        whatsappUrl: aviso.whatsappUrl,
+      },
+    };
   } catch (err) {
     return toActionError(err);
   }
