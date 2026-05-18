@@ -94,7 +94,7 @@ export async function aprobarTurnosAction(
           select: { id: true },
         });
         if (!tipoVoluntario) {
-          throw new Error("No hay un tipo de empleado marcado como voluntario.");
+          throw new Error("No hay ninguna categoría marcada como voluntariado.");
         }
 
         // Empleado: reutiliza por teléfono+tipo voluntario; si no existe, lo crea.
@@ -201,7 +201,7 @@ export async function aprobarTurnosAction(
           });
           if (r.solapa) {
             const err = new Error(
-              "Solape con otros turnos del empleado. Revisa antes de aprobar."
+              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
             );
             (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
               turnos: ["Solape detectado"],
@@ -461,7 +461,7 @@ export async function aprobarTurnosEmpleadoAction(
           select: { id: true },
         });
         if (!tipoEmpleado) {
-          throw new Error("No hay un tipo de empleado contratado activo configurado.");
+          throw new Error("No hay ninguna categoría de personal contratado activa configurada.");
         }
 
         // Buscar empleado por DNI.
@@ -473,7 +473,7 @@ export async function aprobarTurnosEmpleadoAction(
           throw new Error(`No se encontró ningún empleado con DNI ${solicitud.dni}.`);
         }
         if (!empleado.activo) {
-          throw new Error("El empleado asociado está desactivado.");
+          throw new Error("La persona asociada está desactivada.");
         }
 
         const turnoIds = aResolver.map((t) => t.turnoId);
@@ -533,7 +533,7 @@ export async function aprobarTurnosEmpleadoAction(
           });
           if (r.solapa) {
             const err = new Error(
-              "Solape con otros turnos del empleado. Revisa antes de aprobar."
+              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
             );
             (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
               turnos: ["Solape detectado"],
@@ -658,7 +658,7 @@ export async function aprobarSolicitudEmpleadoAction(
           select: { id: true },
         });
         if (!tipoEmpleado) {
-          throw new Error("No hay un tipo de empleado contratado activo configurado.");
+          throw new Error("No hay ninguna categoría de personal contratado activa configurada.");
         }
 
         // 2. Buscar o crear Empleado por DNI
@@ -671,7 +671,7 @@ export async function aprobarSolicitudEmpleadoAction(
         if (empleadoExistente) {
           if (empleadoExistente.esVoluntario) {
             throw new Error(
-              "El empleado registrado con este DNI es voluntario. No se puede aprobar como contratado."
+              "La persona registrada con este DNI pertenece al voluntariado. No se puede aprobar como contratada."
             );
           }
           // Actualizar datos del empleado con la info de la solicitud
@@ -758,7 +758,7 @@ export async function aprobarSolicitudEmpleadoAction(
           });
           if (r.solapa) {
             const err = new Error(
-              "Solape con otros turnos del empleado. Revisa antes de aprobar."
+              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
             );
             (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
               turnos: ["Solape detectado"],

@@ -74,7 +74,7 @@ export default async function SolicitudesPage({
     <div className="flex flex-col gap-6">
       <SectionHeader
         title="Solicitudes"
-        subtitle="Solicitudes de voluntarios y empleados pendientes de revisión."
+        subtitle="Solicitudes de voluntariado y personal pendientes de revisión."
       />
 
       <div className="flex items-center gap-2 flex-wrap text-sm">
