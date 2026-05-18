@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { toActionError, type ActionResult } from "@/lib/action-result";
 import { obtenerEdicionActiva } from "@/lib/edicion";
@@ -29,7 +29,7 @@ export async function calcularNominasAction(): Promise<
   ActionResult<ResultadoCalculo>
 > {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso(["admin", "gerente"]);
 
     const edicion = await obtenerEdicionActiva();
     if (!edicion) return { ok: false, error: "No hay edición activa." };
@@ -147,7 +147,7 @@ export async function marcarPagadaAction(
   }
 
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("caja.nominas.marcar-pagada");
 
     const existente = await prisma.nomina.findUnique({
       where: { id },
@@ -181,7 +181,7 @@ export async function desmarcarPagadaAction(
 
   try {
     // Solo admin — deshacer un "pagada" requiere intención explícita.
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("caja.nominas.marcar-pagada");
 
     const existente = await prisma.nomina.findUnique({
       where: { id },
