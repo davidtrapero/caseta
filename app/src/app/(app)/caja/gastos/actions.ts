@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -21,7 +21,7 @@ export async function crearGastoAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente", "cajero"]);
+    const { user } = await requirePermiso("caja.gastos.crear");
     const data = parseForm(crearGastoSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
@@ -68,7 +68,7 @@ export async function actualizarGastoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente", "cajero"]);
+    const { user } = await requirePermiso("caja.gastos.crear");
     const data = parseForm(actualizarGastoSchema, formData);
 
     const existente = await prisma.gasto.findUnique({ where: { id } });
@@ -105,7 +105,7 @@ export async function eliminarGastoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("caja.gastos.eliminar");
 
     const existente = await prisma.gasto.findUnique({
       where: { id },
