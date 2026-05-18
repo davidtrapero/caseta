@@ -215,7 +215,7 @@ export function DialogoNuevoTurno({
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Puedes crear el turno sin empleados y asignarlos después.
+            Puedes crear el turno sin personal asignado y añadirlo después.
           </p>
         </div>
 

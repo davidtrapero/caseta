@@ -103,7 +103,7 @@ export default async function AsistenciasPage({
       <div className="flex items-end justify-between gap-4">
         <SectionHeader
           title="Asistencias"
-          subtitle="Empleados que han asistido a turnos. Filtros aplican a página y exportación."
+          subtitle="Personal que ha asistido a turnos. Filtros aplican a página y exportación."
         />
         <Button asChild variant="outline">
           <Link

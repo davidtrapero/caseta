@@ -23,7 +23,7 @@ type GrupoRol = {
 };
 
 const GRUPOS_ROL: GrupoRol[] = [
-  { key: "coordinadores", singular: "Coordinador", plural: "Coordinadores" },
+  { key: "coordinadores", singular: "Coordinación", plural: "Coordinación" },
   { key: "trabajadores", singular: "Personal contratado", plural: "Personal contratado" },
   { key: "voluntarios", singular: "Persona voluntaria", plural: "Personas voluntarias", slug: "grupo-rol-vol" },
   { key: "otros", singular: "Otro", plural: "Otros" },

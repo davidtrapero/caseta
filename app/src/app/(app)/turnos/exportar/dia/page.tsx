@@ -63,7 +63,7 @@ export default async function ExportarDiaPage({
           <thead>
             <tr>
               <th style={{ width: 130 }}>Horario</th>
-              <th>Empleados</th>
+              <th>Personal</th>
               <th style={{ width: 200 }}>Vacantes</th>
             </tr>
           </thead>

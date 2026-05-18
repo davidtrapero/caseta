@@ -82,7 +82,7 @@ export default async function ImprimirPage({
           <thead>
             <tr>
               <th style={{ width: 110 }}>Horario</th>
-              <th>Empleados y asistencia</th>
+              <th>Personal y asistencia</th>
               <th style={{ width: 160 }}>Vacantes</th>
             </tr>
           </thead>
@@ -114,9 +114,7 @@ export default async function ImprimirPage({
                         {grupos.coordinadores.length > 0 ? (
                           <BloqueRol
                             titulo={
-                              grupos.coordinadores.length === 1
-                                ? "Coordinador"
-                                : "Coordinadores"
+                              "Coordinación"
                             }
                             asignaciones={grupos.coordinadores}
                             tipos={dia.tiposEmpleado}

@@ -55,7 +55,7 @@ export default async function SemanaTurnosPage({
   const resumen = resumenAlcance(semana.turnos);
 
   const ROL_LABEL: Record<"coordinadores" | "trabajadores" | "voluntarios" | "otros", { singular: string; plural: string }> = {
-    coordinadores: { singular: "Coordinador", plural: "Coordinadores" },
+    coordinadores: { singular: "Coordinación", plural: "Coordinación" },
     trabajadores: { singular: "Personal contratado", plural: "Personal contratado" },
     voluntarios: { singular: "Persona voluntaria", plural: "Personas voluntarias" },
     otros: { singular: "Otros", plural: "Otros" },
