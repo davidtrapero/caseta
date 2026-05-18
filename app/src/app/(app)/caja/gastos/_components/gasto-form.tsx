@@ -38,6 +38,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -53,7 +54,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
           id="descripcion"
           name="descripcion"
           required
-          defaultValue={initial?.descripcion ?? ""}
+          defaultValue={(vals.descripcion as string | undefined) ?? initial?.descripcion ?? ""}
           placeholder="Compra de hielo, alquiler frigorífico…"
           maxLength={300}
         />
@@ -70,7 +71,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
             step="0.01"
             min="0.01"
             required
-            defaultValue={initial?.monto ?? ""}
+            defaultValue={(vals.monto as string | undefined) ?? initial?.monto ?? ""}
             placeholder="12.50"
             className="font-mono"
           />
@@ -83,7 +84,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
             name="fecha"
             type="date"
             required
-            defaultValue={initial?.fecha ?? ""}
+            defaultValue={(vals.fecha as string | undefined) ?? initial?.fecha ?? ""}
           />
           <FieldError messages={errors.fecha} />
         </div>
@@ -96,7 +97,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
             id="categoria"
             name="categoria"
             required
-            defaultValue={initial?.categoria ?? "compras"}
+            defaultValue={(vals.categoria as string | undefined) ?? initial?.categoria ?? "compras"}
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
           >
             {CATEGORIAS_GASTO.map((c) => (
@@ -112,7 +113,7 @@ export function GastoForm({ modo, casetas, initial }: GastoFormProps) {
           <select
             id="casetaId"
             name="casetaId"
-            defaultValue={initial?.casetaId ?? "__central__"}
+            defaultValue={(vals.casetaId as string | undefined) ?? initial?.casetaId ?? "__central__"}
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
           >
             <option value="__central__">— Gasto centralizado —</option>

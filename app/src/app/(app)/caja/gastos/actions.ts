@@ -19,8 +19,8 @@ export async function crearGastoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("caja.gastos.crear");
     const data = parseForm(crearGastoSchema, formData);
 
@@ -49,7 +49,8 @@ export async function crearGastoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/caja/gastos");
@@ -66,8 +67,8 @@ export async function actualizarGastoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("caja.gastos.crear");
     const data = parseForm(actualizarGastoSchema, formData);
 
@@ -87,7 +88,8 @@ export async function actualizarGastoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/caja/gastos");
