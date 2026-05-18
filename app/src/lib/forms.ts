@@ -30,7 +30,7 @@ export function formDataToObject(
   const result: Record<string, unknown> = {};
   const seen = new Set<string>();
 
-  for (const [key, value] of formData.entries()) {
+  for (const key of formData.keys()) {
     // Evita procesar campos ya vistos (solo la primera ocurrencia de cada key)
     if (seen.has(key)) continue;
     seen.add(key);
