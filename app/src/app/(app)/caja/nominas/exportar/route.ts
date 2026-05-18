@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 
 export async function GET(req: Request) {
-  await requireRole(["admin", "gerente", "cajero"]);
+  await requirePermiso("caja.nominas.ver");
 
   const url = new URL(req.url);
   let edicionId = url.searchParams.get("edicionId") ?? undefined;

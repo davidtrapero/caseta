@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import {
   parseForm,
@@ -19,7 +19,7 @@ export async function crearProductoAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(crearProductoSchema, formData);
 
     const caseta = await prisma.caseta.findUnique({
@@ -58,7 +58,7 @@ export async function actualizarProductoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(actualizarProductoSchema, formData);
 
     const existente = await prisma.producto.findUnique({ where: { id } });
@@ -94,7 +94,7 @@ export async function toggleActivoProductoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.productos.crud");
     const actual = await prisma.producto.findUnique({
       where: { id },
       select: { activo: true },

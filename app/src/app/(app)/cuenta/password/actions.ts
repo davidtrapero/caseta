@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 
@@ -26,7 +26,7 @@ export async function cambiarPasswordAction(
   formData: FormData
 ): Promise<ActionResult<{ ok: true }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente", "cajero"]);
+    const { user } = await requirePermiso("turnos.semana.ver");
     const data = parseForm(schema, formData);
 
     await withAuditContext(user.id, async () => {

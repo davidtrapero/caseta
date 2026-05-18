@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -89,7 +89,7 @@ export async function crearEmpleadoAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.empleados.crud");
     const data = parseForm(crearEmpleadoSchema, formData);
 
     const reglaRes = await validarReglaVoluntario({
@@ -151,7 +151,7 @@ export async function actualizarEmpleadoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.empleados.crud");
     const data = parseForm(actualizarEmpleadoSchema, formData);
 
     // Al actualizar no exigimos teléfono — coherente con baseline previo.
@@ -215,7 +215,7 @@ export async function toggleActivoEmpleadoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.empleados.crud");
     const actual = await prisma.empleado.findUnique({
       where: { id },
       select: { activo: true },

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import {
   parseForm,
@@ -19,7 +19,7 @@ export async function ajustarStockAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.stock.ajustar");
     const data = parseForm(ajustarStockSchema, formData);
 
     const edicion = await obtenerEdicionActiva();

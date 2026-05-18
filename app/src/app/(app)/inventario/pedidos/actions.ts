@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import {
   parseForm,
@@ -52,7 +52,7 @@ export async function crearPedidoAction(
   let nuevoId: string | null = null;
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.pedidos.crear");
     const data = parseForm(crearPedidoSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
@@ -112,7 +112,7 @@ export async function editarPedidoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.pedidos.crear");
     const data = parseForm(editarPedidoSchema, formData);
 
     const existente = await prisma.pedido.findUnique({
@@ -178,7 +178,7 @@ export async function recibirPedidoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.pedidos.crear");
 
     const edicion = await obtenerEdicionActiva();
     if (!edicion) return { ok: false, error: "No hay edición activa." };
@@ -269,7 +269,7 @@ export async function cancelarPedidoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("inventario.pedidos.crear");
 
     const existente = await prisma.pedido.findUnique({
       where: { id },

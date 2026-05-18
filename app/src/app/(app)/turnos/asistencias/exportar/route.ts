@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { cargarAsistencias } from "../_lib/query";
 
@@ -14,7 +14,7 @@ function parseTipos(raw: string | null): string[] {
 }
 
 export async function GET(req: Request) {
-  await requireRole(["admin", "gerente"]);
+  await requirePermiso("turnos.imprimir");
 
   const url = new URL(req.url);
   let edicionId = url.searchParams.get("edicionId") ?? undefined;

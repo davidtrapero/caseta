@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -104,7 +104,7 @@ export async function crearTurnoAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(crearTurnoSchema, formData);
 
     // Duplicados en la lista de personal.
@@ -220,7 +220,7 @@ export async function actualizarTurnoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarTurnoSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -288,7 +288,7 @@ export async function eliminarTurnoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
 
     const existente = await prisma.turno.findUnique({
       where: { id },
@@ -314,7 +314,7 @@ export async function asignarEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(asignarEmpleadoSchema, formData);
 
     const turno = await prisma.turno.findUnique({
@@ -398,7 +398,7 @@ export async function desasignarEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(desasignarEmpleadoSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -438,7 +438,7 @@ export async function desasignarTurnoDesdeEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(desasignarEmpleadoSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -475,7 +475,7 @@ export async function toggleAsistenciaAction(
   formData: FormData
 ): Promise<ActionResult<{ asistio: boolean }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente", "cajero"]);
+    const { user } = await requirePermiso(["admin", "gerente", "cajero"]);
     const data = parseForm(toggleAsistenciaSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -531,7 +531,7 @@ export async function duplicarDiaAction(
 ): Promise<ActionResult<{ copiados: number }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(duplicarDiaSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -590,7 +590,7 @@ export async function duplicarSemanaAction(
 ): Promise<ActionResult<{ copiados: number }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(duplicarSemanaSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -724,7 +724,7 @@ export async function actualizarPlazasAction(
 ): Promise<ActionResult<undefined>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarPlazasSchema, formData);
 
     const turno = await prisma.turno.findUnique({
@@ -762,7 +762,7 @@ export async function actualizarTurnoYPlazasAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarTurnoYPlazasSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -975,7 +975,7 @@ export async function contarTurnosSinPlazasAction(): Promise<
   ActionResult<ContadorTurnosSinPlazas>
 > {
   try {
-    await requireRole(["admin"]);
+    await requirePermiso(["admin"]);
 
     const ed = await obtenerEdicionActiva();
     if (!ed) {
@@ -1020,7 +1020,7 @@ export async function rellenarPlazasTurnosSinPlazasAction(
 ): Promise<ActionResult<{ rellenados: number }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso(["admin"]);
     const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
 
     const ed = await obtenerEdicionActiva();
