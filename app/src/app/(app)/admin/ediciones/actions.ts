@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearEdicionSchema, actualizarEdicionSchema } from "./schema";
 
 function generarToken() {
@@ -18,6 +19,7 @@ export async function crearEdicionAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(crearEdicionSchema, formData);
 
@@ -40,6 +42,7 @@ export async function actualizarEdicionAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(actualizarEdicionSchema, formData);
 

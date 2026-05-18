@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearCasetaSchema, actualizarCasetaSchema } from "./schema";
 
 export async function crearCasetaAction(
@@ -13,6 +14,7 @@ export async function crearCasetaAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearCasetaSchema, formData);
 
@@ -35,6 +37,7 @@ export async function actualizarCasetaAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarCasetaSchema, formData);
 

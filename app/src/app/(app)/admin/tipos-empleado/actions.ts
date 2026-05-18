@@ -10,6 +10,7 @@ import {
   toActionError,
   type ActionResult,
 } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import {
   crearTipoEmpleadoSchema,
   actualizarTipoEmpleadoSchema,
@@ -25,6 +26,7 @@ export async function crearTipoEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(crearTipoEmpleadoSchema, formData);
 
@@ -64,6 +66,7 @@ export async function actualizarTipoEmpleadoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(actualizarTipoEmpleadoSchema, formData);
 

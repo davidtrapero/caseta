@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearUsuarioSchema, actualizarUsuarioSchema } from "./schema";
 
 /**
@@ -40,6 +41,7 @@ export async function crearUsuarioAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(crearUsuarioSchema, formData);
 
@@ -60,6 +62,22 @@ export async function crearUsuarioAction(
       });
     });
   } catch (err) {
+    const fieldErrors = err instanceof z.ZodError
+      ? Object.fromEntries(
+          err.issues.map((issue) => [
+            issue.path.join("."),
+            [issue.message],
+          ])
+        )
+      : undefined;
+    if (fieldErrors) {
+      return {
+        ok: false,
+        error: "Error en la validación del formulario.",
+        fieldErrors,
+        values,
+      };
+    }
     return toActionError(err);
   }
 
@@ -77,6 +95,7 @@ export async function actualizarUsuarioAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(actualizarUsuarioSchema, formData);
 
@@ -85,6 +104,7 @@ export async function actualizarUsuarioAction(
       return {
         ok: false,
         error: "No puedes desactivarte a ti mismx.",
+        values,
       };
     }
 
@@ -94,6 +114,7 @@ export async function actualizarUsuarioAction(
       return {
         ok: false,
         error: "No puedes cambiar tu propio rol.",
+        values,
       };
     }
 
@@ -101,6 +122,7 @@ export async function actualizarUsuarioAction(
       return {
         ok: false,
         error: "No se puede: dejaría el sistema sin ningún administrador activo.",
+        values,
       };
     }
 
@@ -115,6 +137,22 @@ export async function actualizarUsuarioAction(
       })
     );
   } catch (err) {
+    const fieldErrors = err instanceof z.ZodError
+      ? Object.fromEntries(
+          err.issues.map((issue) => [
+            issue.path.join("."),
+            [issue.message],
+          ])
+        )
+      : undefined;
+    if (fieldErrors) {
+      return {
+        ok: false,
+        error: "Error en la validación del formulario.",
+        fieldErrors,
+        values,
+      };
+    }
     return toActionError(err);
   }
 

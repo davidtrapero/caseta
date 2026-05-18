@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearProveedorSchema, actualizarProveedorSchema } from "./schema";
 
 export async function crearProveedorAction(
@@ -13,6 +14,7 @@ export async function crearProveedorAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearProveedorSchema, formData);
 
@@ -45,6 +47,7 @@ export async function actualizarProveedorAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarProveedorSchema, formData);
 

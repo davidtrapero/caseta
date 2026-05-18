@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearEntidadSchema, renombrarEntidadSchema } from "./schema";
 
 export async function crearEntidadAction(
@@ -12,6 +13,7 @@ export async function crearEntidadAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearEntidadSchema, formData);
 
@@ -38,6 +40,7 @@ export async function renombrarEntidadAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(renombrarEntidadSchema, formData);
 
