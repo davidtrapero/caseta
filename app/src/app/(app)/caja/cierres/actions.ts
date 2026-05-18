@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { crearCierreSchema, actualizarCierreSchema } from "./schema";
 
@@ -19,18 +20,19 @@ export async function crearCierreAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente", "cajero"]);
     const data = parseForm(crearCierreSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
-    if (!edicion) return { ok: false, error: "No hay edición activa." };
+    if (!edicion) return { ok: false, error: "No hay edición activa.", values };
 
     const caseta = await prisma.caseta.findUnique({
       where: { id: data.casetaId },
       select: { activa: true },
     });
-    if (!caseta) return { ok: false, error: "Caseta no encontrada." };
-    if (!caseta.activa) return { ok: false, error: "La caseta no está activa." };
+    if (!caseta) return { ok: false, error: "Caseta no encontrada.", values };
+    if (!caseta.activa) return { ok: false, error: "La caseta no está activa.", values };
 
     await withAuditContext(user.id, () =>
       prisma.cierreDiario.create({
@@ -62,17 +64,19 @@ export async function actualizarCierreAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente", "cajero"]);
     const data = parseForm(actualizarCierreSchema, formData);
 
     const existente = await prisma.cierreDiario.findUnique({ where: { id } });
-    if (!existente) return { ok: false, error: "Cierre no encontrado." };
+    if (!existente) return { ok: false, error: "Cierre no encontrado.", values };
 
     // Si está bloqueado, solo admin puede editar.
     if (existente.bloqueado && user.rol !== "admin") {
       return {
         ok: false,
         error: "El cierre está bloqueado. Solo admin puede editarlo.",
+        values,
       };
     }
 

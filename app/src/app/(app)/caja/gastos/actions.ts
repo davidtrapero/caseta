@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { crearGastoSchema, actualizarGastoSchema } from "./schema";
 
@@ -19,18 +20,19 @@ export async function crearGastoAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente", "cajero"]);
     const data = parseForm(crearGastoSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
-    if (!edicion) return { ok: false, error: "No hay edición activa." };
+    if (!edicion) return { ok: false, error: "No hay edición activa.", values };
 
     if (data.casetaId) {
       const caseta = await prisma.caseta.findUnique({
         where: { id: data.casetaId },
         select: { activa: true },
       });
-      if (!caseta) return { ok: false, error: "Caseta no encontrada." };
+      if (!caseta) return { ok: false, error: "Caseta no encontrada.", values };
     }
 
     await withAuditContext(user.id, () =>
@@ -65,11 +67,12 @@ export async function actualizarGastoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente", "cajero"]);
     const data = parseForm(actualizarGastoSchema, formData);
 
     const existente = await prisma.gasto.findUnique({ where: { id } });
-    if (!existente) return { ok: false, error: "Gasto no encontrado." };
+    if (!existente) return { ok: false, error: "Gasto no encontrado.", values };
 
     await withAuditContext(user.id, () =>
       prisma.gasto.update({
