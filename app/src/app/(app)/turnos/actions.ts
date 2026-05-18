@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import {
@@ -102,21 +103,22 @@ export async function crearTurnoAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearTurnoSchema, formData);
 
     // Duplicados en la lista de personal.
     const uniq = new Set(data.empleadoIdsJson);
     if (uniq.size !== data.empleadoIdsJson.length) {
-      return { ok: false, error: "Una persona aparece duplicada en la lista." };
+      return { ok: false, error: "Una persona aparece duplicada en la lista.", values };
     }
 
     const edErr = await validarEdicionActiva(data.edicionId);
-    if (edErr) return { ok: false, error: edErr };
+    if (edErr) return { ok: false, error: edErr, values };
     const casErr = await validarCasetaActiva(data.casetaId);
-    if (casErr) return { ok: false, error: casErr };
+    if (casErr) return { ok: false, error: casErr, values };
     const empErr = await validarEmpleadosActivos(data.empleadoIdsJson);
-    if (empErr) return { ok: false, error: empErr };
+    if (empErr) return { ok: false, error: empErr, values };
 
     const inicio = new Date(data.fechaInicio);
     const fin = new Date(data.fechaFin);
@@ -139,6 +141,7 @@ export async function crearTurnoAction(
           return {
             ok: false,
             error: `Solape detectado para un empleado (${res.conflictos.length} conflicto(s)).`,
+            values,
           };
         }
       }
@@ -216,13 +219,14 @@ export async function actualizarTurnoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarTurnoSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
-    if (edErr) return { ok: false, error: edErr };
+    if (edErr) return { ok: false, error: edErr, values };
     const casErr = await validarCasetaActiva(data.casetaId);
-    if (casErr) return { ok: false, error: casErr };
+    if (casErr) return { ok: false, error: casErr, values };
 
     const existente = await prisma.turno.findUnique({
       where: { id },
@@ -247,6 +251,7 @@ export async function actualizarTurnoAction(
           return {
             ok: false,
             error: `Solape detectado tras mover el horario (${res.conflictos.length} conflicto(s)).`,
+            values,
           };
         }
       }
@@ -525,16 +530,17 @@ export async function duplicarDiaAction(
   formData: FormData
 ): Promise<ActionResult<{ copiados: number }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(duplicarDiaSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
-    if (edErr) return { ok: false, error: edErr };
+    if (edErr) return { ok: false, error: edErr, values };
     const casErr = await validarCasetaActiva(data.casetaId);
-    if (casErr) return { ok: false, error: casErr };
+    if (casErr) return { ok: false, error: casErr, values };
     if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
       const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
-      if (casOrigErr) return { ok: false, error: casOrigErr };
+      if (casOrigErr) return { ok: false, error: casOrigErr, values };
     }
 
     const origenIni = ymdToUtcDate(data.diaOrigen);
@@ -583,16 +589,17 @@ export async function duplicarSemanaAction(
   formData: FormData
 ): Promise<ActionResult<{ copiados: number }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(duplicarSemanaSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
-    if (edErr) return { ok: false, error: edErr };
+    if (edErr) return { ok: false, error: edErr, values };
     const casErr = await validarCasetaActiva(data.casetaId);
-    if (casErr) return { ok: false, error: casErr };
+    if (casErr) return { ok: false, error: casErr, values };
     if (data.casetaIdOrigen && data.casetaIdOrigen !== data.casetaId) {
       const casOrigErr = await validarCasetaActiva(data.casetaIdOrigen);
-      if (casOrigErr) return { ok: false, error: casOrigErr };
+      if (casOrigErr) return { ok: false, error: casOrigErr, values };
     }
 
     const origenIni = ymdToUtcDate(data.lunesOrigen);
@@ -716,6 +723,7 @@ export async function actualizarPlazasAction(
   formData: FormData
 ): Promise<ActionResult<undefined>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarPlazasSchema, formData);
 
@@ -723,12 +731,12 @@ export async function actualizarPlazasAction(
       where: { id: data.turnoId },
       select: { id: true },
     });
-    if (!turno) return { ok: false, error: "Turno no encontrado." };
+    if (!turno) return { ok: false, error: "Turno no encontrado.", values };
 
     const plazas = data.plazasJson;
 
     const errPlazas = await validarPlazasVsAsignados(data.turnoId, plazas);
-    if (errPlazas) return { ok: false, error: errPlazas };
+    if (errPlazas) return { ok: false, error: errPlazas, values };
 
     await withAuditContext(user.id, () =>
       prisma.$transaction((tx) => aplicarPlazasEnTx(tx, data.turnoId, plazas))
@@ -753,19 +761,20 @@ export async function actualizarTurnoYPlazasAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarTurnoYPlazasSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
-    if (edErr) return { ok: false, error: edErr };
+    if (edErr) return { ok: false, error: edErr, values };
     const casErr = await validarCasetaActiva(data.casetaId);
-    if (casErr) return { ok: false, error: casErr };
+    if (casErr) return { ok: false, error: casErr, values };
 
     const existente = await prisma.turno.findUnique({
       where: { id },
       include: { asignaciones: { select: { empleadoId: true } } },
     });
-    if (!existente) return { ok: false, error: "Turno no encontrado." };
+    if (!existente) return { ok: false, error: "Turno no encontrado.", values };
 
     const inicio = new Date(data.fechaInicio);
     const fin = new Date(data.fechaFin);
@@ -785,13 +794,14 @@ export async function actualizarTurnoYPlazasAction(
           return {
             ok: false,
             error: `Solape detectado tras mover el horario (${res.conflictos.length} conflicto(s)).`,
+            values,
           };
         }
       }
     }
 
     const errPlazas = await validarPlazasVsAsignados(id, data.plazasJson);
-    if (errPlazas) return { ok: false, error: errPlazas };
+    if (errPlazas) return { ok: false, error: errPlazas, values };
 
     await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
@@ -1009,16 +1019,17 @@ export async function rellenarPlazasTurnosSinPlazasAction(
   formData: FormData
 ): Promise<ActionResult<{ rellenados: number }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin"]);
     const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
 
     const ed = await obtenerEdicionActiva();
-    if (!ed) return { ok: false, error: "No hay edición activa." };
+    if (!ed) return { ok: false, error: "No hay edición activa.", values };
 
     const tipoIds = data.plazasJson.map((p) => p.tipoEmpleadoId);
     const tiposUnicos = new Set(tipoIds);
     if (tiposUnicos.size !== tipoIds.length) {
-      return { ok: false, error: "No puedes repetir el mismo tipo de empleado." };
+      return { ok: false, error: "No puedes repetir el mismo tipo de empleado.", values };
     }
 
     const tipos = await prisma.tipoEmpleado.findMany({
@@ -1026,15 +1037,15 @@ export async function rellenarPlazasTurnosSinPlazasAction(
       select: { id: true, activo: true },
     });
     if (tipos.length !== tipoIds.length) {
-      return { ok: false, error: "Algún tipo de empleado no existe." };
+      return { ok: false, error: "Algún tipo de empleado no existe.", values };
     }
     if (tipos.some((t) => !t.activo)) {
-      return { ok: false, error: "Algún tipo de empleado no está activo." };
+      return { ok: false, error: "Algún tipo de empleado no está activo.", values };
     }
 
     if (data.casetaId) {
       const casErr = await validarCasetaActiva(data.casetaId);
-      if (casErr) return { ok: false, error: casErr };
+      if (casErr) return { ok: false, error: casErr, values };
     }
 
     const turnos = await prisma.turno.findMany({
