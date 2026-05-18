@@ -167,4 +167,146 @@ describe("formDataToObject", () => {
     const result = formDataToObject(fd);
     expect(result).toEqual({});
   });
+
+  it("preserva strings numéricos como strings (FormData siempre devuelve strings)", () => {
+    const fd = new FormData();
+    fd.append("cantidad", "42");
+    fd.append("precio", "19.99");
+    fd.append("porcentaje", "0");
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      cantidad: "42",
+      precio: "19.99",
+      porcentaje: "0",
+    });
+    expect(typeof result.cantidad).toBe("string");
+    expect(typeof result.precio).toBe("string");
+  });
+
+  it("simula booleanos checkbox: múltiples valores con mismo nombre -> array", () => {
+    // En HTML, checkboxes con mismo name generan multivalor en FormData.
+    // El frontend puede interpretar como booleano, pero formDataToObject preserva strings.
+    const fd = new FormData();
+    fd.append("casetas", "caseta-1");
+    fd.append("casetas", "caseta-2");
+    fd.append("casetas", "caseta-3");
+    fd.append("activo", "on"); // Checkbox checked
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      casetas: ["caseta-1", "caseta-2", "caseta-3"],
+      activo: "on",
+    });
+    expect(Array.isArray(result.casetas)).toBe(true);
+  });
+
+  it("checkbox no enviado (no checked) resulta en campo ausente", () => {
+    // Checkboxes unchecked no aparecen en FormData
+    const fd = new FormData();
+    fd.append("nombre", "Test");
+    // No añadimos 'confirmado' porque estaría unchecked
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      nombre: "Test",
+    });
+    expect(result.confirmado).toBeUndefined();
+  });
+
+  it("soporta campos con guiones (kebab-case)", () => {
+    const fd = new FormData();
+    fd.append("primer-nombre", "Juan");
+    fd.append("apellido-paterno", "García");
+    fd.append("email-trabajo", "juan@work.com");
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      "primer-nombre": "Juan",
+      "apellido-paterno": "García",
+      "email-trabajo": "juan@work.com",
+    });
+  });
+
+  it("soporta campos con underscores (snake_case) pero no prefix _", () => {
+    const fd = new FormData();
+    fd.append("primer_nombre", "María");
+    fd.append("apellido_materno", "López");
+    fd.append("_id", "no-incluir"); // Prefix _ se excluye
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      primer_nombre: "María",
+      apellido_materno: "López",
+    });
+    expect(result._id).toBeUndefined();
+  });
+
+  it("maneja mezcla de vacíos, multivalor y excluidos complejos", () => {
+    const fd = new FormData();
+    fd.append("nombre", "Test");
+    fd.append("apellido", ""); // Vacío -> excluido
+    fd.append("turnos", "lunes");
+    fd.append("turnos", ""); // Un valor vacío en multivalor
+    fd.append("turnos", "miércoles");
+    fd.append("password", "secret"); // Blacklist
+    fd.append("comentarios", ""); // Vacío
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      nombre: "Test",
+      turnos: ["lunes", "miércoles"], // El vacío se filtra
+    });
+  });
+
+  it("soporta excludeFields con nombres en kebab y snake case", () => {
+    const fd = new FormData();
+    fd.append("campo-publico", "visible");
+    fd.append("campo_secreto", "oculto");
+    fd.append("email", "test@example.com");
+
+    const result = formDataToObject(fd, {
+      excludeFields: ["campo-publico", "campo_secreto"],
+    });
+    expect(result).toEqual({
+      email: "test@example.com",
+    });
+    expect(result["campo-publico"]).toBeUndefined();
+    expect(result["campo_secreto"]).toBeUndefined();
+  });
+
+  it("preserva orden de inserción (único para first occurrence en multivalor)", () => {
+    const fd = new FormData();
+    fd.append("z_field", "z1");
+    fd.append("a_field", "a1");
+    fd.append("m_field", "m1");
+
+    const result = formDataToObject(fd);
+    const keys = Object.keys(result);
+    // FormData.keys() itera en orden de inserción
+    expect(keys).toEqual(["z_field", "a_field", "m_field"]);
+  });
+
+  it("mezcla compleja: números + booleanos + multivalor + vacíos + excluidos", () => {
+    const fd = new FormData();
+    fd.append("casetaId", "c-1");
+    fd.append("jornalDiario", "50.00");
+    fd.append("turnos", "turno-1");
+    fd.append("turnos", "turno-2");
+    fd.append("activo", "on");
+    fd.append("notas", "");
+    fd.append("password", "secret");
+    fd.append("_metadata", "ignored");
+    fd.append("cantidad", "100");
+
+    const result = formDataToObject(fd);
+    expect(result).toEqual({
+      casetaId: "c-1",
+      jornalDiario: "50.00",
+      turnos: ["turno-1", "turno-2"],
+      activo: "on",
+      cantidad: "100",
+    });
+    expect(Object.keys(result).length).toBe(5);
+  });
 });
