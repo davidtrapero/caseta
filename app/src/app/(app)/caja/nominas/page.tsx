@@ -21,6 +21,10 @@ import {
   BotonMarcarPagada,
   BotonDesmarcarPagada,
 } from "./_components/acciones-nomina";
+import { parseListParams } from "@/lib/list-params";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { PageSizeSelect } from "@/components/ui/page-size-select";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
   style: "currency",
@@ -34,10 +38,21 @@ const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
   timeZone: "UTC",
 });
 
-export default async function NominasPage() {
+export default async function NominasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
   const { user } = await requireRole(["admin", "gerente", "cajero"]);
   const esAdmin = user.rol === "admin";
   const puedeCalcular = user.rol === "admin" || user.rol === "gerente";
+  const sp = await searchParams;
+
+  const listParams = parseListParams(sp, {
+    defaultPageSize: 25,
+    allowedPageSizes: [10, 25, 50, 100],
+    allowedSorts: ["pagada", "nombre"],
+  });
 
   const edicion = await obtenerEdicionActiva();
 
@@ -58,15 +73,33 @@ export default async function NominasPage() {
     );
   }
 
-  const nominas = await prisma.nomina.findMany({
-    where: { edicionId: edicion.id },
-    include: {
-      empleado: {
-        select: { id: true, nombre: true, activo: true },
+  // Construir orderBy dinámico
+  let orderBy: any = [{ pagada: "asc" }, { empleado: { nombre: "asc" } }];
+  if (listParams.sort) {
+    const direction = listParams.order ?? "asc";
+    if (listParams.sort === "pagada") {
+      orderBy = [{ pagada: direction }, { empleado: { nombre: "asc" } }];
+    } else if (listParams.sort === "nombre") {
+      orderBy = [{ empleado: { nombre: direction } }];
+    }
+  }
+
+  const [nominas, total] = await Promise.all([
+    prisma.nomina.findMany({
+      where: { edicionId: edicion.id },
+      include: {
+        empleado: {
+          select: { id: true, nombre: true, activo: true },
+        },
       },
-    },
-    orderBy: [{ pagada: "asc" }, { empleado: { nombre: "asc" } }],
-  });
+      orderBy,
+      skip: listParams.skip,
+      take: listParams.take,
+    }),
+    prisma.nomina.count({
+      where: { edicionId: edicion.id },
+    }),
+  ]);
 
   // Bloqueo para gerente si hay pagadas.
   const hayPagadas = nominas.some((n) => n.pagada);
@@ -114,14 +147,38 @@ export default async function NominasPage() {
             <ResumenCard label="Pagado" valor={totalPagado} />
             <ResumenCard label="Pendiente" valor={totalPendiente} destacar />
           </div>
+
+          <div className="mb-4 flex items-center justify-between">
+            <PageSizeSelect
+              currentPageSize={listParams.pageSize}
+              basePath="/caja/nominas"
+            />
+          </div>
+
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Personal</TableHead>
+                <TableHead>
+                  <SortableHeader
+                    column="nombre"
+                    label="Personal"
+                    basePath="/caja/nominas"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                  />
+                </TableHead>
                 <TableHead className="w-24 text-right">Días</TableHead>
                 <TableHead className="w-32 text-right">Jornal</TableHead>
                 <TableHead className="w-36 text-right">Total</TableHead>
-                <TableHead className="w-32">Estado</TableHead>
+                <TableHead className="w-32">
+                  <SortableHeader
+                    column="pagada"
+                    label="Estado"
+                    basePath="/caja/nominas"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                  />
+                </TableHead>
                 <TableHead className="w-32">Pago</TableHead>
                 <TableHead className="w-40 text-right">Acciones</TableHead>
               </TableRow>
@@ -170,6 +227,12 @@ export default async function NominasPage() {
               ))}
             </TableBody>
           </Table>
+          <DataTablePagination
+            page={listParams.page}
+            pageSize={listParams.pageSize}
+            total={total}
+            basePath="/caja/nominas"
+          />
         </>
       )}
     </div>
