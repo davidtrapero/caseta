@@ -273,12 +273,12 @@ export function EmpleadoForm({
           value={jornalDiario}
           onChange={(e) => setJornalDiario(e.target.value)}
           disabled={esVoluntario}
-          placeholder={esVoluntario ? "No aplica (voluntario)" : "80.00"}
+          placeholder={esVoluntario ? "No aplica (voluntariado)" : "80.00"}
         />
         <p className="text-xs text-muted-foreground mt-1">
           {esVoluntario
-            ? "Los voluntarios no cobran jornal."
-            : "Dejar vacío si es voluntario (selecciona el tipo Voluntario)."}
+            ? "El voluntariado no cobra jornal."
+            : "Dejar vacío para voluntariado (selecciona el tipo Voluntario)."}
         </p>
         <FieldError messages={errors.jornalDiario} />
       </div>

@@ -36,8 +36,8 @@ export default async function NuevoEmpleadoPage() {
 
   return (
     <FormShell
-      title="Nuevo empleado"
-      subtitle="Dejar el jornal vacío si es voluntario."
+      title="Nueva persona"
+      subtitle="Deja el jornal vacío si participa como voluntariado."
     >
       <EmpleadoForm
         modo="crear"

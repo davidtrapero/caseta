@@ -40,36 +40,36 @@ async function validarReglaVoluntario(data: {
     select: { id: true },
   });
   if (tipos.length !== data.tipoIds.length) {
-    return { ok: false, error: "Uno o más tipos de empleado no válidos o inactivos." };
+    return { ok: false, error: "Uno o más categorías de personal no son válidas o están inactivas." };
   }
 
   if (data.esVoluntario) {
     if (data.jornalDiario !== undefined) {
       return {
         ok: false,
-        error: "Los voluntarios no pueden tener jornal asignado.",
-        fieldErrors: { jornalDiario: ["Deja este campo vacío para voluntarios."] },
+        error: "El voluntariado no puede tener jornal asignado.",
+        fieldErrors: { jornalDiario: ["Deja este campo vacío para el voluntariado."] },
       };
     }
     if (!data.entidadId) {
       return {
         ok: false,
-        error: "Los voluntarios requieren una entidad.",
-        fieldErrors: { entidadId: ["Selecciona una entidad para voluntarios."] },
+        error: "El voluntariado requiere una entidad.",
+        fieldErrors: { entidadId: ["Selecciona una entidad para el voluntariado."] },
       };
     }
     if (data.exigirContacto && !data.telefono) {
       return {
         ok: false,
-        error: "Los voluntarios requieren teléfono.",
-        fieldErrors: { telefono: ["Proporciona un teléfono para voluntarios."] },
+        error: "El voluntariado requiere teléfono.",
+        fieldErrors: { telefono: ["Proporciona un teléfono para el voluntariado."] },
       };
     }
   } else {
     if (data.jornalDiario === undefined) {
       return {
         ok: false,
-        error: "El jornal diario es obligatorio para no-voluntarios.",
+        error: "El jornal diario es obligatorio para personal contratado.",
         fieldErrors: { jornalDiario: ["Proporciona un jornal diario."] },
       };
     }
@@ -227,7 +227,7 @@ export async function toggleActivoEmpleadoAction(
       select: { activo: true },
     });
     if (!actual) {
-      return { ok: false, error: "Empleado no encontrado." };
+      return { ok: false, error: "Persona no encontrada." };
     }
 
     const actualizado = await withAuditContext(user.id, () =>

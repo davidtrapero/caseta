@@ -89,10 +89,10 @@ export default async function EmpleadosPage({
   return (
     <div className="flex flex-col gap-4">
       <SectionHeader
-        title="Empleados"
+        title="Personal"
         subtitle="Personal disponible para turnos."
         actionHref="/empleados/nuevo"
-        actionLabel="Nuevo empleado"
+        actionLabel="Añadir persona"
         canAct={puedeEditar}
       />
 
@@ -107,14 +107,14 @@ export default async function EmpleadosPage({
         hayFiltrosActivos ? (
           <EmptyState
             title="Sin resultados"
-            description="Ningún empleado coincide con los filtros aplicados. Prueba a limpiar la búsqueda."
+            description="Ninguna persona coincide con los filtros aplicados. Prueba a limpiar la búsqueda."
           />
         ) : (
           <EmptyState
-            title="Sin empleados registrados"
-            description="Registra empleados para poder asignarles turnos y calcular nóminas."
+            title="Sin personal registrado"
+            description="Registra el personal para poder asignarle turnos y calcular nóminas."
             actionHref={puedeEditar ? "/empleados/nuevo" : undefined}
-            actionLabel={puedeEditar ? "Crear empleado" : undefined}
+            actionLabel={puedeEditar ? "Añadir persona" : undefined}
           />
         )
       ) : (
