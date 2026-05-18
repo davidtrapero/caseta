@@ -84,7 +84,7 @@ export async function actualizarUsuarioAction(
     if (user.id === id && data.activo === false) {
       return {
         ok: false,
-        error: "No puedes desactivarte a ti misma.",
+        error: "No puedes desactivarte a ti mismx.",
       };
     }
 
@@ -139,7 +139,7 @@ export async function desactivarUsuarioAction(
     const { user } = await requireRole(["admin"]);
 
     if (user.id === id) {
-      return { ok: false, error: "No puedes desactivarte a ti misma." };
+      return { ok: false, error: "No puedes desactivarte a ti mismx." };
     }
 
     if (await dejariaSinAdmins(id, { activo: false })) {
