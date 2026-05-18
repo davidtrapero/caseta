@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -15,7 +15,7 @@ export async function crearProveedorAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.proveedores.crud");
     const data = parseForm(crearProveedorSchema, formData);
 
     await withAuditContext(user.id, () =>
@@ -48,7 +48,7 @@ export async function actualizarProveedorAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.proveedores.crud");
     const data = parseForm(actualizarProveedorSchema, formData);
 
     await withAuditContext(user.id, () =>
@@ -81,7 +81,7 @@ export async function toggleActivoProveedorAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.proveedores.crud");
     const actual = await prisma.proveedor.findUnique({
       where: { id },
       select: { activo: true },

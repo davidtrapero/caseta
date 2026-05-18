@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -20,7 +20,7 @@ export async function crearEdicionAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.ediciones.editar");
     const data = parseForm(crearEdicionSchema, formData);
 
     await withAuditContext(user.id, () => prisma.edicion.create({ data }));
@@ -43,7 +43,7 @@ export async function actualizarEdicionAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.ediciones.editar");
     const data = parseForm(actualizarEdicionSchema, formData);
 
     await withAuditContext(user.id, () =>
@@ -61,7 +61,7 @@ export async function toggleActivaAction(formData: FormData): Promise<void> {
   const id = formData.get("_id");
   if (typeof id !== "string" || !id) return;
 
-  const { user } = await requireRole(["admin"]);
+  const { user } = await requirePermiso("admin.ediciones.editar");
   const actual = await prisma.edicion.findUnique({ where: { id }, select: { activa: true } });
   if (!actual) return;
 
@@ -81,7 +81,7 @@ export async function publicarFormularioAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.ediciones.editar");
     const actual = await prisma.edicion.findUnique({
       where: { id },
       select: { formularioToken: true },
@@ -116,7 +116,7 @@ export async function rotarFormularioAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.ediciones.editar");
     await withAuditContext(user.id, () =>
       prisma.edicion.update({
         where: { id },
@@ -141,7 +141,7 @@ export async function despublicarFormularioAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.ediciones.editar");
     await withAuditContext(user.id, () =>
       prisma.edicion.update({
         where: { id },

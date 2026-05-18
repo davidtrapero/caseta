@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -42,7 +42,7 @@ export async function crearUsuarioAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.usuarios.editar");
     const data = parseForm(crearUsuarioSchema, formData);
 
     await withAuditContext(user.id, async () => {
@@ -96,7 +96,7 @@ export async function actualizarUsuarioAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.usuarios.editar");
     const data = parseForm(actualizarUsuarioSchema, formData);
 
     // Protección: no permitir auto-desactivación.
@@ -174,7 +174,7 @@ export async function desactivarUsuarioAction(
   }
 
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.usuarios.editar");
 
     if (user.id === id) {
       return { ok: false, error: "No puedes desactivarte a ti mismx." };
@@ -208,7 +208,7 @@ export async function reactivarUsuarioAction(
   }
 
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.usuarios.editar");
 
     await withAuditContext(user.id, () =>
       prisma.user.update({ where: { id }, data: { activo: true } })
@@ -238,7 +238,7 @@ export async function resetearPasswordAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.usuarios.editar");
     const data = parseForm(resetearPasswordSchema, formData);
 
     const ctx = await auth.$context;

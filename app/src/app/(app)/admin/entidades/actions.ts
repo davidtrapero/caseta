@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -14,7 +14,7 @@ export async function crearEntidadAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.entidades.crud");
     const data = parseForm(crearEntidadSchema, formData);
 
     const creada = await withAuditContext(user.id, () =>
@@ -41,7 +41,7 @@ export async function renombrarEntidadAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.entidades.crud");
     const data = parseForm(renombrarEntidadSchema, formData);
 
     await withAuditContext(user.id, () =>
@@ -68,7 +68,7 @@ export async function desactivarEntidadAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.entidades.crud");
     await withAuditContext(user.id, () =>
       prisma.entidadVoluntario.update({
         where: { id },
@@ -92,7 +92,7 @@ export async function reactivarEntidadAction(
   }
 
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("admin.entidades.crud");
     await withAuditContext(user.id, () =>
       prisma.entidadVoluntario.update({
         where: { id },

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import {
   parseForm,
@@ -27,7 +27,7 @@ export async function crearTipoEmpleadoAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.tipos-empleado.crud");
     const data = parseForm(crearTipoEmpleadoSchema, formData);
 
     const maxOrden = await prisma.tipoEmpleado.aggregate({
@@ -67,7 +67,7 @@ export async function actualizarTipoEmpleadoAction(
 
   try {
     const values = formDataToObject(formData);
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.tipos-empleado.crud");
     const data = parseForm(actualizarTipoEmpleadoSchema, formData);
 
     await withAuditContext(user.id, () =>
@@ -101,7 +101,7 @@ export async function eliminarTipoEmpleadoAction(
   }
 
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.tipos-empleado.crud");
 
     const tipo = await prisma.tipoEmpleado.findUnique({
       where: { id },
