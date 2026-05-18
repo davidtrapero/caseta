@@ -39,6 +39,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
   const tiposOrdenados = ordenarTipos(tiposEmpleado);
 
   return (
@@ -54,7 +55,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
         <Input
           id="nombre"
           name="nombre"
-          defaultValue={initial?.nombre ?? ""}
+          defaultValue={(vals.nombre as string | undefined) ?? initial?.nombre ?? ""}
           placeholder="Caseta La Pradera"
           required
         />
@@ -66,7 +67,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
         <Input
           id="ubicacion"
           name="ubicacion"
-          defaultValue={initial?.ubicacion ?? ""}
+          defaultValue={(vals.ubicacion as string | undefined) ?? initial?.ubicacion ?? ""}
           placeholder="Calle Infierno, nº 12"
         />
         <FieldError messages={errors.ubicacion} />
@@ -76,7 +77,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
         <input
           type="checkbox"
           name="activa"
-          defaultChecked={initial?.activa ?? true}
+          defaultChecked={vals.activa !== undefined ? (vals.activa as string) === "on" : (initial?.activa ?? true)}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
         />
         <span>Caseta activa (disponible para turnos, cierres y pedidos).</span>
@@ -92,7 +93,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
             step="0.01"
             min="0"
             max="9999.99"
-            defaultValue={initial?.jornalDiarioDefault ?? ""}
+            defaultValue={(vals.jornalDiarioDefault as string | undefined) ?? initial?.jornalDiarioDefault ?? ""}
             placeholder="80.00"
           />
           <p className="text-xs text-muted-foreground mt-1">
@@ -105,7 +106,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
           <select
             id="tipoEmpleadoDefectoId"
             name="tipoEmpleadoDefectoId"
-            defaultValue={initial?.tipoEmpleadoDefectoId ?? ""}
+            defaultValue={(vals.tipoEmpleadoDefectoId as string | undefined) ?? initial?.tipoEmpleadoDefectoId ?? ""}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">— Sin defecto —</option>

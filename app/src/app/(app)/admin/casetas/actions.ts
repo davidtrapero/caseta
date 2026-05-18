@@ -13,14 +13,15 @@ export async function crearCasetaAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.casetas.crud");
     const data = parseForm(crearCasetaSchema, formData);
 
     await withAuditContext(user.id, () => prisma.caseta.create({ data }));
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/casetas");
@@ -36,8 +37,8 @@ export async function actualizarCasetaAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.casetas.crud");
     const data = parseForm(actualizarCasetaSchema, formData);
 
@@ -45,7 +46,8 @@ export async function actualizarCasetaAction(
       prisma.caseta.update({ where: { id }, data })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/casetas");
