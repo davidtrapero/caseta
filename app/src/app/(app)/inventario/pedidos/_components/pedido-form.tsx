@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,8 @@ export function PedidoForm({
     FormData
   >(action, null);
 
+  const vals = state && !state.ok ? state.values ?? {} : {};
+
   const [proveedorId, setProveedorId] = useState(initial?.proveedorId ?? "");
   const [casetaId, setCasetaId] = useState(initial?.casetaId ?? "");
   const [lineas, setLineas] = useState<Linea[]>(
@@ -64,6 +66,31 @@ export function PedidoForm({
       ? initial.lineas
       : [{ productoId: "", cantidad: "", precioUnitario: "" }]
   );
+
+  // Restaurar estado controlado tras error de validación
+  useEffect(() => {
+    if (state && !state.ok && vals) {
+      if (vals.proveedorId) setProveedorId(vals.proveedorId as string);
+      if (vals.casetaId) setCasetaId(vals.casetaId as string);
+      if (vals.lineasJson) {
+        try {
+          const lineasRestauradas = JSON.parse(vals.lineasJson as string) as Array<{
+            productoId: string;
+            cantidad: number;
+            precioUnitario: number;
+          }>;
+          setLineas(lineasRestauradas.map((l) => ({
+            productoId: l.productoId,
+            cantidad: String(l.cantidad),
+            precioUnitario: String(l.precioUnitario),
+          })));
+        } catch {
+          // JSON inválido: no restaurar líneas
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
 
   const productosDeLaCaseta = useMemo(
     () => productos.filter((p) => p.casetaId === casetaId),

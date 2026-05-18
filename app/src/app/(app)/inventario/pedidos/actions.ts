@@ -49,9 +49,9 @@ export async function crearPedidoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   let nuevoId: string | null = null;
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("inventario.pedidos.crear");
     const data = parseForm(crearPedidoSchema, formData);
 
@@ -93,7 +93,8 @@ export async function crearPedidoAction(
 
     nuevoId = pedido.id;
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/inventario/pedidos");
@@ -110,8 +111,8 @@ export async function editarPedidoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("inventario.pedidos.crear");
     const data = parseForm(editarPedidoSchema, formData);
 
@@ -160,7 +161,8 @@ export async function editarPedidoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/inventario/pedidos");
