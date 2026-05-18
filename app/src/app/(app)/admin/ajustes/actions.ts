@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import {
   parseForm,
@@ -27,7 +27,7 @@ export async function actualizarPlantillaAction(
   formData: FormData
 ): Promise<ActionResult<{ clave: string }>> {
   try {
-    const { user } = await requireRole(["admin"]);
+    const { user } = await requirePermiso("admin.ajustes.editar");
     const data = parseForm(schema, formData);
 
     const usadas = extraerVariables(data.cuerpo);
