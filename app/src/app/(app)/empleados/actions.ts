@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { dniNieSchema } from "@/lib/validators";
 import { crearEmpleadoSchema, actualizarEmpleadoSchema } from "./schema";
 
@@ -87,6 +88,7 @@ export async function crearEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearEmpleadoSchema, formData);
 
@@ -98,7 +100,10 @@ export async function crearEmpleadoAction(
       telefono: data.telefono,
       exigirContacto: true,
     });
-    if (esActionResult(reglaRes)) return reglaRes as ActionResult<{ id: string }>;
+    if (esActionResult(reglaRes)) {
+      const result = reglaRes as ActionResult<{ id: string }>;
+      return { ...result, values };
+    }
 
     const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);
     if (!dniRes.ok) {
@@ -106,6 +111,7 @@ export async function crearEmpleadoAction(
         ok: false,
         error: dniRes.error,
         fieldErrors: { dni: [dniRes.error] },
+        values,
       };
     }
 
@@ -144,6 +150,7 @@ export async function actualizarEmpleadoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarEmpleadoSchema, formData);
 
@@ -156,7 +163,10 @@ export async function actualizarEmpleadoAction(
       telefono: data.telefono,
       exigirContacto: false,
     });
-    if (esActionResult(reglaRes)) return reglaRes as ActionResult<{ id: string }>;
+    if (esActionResult(reglaRes)) {
+      const result = reglaRes as ActionResult<{ id: string }>;
+      return { ...result, values };
+    }
 
     const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);
     if (!dniRes.ok) {
@@ -164,6 +174,7 @@ export async function actualizarEmpleadoAction(
         ok: false,
         error: dniRes.error,
         fieldErrors: { dni: [dniRes.error] },
+        values,
       };
     }
 
