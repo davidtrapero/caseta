@@ -4,6 +4,9 @@ import { requireRole } from "@/lib/authz";
 import { SectionHeader } from "../_components/page-header";
 import { FiltroEdicion } from "./_components/filtro-edicion";
 import { TabsSolicitudes } from "./_components/tabs-solicitudes";
+import { parseListParams } from "@/lib/list-params";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { PageSizeSelect } from "@/components/ui/page-size-select";
 import type { EstadoSolicitud } from "@prisma/client";
 
 const ESTADOS: EstadoSolicitud[] = [
@@ -14,7 +17,13 @@ const ESTADOS: EstadoSolicitud[] = [
   "cancelada",
 ];
 
-type SP = Promise<{ estado?: string; edicionId?: string }>;
+type SP = Promise<{
+  estado?: string;
+  edicionId?: string;
+  page?: string;
+  pageSize?: string;
+  [key: string]: string | undefined;
+}>;
 
 export default async function SolicitudesPage({
   searchParams,
@@ -30,6 +39,12 @@ export default async function SolicitudesPage({
     ? (sp.estado as EstadoSolicitud)
     : "pendiente";
 
+  const listParams = parseListParams(sp, {
+    defaultPageSize: 25,
+    allowedPageSizes: [10, 25, 50, 100],
+    allowedSorts: [],
+  });
+
   const ediciones = await prisma.edicion.findMany({
     orderBy: [{ activa: "desc" }, { anio: "desc" }],
     select: { id: true, anio: true, nombre: true, activa: true },
@@ -40,35 +55,78 @@ export default async function SolicitudesPage({
     ...(sp.edicionId ? { edicionId: sp.edicionId } : {}),
   } as const;
 
-  const [solicitudesVoluntario, solicitudesEmpleado] = await Promise.all([
-    prisma.solicitudVoluntario.findMany({
-      where: filtroBase,
-      include: {
-        entidad: { select: { nombre: true } },
-        edicion: { select: { anio: true, nombre: true } },
-        turnos: {
-          include: {
-            turno: { include: { caseta: { select: { nombre: true } } } },
-          },
-          orderBy: { turno: { fechaInicio: "asc" } },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.solicitudEmpleado.findMany({
-      where: filtroBase,
-      include: {
-        edicion: { select: { anio: true, nombre: true } },
-        turnos: {
-          include: {
-            turno: { include: { caseta: { select: { nombre: true } } } },
-          },
-          orderBy: { turno: { fechaInicio: "asc" } },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
+  // Contar totales para calcular paginación
+  const [totalVoluntario, totalEmpleado] = await Promise.all([
+    prisma.solicitudVoluntario.count({ where: filtroBase }),
+    prisma.solicitudEmpleado.count({ where: filtroBase }),
   ]);
+  const total = totalVoluntario + totalEmpleado;
+
+  // Paginar sobre el conjunto combinado: primero voluntarios, luego empleados
+  // Calculamos cuántos de cada tipo corresponden a esta página
+  const skip = listParams.skip;
+  const take = listParams.take;
+
+  let skipVoluntario = 0;
+  let takeVoluntario = 0;
+  let skipEmpleado = 0;
+  let takeEmpleado = 0;
+
+  if (skip < totalVoluntario) {
+    skipVoluntario = skip;
+    takeVoluntario = Math.min(take, totalVoluntario - skip);
+    const restante = take - takeVoluntario;
+    if (restante > 0) {
+      skipEmpleado = 0;
+      takeEmpleado = restante;
+    }
+  } else {
+    skipEmpleado = skip - totalVoluntario;
+    takeEmpleado = take;
+  }
+
+  const [solicitudesVoluntario, solicitudesEmpleado] = await Promise.all([
+    takeVoluntario > 0
+      ? prisma.solicitudVoluntario.findMany({
+          where: filtroBase,
+          include: {
+            entidad: { select: { nombre: true } },
+            edicion: { select: { anio: true, nombre: true } },
+            turnos: {
+              include: {
+                turno: { include: { caseta: { select: { nombre: true } } } },
+              },
+              orderBy: { turno: { fechaInicio: "asc" } },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: skipVoluntario,
+          take: takeVoluntario,
+        })
+      : Promise.resolve([]),
+    takeEmpleado > 0
+      ? prisma.solicitudEmpleado.findMany({
+          where: filtroBase,
+          include: {
+            edicion: { select: { anio: true, nombre: true } },
+            turnos: {
+              include: {
+                turno: { include: { caseta: { select: { nombre: true } } } },
+              },
+              orderBy: { turno: { fechaInicio: "asc" } },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+          skip: skipEmpleado,
+          take: takeEmpleado,
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const filtroQueryParams = new URLSearchParams({
+    estado: estadoFiltro,
+    ...(sp.edicionId && { edicionId: sp.edicionId }),
+  }).toString();
 
   return (
     <div className="flex flex-col gap-6">
@@ -107,11 +165,32 @@ export default async function SolicitudesPage({
         />
       </div>
 
+      <div className="flex items-center justify-between">
+        <PageSizeSelect
+          currentPageSize={listParams.pageSize}
+          basePath="/admin/solicitudes"
+          queryParams={filtroQueryParams}
+        />
+        <span className="text-sm text-muted-foreground">
+          {total} solicitudes
+        </span>
+      </div>
+
       <TabsSolicitudes
         solicitudesVoluntario={solicitudesVoluntario}
         solicitudesEmpleado={solicitudesEmpleado}
         estadoFiltro={estadoFiltro}
       />
+
+      {total > listParams.pageSize && (
+        <DataTablePagination
+          page={listParams.page}
+          pageSize={listParams.pageSize}
+          total={total}
+          basePath="/admin/solicitudes"
+          queryParams={filtroQueryParams}
+        />
+      )}
     </div>
   );
 }
