@@ -102,8 +102,8 @@ export async function crearTurnoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(crearTurnoSchema, formData);
 
@@ -203,7 +203,8 @@ export async function crearTurnoAction(
     revalidatePath("/turnos");
     return { ok: true, data: { id: turno.id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -218,8 +219,8 @@ export async function actualizarTurnoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarTurnoSchema, formData);
 
@@ -272,7 +273,8 @@ export async function actualizarTurnoAction(
     revalidatePath("/turnos");
     return { ok: true, data: { id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -529,8 +531,8 @@ export async function duplicarDiaAction(
   _prev: ActionResult<{ copiados: number }> | null,
   formData: FormData
 ): Promise<ActionResult<{ copiados: number }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(duplicarDiaSchema, formData);
 
@@ -578,7 +580,8 @@ export async function duplicarDiaAction(
     revalidatePath("/turnos");
     return { ok: true, data: { copiados: resultado.copiados } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -588,8 +591,8 @@ export async function duplicarSemanaAction(
   _prev: ActionResult<{ copiados: number }> | null,
   formData: FormData
 ): Promise<ActionResult<{ copiados: number }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(duplicarSemanaSchema, formData);
 
@@ -637,7 +640,8 @@ export async function duplicarSemanaAction(
     revalidatePath("/turnos");
     return { ok: true, data: { copiados: resultado.copiados } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -722,8 +726,8 @@ export async function actualizarPlazasAction(
   _prev: ActionResult<undefined> | null,
   formData: FormData
 ): Promise<ActionResult<undefined>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarPlazasSchema, formData);
 
@@ -745,7 +749,8 @@ export async function actualizarPlazasAction(
     revalidatePath("/turnos");
     return { ok: true, data: undefined };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -760,8 +765,8 @@ export async function actualizarTurnoYPlazasAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(actualizarTurnoYPlazasSchema, formData);
 
@@ -821,7 +826,8 @@ export async function actualizarTurnoYPlazasAction(
     revalidatePath("/turnos");
     return { ok: true, data: { id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -1018,8 +1024,8 @@ export async function rellenarPlazasTurnosSinPlazasAction(
   _prev: ActionResult<{ rellenados: number }> | null,
   formData: FormData
 ): Promise<ActionResult<{ rellenados: number }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("turnos.semana.crear");
     const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
 
@@ -1079,6 +1085,7 @@ export async function rellenarPlazasTurnosSinPlazasAction(
     revalidatePath("/admin/mantenimiento");
     return { ok: true, data: { rellenados: turnos.length } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
