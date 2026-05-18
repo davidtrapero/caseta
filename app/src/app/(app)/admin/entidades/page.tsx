@@ -14,18 +14,49 @@ import {
   RenombrarEntidadForm,
 } from "./_components/entidad-form";
 import { ToggleActivaEntidadForm } from "./_components/toggle-activa";
+import { parseListParams } from "@/lib/list-params";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { PageSizeSelect } from "@/components/ui/page-size-select";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
-export default async function EntidadesPage() {
+export default async function EntidadesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | undefined }>;
+}) {
   await requireRole(["admin", "gerente"]);
+  const sp = await searchParams;
 
-  const entidades = await prisma.entidadVoluntario.findMany({
-    orderBy: [{ activa: "desc" }, { nombre: "asc" }],
-    include: {
-      _count: {
-        select: { empleados: true, solicitudes: true },
-      },
-    },
+  const listParams = parseListParams(sp, {
+    defaultPageSize: 25,
+    allowedPageSizes: [10, 25, 50, 100],
+    allowedSorts: ["nombre", "activa"],
   });
+
+  // Construir orderBy dinámico
+  let orderBy: any = [{ activa: "desc" }, { nombre: "asc" }];
+  if (listParams.sort) {
+    const direction = listParams.order ?? "asc";
+    if (listParams.sort === "nombre") {
+      orderBy = [{ nombre: direction }];
+    } else if (listParams.sort === "activa") {
+      orderBy = [{ activa: direction }, { nombre: "asc" }];
+    }
+  }
+
+  const [entidades, total] = await Promise.all([
+    prisma.entidadVoluntario.findMany({
+      orderBy,
+      include: {
+        _count: {
+          select: { empleados: true, solicitudes: true },
+        },
+      },
+      skip: listParams.skip,
+      take: listParams.take,
+    }),
+    prisma.entidadVoluntario.count(),
+  ]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -45,34 +76,64 @@ export default async function EntidadesPage() {
           description="Crea al menos una entidad para poder publicar el formulario público de personas voluntarias."
         />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead className="w-32 text-right">Personal</TableHead>
-              <TableHead className="w-32 text-right">Solicitudes</TableHead>
-              <TableHead className="w-32">Estado</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {entidades.map((e) => (
-              <TableRow key={e.id}>
-                <TableCell className="font-medium">
-                  <RenombrarEntidadForm id={e.id} nombreActual={e.nombre} />
-                </TableCell>
-                <TableCell className="text-right text-muted-foreground">
-                  {e._count.empleados}
-                </TableCell>
-                <TableCell className="text-right text-muted-foreground">
-                  {e._count.solicitudes}
-                </TableCell>
-                <TableCell>
-                  <ToggleActivaEntidadForm id={e.id} activa={e.activa} />
-                </TableCell>
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <PageSizeSelect
+              currentPageSize={listParams.pageSize}
+              basePath="/admin/entidades"
+            />
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>
+                  <SortableHeader
+                    column="nombre"
+                    label="Nombre"
+                    basePath="/admin/entidades"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                  />
+                </TableHead>
+                <TableHead className="w-32 text-right">Personal</TableHead>
+                <TableHead className="w-32 text-right">Solicitudes</TableHead>
+                <TableHead className="w-32">
+                  <SortableHeader
+                    column="activa"
+                    label="Estado"
+                    basePath="/admin/entidades"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                  />
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {entidades.map((e) => (
+                <TableRow key={e.id}>
+                  <TableCell className="font-medium">
+                    <RenombrarEntidadForm id={e.id} nombreActual={e.nombre} />
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {e._count.empleados}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">
+                    {e._count.solicitudes}
+                  </TableCell>
+                  <TableCell>
+                    <ToggleActivaEntidadForm id={e.id} activa={e.activa} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <DataTablePagination
+            page={listParams.page}
+            pageSize={listParams.pageSize}
+            total={total}
+            basePath="/admin/entidades"
+          />
+        </>
       )}
     </div>
   );
