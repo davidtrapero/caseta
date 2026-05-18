@@ -63,6 +63,8 @@ model User {
   solicitudesDecididas   SolicitudVoluntario[]
   turnosSolicitudDecididos SolicitudVoluntarioTurno[] @relation("DecididasTurno")
   plantillasActualizadas PlantillaMensaje[]
+  solicitudesEmpleadoDecididas      SolicitudEmpleado[] @relation("SolicitudEmpleadoDecididas")
+  solicitudesEmpleadoTurnoDecididas SolicitudEmpleadoTurno[] @relation("SolicitudEmpleadoTurnoDecididas")
 
   @@map("user")
 }
@@ -134,6 +136,7 @@ model Edicion {
   movimientos           MovimientoStock[]
   nominas               Nomina[]
   solicitudesVoluntario SolicitudVoluntario[]
+  solicitudesEmpleado   SolicitudEmpleado[]
 }
 
 // Caseta — transversal entre ediciones.
@@ -199,6 +202,7 @@ model Turno {
   asignaciones          TurnoEmpleado[]
   plazas                TurnoPlaza[]
   solicitudesVoluntario SolicitudVoluntarioTurno[]
+  solicitudesEmpleado   SolicitudEmpleadoTurno[]
 
   @@index([casetaId, fechaInicio])
   @@index([edicionId, fechaInicio])
@@ -481,6 +485,49 @@ model SolicitudVoluntarioTurno {
   solicitud   SolicitudVoluntario @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
   turno       Turno               @relation(fields: [turnoId], references: [id], onDelete: Cascade)
   decididaPor User?               @relation("DecididasTurno", fields: [decididaPorUserId], references: [id], onDelete: SetNull)
+
+  @@unique([solicitudId, turnoId])
+  @@index([turnoId])
+}
+
+// Solicitud de apuntarse como empleado (contratado).
+// dni es UNIQUE per (edicionId, dni) para permitir re-solicitudes en años distintos.
+model SolicitudEmpleado {
+  id           String   @id @default(cuid())
+  edicionId    String
+  dni          String   // extraído de búsqueda en Empleado o ingresado manualmente
+  nombre       String
+  apellidos    String?
+  telefono     String?
+  email        String?
+  estado       EstadoSolicitud @default(pendiente)
+  motivoRechazo String?  @db.Text
+  createdAt    DateTime @default(now())
+  decididaAt   DateTime?
+  decididaPorUserId String?
+
+  edicion     Edicion                  @relation(fields: [edicionId], references: [id], onDelete: Cascade)
+  decididaPor User?                    @relation("SolicitudEmpleadoDecididas", fields: [decididaPorUserId], references: [id], onDelete: SetNull)
+  turnos      SolicitudEmpleadoTurno[]
+
+  @@unique([edicionId, dni])
+  @@index([edicionId, estado])
+  @@index([dni])
+}
+
+model SolicitudEmpleadoTurno {
+  id          String @id @default(cuid())
+  solicitudId String
+  turnoId     String
+
+  estado            EstadoSolicitudTurno @default(pendiente)
+  motivoRechazo     String?              @db.Text
+  decididaAt        DateTime?
+  decididaPorUserId String?
+
+  solicitud   SolicitudEmpleado @relation(fields: [solicitudId], references: [id], onDelete: Cascade)
+  turno       Turno             @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  decididaPor User?             @relation("SolicitudEmpleadoTurnoDecididas", fields: [decididaPorUserId], references: [id], onDelete: SetNull)
 
   @@unique([solicitudId, turnoId])
   @@index([turnoId])
