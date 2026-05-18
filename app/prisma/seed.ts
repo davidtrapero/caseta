@@ -161,6 +161,19 @@ async function main() {
   });
   console.log("✓ Plantillas de rechazo voluntario listas");
 
+  // ---- Permisos por rol ----
+  const { DEFAULT_PERMISSIONS_BY_ROLE } = await import("../src/lib/permissions/catalog");
+  for (const [rol, permisos] of Object.entries(DEFAULT_PERMISSIONS_BY_ROLE)) {
+    for (const permiso of permisos) {
+      await prisma.rolPermiso.upsert({
+        where: { rol_permiso: { rol: rol as any, permiso } },
+        update: {},
+        create: { rol: rol as any, permiso },
+      });
+    }
+  }
+  console.log("✓ Permisos por rol sembrados (admin, gerente, cajero)");
+
   await prisma.$disconnect();
 }
 
