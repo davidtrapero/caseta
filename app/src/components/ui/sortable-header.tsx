@@ -83,13 +83,7 @@ export function SortableHeader({
     <button
       onClick={handleClick}
       className="inline-flex items-center gap-2 font-medium hover:text-blue-600 transition-colors"
-      aria-sort={
-        currentSort === column
-          ? currentOrder === "asc"
-            ? "ascending"
-            : "descending"
-          : "none"
-      }
+      title={`Ordenar por ${label} (click para cambiar)`}
     >
       {label}
       <span className="inline-flex w-4 h-4">
