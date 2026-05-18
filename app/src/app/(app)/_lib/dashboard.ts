@@ -21,7 +21,6 @@ export type DashboardData = {
 };
 
 export type KpiData = {
-  ingresosHoy: number;
   ingresosEdicion: number;
   gastosEdicion: number;
   resultadoNeto: number;
@@ -112,7 +111,6 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
   const esAdminOGerente = rol === "admin" || rol === "gerente";
 
   const [
-    ingresosHoyAgg,
     ingresosEdicionAgg,
     gastosEdicionAgg,
     turnosHoyRaw,
@@ -126,11 +124,6 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     voluntariosAprobadosCount,
     pedidosPendientesCount,
   ] = await Promise.all([
-    // KPI: ingresos del día
-    prisma.cierreDiario.aggregate({
-      where: { edicionId: edicion.id, fecha: { gte: inicioDia, lt: finDia } },
-      _sum: { ingresosTotales: true },
-    }),
     // KPI: ingresos acumulados edición
     prisma.cierreDiario.aggregate({
       where: { edicionId: edicion.id },
@@ -213,13 +206,11 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
   ]);
 
   // KPIs
-  const ingresosHoy = Number(ingresosHoyAgg._sum.ingresosTotales ?? 0);
   const ingresosEdicion = Number(ingresosEdicionAgg._sum.ingresosTotales ?? 0);
   const gastosEdicion = Number(gastosEdicionAgg._sum.monto ?? 0);
   const resultadoNeto = ingresosEdicion - gastosEdicion;
 
   const kpis: KpiData = {
-    ingresosHoy,
     ingresosEdicion,
     gastosEdicion,
     resultadoNeto,
