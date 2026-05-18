@@ -19,8 +19,8 @@ export async function crearCierreAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("caja.cierres.crear");
     const data = parseForm(crearCierreSchema, formData);
 
@@ -46,7 +46,8 @@ export async function crearCierreAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/caja/cierres");
@@ -63,8 +64,8 @@ export async function actualizarCierreAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("caja.cierres.crear");
     const data = parseForm(actualizarCierreSchema, formData);
 
@@ -92,7 +93,8 @@ export async function actualizarCierreAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/caja/cierres");

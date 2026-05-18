@@ -41,6 +41,7 @@ export function CierreForm({ modo, casetas, initial, soloLectura }: CierreFormPr
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -63,7 +64,7 @@ export function CierreForm({ modo, casetas, initial, soloLectura }: CierreFormPr
           name="casetaId"
           required
           disabled={soloLectura}
-          defaultValue={initial?.casetaId ?? ""}
+          defaultValue={(vals.casetaId as string | undefined) ?? initial?.casetaId ?? ""}
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="" disabled>
@@ -87,7 +88,7 @@ export function CierreForm({ modo, casetas, initial, soloLectura }: CierreFormPr
             type="date"
             required
             disabled={soloLectura}
-            defaultValue={initial?.fecha ?? ""}
+            defaultValue={(vals.fecha as string | undefined) ?? initial?.fecha ?? ""}
           />
           <FieldError messages={errors.fecha} />
         </div>
@@ -101,7 +102,7 @@ export function CierreForm({ modo, casetas, initial, soloLectura }: CierreFormPr
             min="0"
             required
             disabled={soloLectura}
-            defaultValue={initial?.ingresosTotales ?? ""}
+            defaultValue={(vals.ingresosTotales as string | undefined) ?? initial?.ingresosTotales ?? ""}
             placeholder="1234.56"
             className="font-mono"
           />
@@ -115,7 +116,7 @@ export function CierreForm({ modo, casetas, initial, soloLectura }: CierreFormPr
           id="notas"
           name="notas"
           disabled={soloLectura}
-          defaultValue={initial?.notas ?? ""}
+          defaultValue={(vals.notas as string | undefined) ?? initial?.notas ?? ""}
           rows={3}
           placeholder="Observaciones del día (opcional)"
           className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
