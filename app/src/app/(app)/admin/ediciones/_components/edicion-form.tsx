@@ -38,6 +38,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -55,7 +56,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
             name="anio"
             type="number"
             inputMode="numeric"
-            defaultValue={initial?.anio ?? new Date().getFullYear()}
+            defaultValue={(vals.anio as string | undefined) ?? initial?.anio ?? new Date().getFullYear()}
             required
           />
           <FieldError messages={errors.anio} />
@@ -65,7 +66,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
           <Input
             id="nombre"
             name="nombre"
-            defaultValue={initial?.nombre ?? ""}
+            defaultValue={(vals.nombre as string | undefined) ?? initial?.nombre ?? ""}
             placeholder="San Isidro 2026"
             required
           />
@@ -80,7 +81,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
             id="fechaInicio"
             name="fechaInicio"
             type="date"
-            defaultValue={initial ? toDateInput(initial.fechaInicio) : ""}
+            defaultValue={(vals.fechaInicio as string | undefined) ?? (initial ? toDateInput(initial.fechaInicio) : "")}
             required
           />
           <FieldError messages={errors.fechaInicio} />
@@ -91,7 +92,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
             id="fechaFin"
             name="fechaFin"
             type="date"
-            defaultValue={initial ? toDateInput(initial.fechaFin) : ""}
+            defaultValue={(vals.fechaFin as string | undefined) ?? (initial ? toDateInput(initial.fechaFin) : "")}
             required
           />
           <FieldError messages={errors.fechaFin} />
@@ -102,7 +103,7 @@ export function EdicionForm({ modo, initial }: EdicionFormProps) {
         <input
           type="checkbox"
           name="activa"
-          defaultChecked={initial?.activa ?? false}
+          defaultChecked={vals.activa !== undefined ? (vals.activa as string) === "on" : (initial?.activa ?? false)}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
         />
         <span>Marcar como edición activa (visible por defecto en selectores).</span>

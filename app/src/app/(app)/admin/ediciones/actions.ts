@@ -18,14 +18,15 @@ export async function crearEdicionAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.ediciones.editar");
     const data = parseForm(crearEdicionSchema, formData);
 
     await withAuditContext(user.id, () => prisma.edicion.create({ data }));
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/ediciones");
@@ -41,8 +42,8 @@ export async function actualizarEdicionAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.ediciones.editar");
     const data = parseForm(actualizarEdicionSchema, formData);
 
@@ -50,7 +51,8 @@ export async function actualizarEdicionAction(
       prisma.edicion.update({ where: { id }, data })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/ediciones");
