@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requirePermiso } from "@/lib/authz";
+import { requireRole, requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { formDataToObject } from "@/lib/forms";
@@ -475,7 +475,7 @@ export async function toggleAsistenciaAction(
   formData: FormData
 ): Promise<ActionResult<{ asistio: boolean }>> {
   try {
-    const { user } = await requirePermiso(["admin", "gerente", "cajero"]);
+    const { user } = await requireRole(["admin", "gerente", "cajero"]);
     const data = parseForm(toggleAsistenciaSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -975,7 +975,7 @@ export async function contarTurnosSinPlazasAction(): Promise<
   ActionResult<ContadorTurnosSinPlazas>
 > {
   try {
-    await requirePermiso(["admin"]);
+    await requireRole("admin");
 
     const ed = await obtenerEdicionActiva();
     if (!ed) {
@@ -1020,7 +1020,7 @@ export async function rellenarPlazasTurnosSinPlazasAction(
 ): Promise<ActionResult<{ rellenados: number }>> {
   try {
     const values = formDataToObject(formData);
-    const { user } = await requirePermiso(["admin"]);
+    const { user } = await requireRole("admin");
     const data = parseForm(rellenarPlazasTurnosSinPlazasSchema, formData);
 
     const ed = await obtenerEdicionActiva();

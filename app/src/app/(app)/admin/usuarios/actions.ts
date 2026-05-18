@@ -40,8 +40,8 @@ export async function crearUsuarioAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.usuarios.editar");
     const data = parseForm(crearUsuarioSchema, formData);
 
@@ -94,8 +94,8 @@ export async function actualizarUsuarioAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.usuarios.editar");
     const data = parseForm(actualizarUsuarioSchema, formData);
 

@@ -102,7 +102,10 @@ export async function crearEmpleadoAction(
     });
     if (esActionResult(reglaRes)) {
       const result = reglaRes as ActionResult<{ id: string }>;
-      return { ...result, values };
+      if (result.ok === false) {
+        return { ...result, values };
+      }
+      return result;
     }
 
     const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);
@@ -165,7 +168,10 @@ export async function actualizarEmpleadoAction(
     });
     if (esActionResult(reglaRes)) {
       const result = reglaRes as ActionResult<{ id: string }>;
-      return { ...result, values };
+      if (result.ok === false) {
+        return { ...result, values };
+      }
+      return result;
     }
 
     const dniRes = resolverDni(data.dni, reglaRes.esVoluntario);

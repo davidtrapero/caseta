@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requirePermiso } from "@/lib/authz";
+import { requireRole, requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { toActionError, type ActionResult } from "@/lib/action-result";
 import { obtenerEdicionActiva } from "@/lib/edicion";
@@ -29,7 +29,7 @@ export async function calcularNominasAction(): Promise<
   ActionResult<ResultadoCalculo>
 > {
   try {
-    const { user } = await requirePermiso(["admin", "gerente"]);
+    const { user } = await requireRole(["admin", "gerente"]);
 
     const edicion = await obtenerEdicionActiva();
     if (!edicion) return { ok: false, error: "No hay edición activa." };
