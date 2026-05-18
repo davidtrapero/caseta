@@ -65,7 +65,7 @@ export default async function InicioPage() {
         <section>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             <KpiCard
-              etiqueta="Ingresos · edición"
+              etiqueta="Ingresos"
               valor={kpis.ingresosEdicion}
               nota="Acumulado"
               tono="positivo"
@@ -73,13 +73,13 @@ export default async function InicioPage() {
             {esAdminOGerente && (
               <>
                 <KpiCard
-                  etiqueta="Gastos · edición"
+                  etiqueta="Gastos"
                   valor={kpis.gastosEdicion}
                   nota="Acumulado"
                   tono="negativo"
                 />
                 <KpiCard
-                  etiqueta="Neto · edición"
+                  etiqueta="Neto"
                   valor={kpis.resultadoNeto}
                   nota="Ingresos − gastos"
                   tono={kpis.resultadoNeto >= 0 ? "neto-positivo" : "neto-negativo"}
