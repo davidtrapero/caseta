@@ -41,7 +41,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Edición no encontrada." }, { status: 404 });
   }
 
-  const empleados = await cargarAsistencias({
+  // Sin skip/take para exportar todos los registros
+  const { empleados } = await cargarAsistencias({
     edicionId,
     tipoEmpleadoIds,
     entidadId,

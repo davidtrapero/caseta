@@ -7,12 +7,18 @@ import { SectionHeader, EmptyState } from "../../admin/_components/page-header";
 import { cargarAsistencias } from "./_lib/query";
 import { FiltrosAsistencias } from "./_components/filtros";
 import { TablaAsistencias, type FilaEmpleado } from "./_components/tabla-asistencias";
+import { parseListParams } from "@/lib/list-params";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { PageSizeSelect } from "@/components/ui/page-size-select";
 
 type SP = Promise<{
   edicionId?: string;
   tipos?: string;
   entidadId?: string;
   casetaId?: string;
+  page?: string;
+  pageSize?: string;
+  [key: string]: string | undefined;
 }>;
 
 function parseTipos(raw: string | undefined): string[] {
@@ -30,6 +36,12 @@ export default async function AsistenciasPage({
 }) {
   await requireRole(["admin", "gerente"]);
   const sp = await searchParams;
+
+  const listParams = parseListParams(sp, {
+    defaultPageSize: 25,
+    allowedPageSizes: [10, 25, 50, 100],
+    allowedSorts: [],
+  });
 
   const ediciones = await prisma.edicion.findMany({
     orderBy: [{ activa: "desc" }, { anio: "desc" }],
@@ -58,25 +70,28 @@ export default async function AsistenciasPage({
 
   const tipoEmpleadoIds = parseTipos(sp.tipos);
 
-  const [entidades, casetas, tiposEmpleado, empleados] = await Promise.all([
-    prisma.entidadVoluntario.findMany({
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true },
-    }),
-    prisma.caseta.findMany({
-      orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true },
-    }),
-    prisma.tipoEmpleado.findMany({
-      orderBy: { orden: "asc" },
-    }),
-    cargarAsistencias({
-      edicionId,
-      tipoEmpleadoIds,
-      entidadId: sp.entidadId,
-      casetaId: sp.casetaId,
-    }),
-  ]);
+  const [entidades, casetas, tiposEmpleado, { empleados, total }] =
+    await Promise.all([
+      prisma.entidadVoluntario.findMany({
+        orderBy: { nombre: "asc" },
+        select: { id: true, nombre: true },
+      }),
+      prisma.caseta.findMany({
+        orderBy: { nombre: "asc" },
+        select: { id: true, nombre: true },
+      }),
+      prisma.tipoEmpleado.findMany({
+        orderBy: { orden: "asc" },
+      }),
+      cargarAsistencias({
+        edicionId,
+        tipoEmpleadoIds,
+        entidadId: sp.entidadId,
+        casetaId: sp.casetaId,
+        skip: listParams.skip,
+        take: listParams.take,
+      }),
+    ]);
 
   const filas: FilaEmpleado[] = empleados.map((e) => ({
     id: e.id,
@@ -97,6 +112,14 @@ export default async function AsistenciasPage({
   if (sp.tipos) exportParams.set("tipos", sp.tipos);
   if (sp.entidadId) exportParams.set("entidadId", sp.entidadId);
   if (sp.casetaId) exportParams.set("casetaId", sp.casetaId);
+
+  // Filtros activos para mantener en paginación
+  const filtroQueryParams = new URLSearchParams({
+    ...(sp.edicionId && { edicionId: sp.edicionId }),
+    ...(sp.tipos && { tipos: sp.tipos }),
+    ...(sp.entidadId && { entidadId: sp.entidadId }),
+    ...(sp.casetaId && { casetaId: sp.casetaId }),
+  }).toString();
 
   return (
     <div className="flex flex-col gap-6">
@@ -134,13 +157,29 @@ export default async function AsistenciasPage({
         tiposActivos={tipoEmpleadoIds}
       />
 
-      {filas.length === 0 ? (
+      {filas.length === 0 && listParams.page === 1 ? (
         <EmptyState
           title="Sin asistencias"
           description="Ningún empleado tiene asistencias registradas con los filtros actuales."
         />
       ) : (
-        <TablaAsistencias filas={filas} />
+        <>
+          <div className="flex items-center justify-between">
+            <PageSizeSelect
+              currentPageSize={listParams.pageSize}
+              basePath="/turnos/asistencias"
+              queryParams={filtroQueryParams}
+            />
+          </div>
+          <TablaAsistencias filas={filas} />
+          <DataTablePagination
+            page={listParams.page}
+            pageSize={listParams.pageSize}
+            total={total}
+            basePath="/turnos/asistencias"
+            queryParams={filtroQueryParams}
+          />
+        </>
       )}
     </div>
   );
