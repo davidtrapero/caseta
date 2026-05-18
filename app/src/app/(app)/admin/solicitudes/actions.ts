@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requirePermiso, requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
@@ -608,8 +608,8 @@ export async function aprobarSolicitudEmpleadoAction(
   userId: string
 ): Promise<ActionResult<null>> {
   try {
-    // Auth: requiere admin o gerente
-    await requireRole(["admin", "gerente"]);
+    // Auth: requiere permiso de decidir solicitudes
+    await requirePermiso("solicitudes.decidir");
 
     const data = parseForm(aprobarSolicitudEmpleadoSchema, formData);
 
