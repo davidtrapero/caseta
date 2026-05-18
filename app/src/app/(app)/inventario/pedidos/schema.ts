@@ -19,7 +19,7 @@ const lineasJson = z
           productoId: z.string().min(1, "Producto inválido"),
           cantidad: z.coerce
             .number({ error: "Cantidad inválida" })
-            .positive("La cantidad debe ser mayor que 0")
+            .positive("La cantidad debe ser mayor que 0.")
             .max(999999, "Cantidad demasiado alta"),
           precioUnitario: z.coerce
             .number({ error: "Precio inválido" })
@@ -27,7 +27,7 @@ const lineasJson = z
             .max(9999999, "Precio demasiado alto"),
         })
       )
-      .min(1, "El pedido debe tener al menos una línea")
+      .min(1, "Añade al menos una línea al pedido.")
   );
 
 const baseProducto = z.object({

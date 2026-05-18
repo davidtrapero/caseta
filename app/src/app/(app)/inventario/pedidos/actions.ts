@@ -202,7 +202,7 @@ export async function recibirPedidoAction(
           );
         }
         if (pedido.detalles.length === 0) {
-          throw new Error("El pedido no tiene líneas.");
+          throw new Error("Añade al menos una línea al pedido.");
         }
 
         await tx.pedido.update({

@@ -8,7 +8,7 @@ const opcional = (max: number) =>
 
 const baseProducto = z.object({
   casetaId: z.string().min(1, "Caseta inválida"),
-  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
+  nombre: z.string().trim().min(2, "Completa el nombre").max(120),
   unidad: opcional(40),
   activo: z.preprocess((v) => v === "on" || v === true, z.boolean()),
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const baseCaseta = z.object({
-  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(80),
+  nombre: z.string().trim().min(2, "Completa el nombre").max(80),
   ubicacion: z
     .preprocess(
       (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),

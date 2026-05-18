@@ -133,7 +133,7 @@ export async function aprobarTurnosAction(
         }
 
         if (!empleado.activo) {
-          throw new Error("El empleado asociado está desactivado.");
+          throw new Error("El personal asociado está desactivado.");
         }
 
         const turnoIds = aResolver.map((t) => t.turnoId);

@@ -10,7 +10,7 @@ const fechaSchema = z.coerce.date({ error: "Fecha inválida" });
 
 const baseEdicion = z.object({
   anio: anioSchema,
-  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(80),
+  nombre: z.string().trim().min(2, "Completa el nombre").max(80),
   fechaInicio: fechaSchema,
   fechaFin: fechaSchema,
   activa: z.preprocess((v) => v === "on" || v === true, z.boolean()),

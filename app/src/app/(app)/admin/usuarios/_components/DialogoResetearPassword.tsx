@@ -32,7 +32,7 @@ export function DialogoResetearPassword({ userId, userName }: Props) {
       last.current = state;
       if (state.ok) {
         show(
-          "Contraseña reseteada. El usuario deberá cambiarla en su próximo login.",
+          "Contraseña reseteada. Deberá cambiarla en el próximo acceso.",
           "success"
         );
         queueMicrotask(() => setOpen(false));

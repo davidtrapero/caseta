@@ -12,7 +12,7 @@ const emailOpcional = z.preprocess(
 );
 
 const baseProveedor = z.object({
-  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
+  nombre: z.string().trim().min(2, "Completa el nombre").max(120),
   contacto: opcionalString(120),
   email: emailOpcional,
   telefono: opcionalString(40),

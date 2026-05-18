@@ -47,21 +47,21 @@ async function validarReglaVoluntario(data: {
       return {
         ok: false,
         error: "Los voluntarios no pueden tener jornal asignado.",
-        fieldErrors: { jornalDiario: ["Dejar vacío para voluntarios."] },
+        fieldErrors: { jornalDiario: ["Deja este campo vacío para voluntarios."] },
       };
     }
     if (!data.entidadId) {
       return {
         ok: false,
         error: "Los voluntarios requieren una entidad.",
-        fieldErrors: { entidadId: ["Entidad obligatoria para voluntarios."] },
+        fieldErrors: { entidadId: ["Selecciona una entidad para voluntarios."] },
       };
     }
     if (data.exigirContacto && !data.telefono) {
       return {
         ok: false,
         error: "Los voluntarios requieren teléfono.",
-        fieldErrors: { telefono: ["Teléfono obligatorio para voluntarios."] },
+        fieldErrors: { telefono: ["Proporciona un teléfono para voluntarios."] },
       };
     }
   } else {
@@ -69,7 +69,7 @@ async function validarReglaVoluntario(data: {
       return {
         ok: false,
         error: "El jornal diario es obligatorio para no-voluntarios.",
-        fieldErrors: { jornalDiario: ["Indica un jornal."] },
+        fieldErrors: { jornalDiario: ["Proporciona un jornal diario."] },
       };
     }
   }

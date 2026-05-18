@@ -9,20 +9,20 @@ const baseTipoEmpleado = z.object({
   label: z
     .string()
     .trim()
-    .min(2, "El label es obligatorio (mínimo 2 caracteres).")
+    .min(2, "Completa el nombre (mínimo 2 caracteres).")
     .max(64, "Máximo 64 caracteres."),
   labelCorto: z
     .string()
     .trim()
-    .min(1, "El label corto es obligatorio.")
+    .min(1, "Completa el nombre corto.")
     .max(8, "Máximo 8 caracteres."),
   colorHex: z
     .string()
     .trim()
     .regex(colorHexRegex, "Formato esperado: #RRGGBB."),
   orden: z.coerce
-    .number({ error: "El orden debe ser numérico." })
-    .int("El orden debe ser entero.")
+    .number({ error: "Ingresa un número válido para el orden." })
+    .int("El orden debe ser un número entero.")
     .min(0, "El orden no puede ser negativo."),
   esVoluntario: checkbox,
   activo: checkbox,
@@ -32,7 +32,7 @@ export const crearTipoEmpleadoSchema = z.object({
   slug: z
     .string()
     .trim()
-    .min(2, "El slug es obligatorio (mínimo 2 caracteres).")
+    .min(2, "Completa el identificador (mínimo 2 caracteres).")
     .max(32, "Máximo 32 caracteres.")
     .regex(slugRegex, "Solo minúsculas, dígitos, '-' o '_'. Debe empezar por letra."),
   label: baseTipoEmpleado.shape.label,

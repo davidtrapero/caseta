@@ -7,14 +7,14 @@ const montoDecimal = z.preprocess(
   (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
   z.coerce
     .number({ error: "Monto inválido" })
-    .min(0.01, "El monto debe ser positivo")
+    .min(0.01, "El monto debe ser mayor a 0")
     .max(99999999.99, "Monto demasiado alto")
 );
 
 const descripcion = z
   .string()
   .trim()
-  .min(2, "La descripción es obligatoria")
+  .min(2, "Completa la descripción")
   .max(300);
 
 const categoriaEnum = z.enum(CATEGORIAS_GASTO);

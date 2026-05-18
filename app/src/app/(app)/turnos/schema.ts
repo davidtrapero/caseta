@@ -43,14 +43,14 @@ const baseTurnoRango = z
   })
   .refine(
     (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
-    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+    { message: "La fecha de fin debe ser posterior a la de inicio.", path: ["fechaFin"] }
   )
   .refine(
     (d) => {
       const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
       return ms <= 24 * 60 * 60 * 1000;
     },
-    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+    { message: "Un turno no puede durar más de 24 horas.", path: ["fechaFin"] }
   );
 
 // Plazas esperadas por tipo: serializado como JSON en un campo hidden.
@@ -87,14 +87,14 @@ export const crearTurnoSchema = z
   })
   .refine(
     (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
-    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+    { message: "La fecha de fin debe ser posterior a la de inicio.", path: ["fechaFin"] }
   )
   .refine(
     (d) => {
       const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
       return ms <= 24 * 60 * 60 * 1000;
     },
-    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+    { message: "Un turno no puede durar más de 24 horas.", path: ["fechaFin"] }
   );
 
 // Actualizar: sólo horario del turno; las asignaciones se gestionan aparte.
@@ -226,14 +226,14 @@ export const actualizarTurnoYPlazasSchema = z
   })
   .refine(
     (d) => new Date(d.fechaFin).getTime() > new Date(d.fechaInicio).getTime(),
-    { message: "La fecha fin debe ser posterior a la fecha inicio", path: ["fechaFin"] }
+    { message: "La fecha de fin debe ser posterior a la de inicio.", path: ["fechaFin"] }
   )
   .refine(
     (d) => {
       const ms = new Date(d.fechaFin).getTime() - new Date(d.fechaInicio).getTime();
       return ms <= 24 * 60 * 60 * 1000;
     },
-    { message: "Un turno no puede durar más de 24 horas", path: ["fechaFin"] }
+    { message: "Un turno no puede durar más de 24 horas.", path: ["fechaFin"] }
   );
 
 export type CrearTurnoInput = z.infer<typeof crearTurnoSchema>;

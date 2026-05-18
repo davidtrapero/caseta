@@ -17,7 +17,7 @@ const jornalSchema = z.preprocess(
   (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
   z.coerce
     .number({ error: "Jornal inválido" })
-    .min(0, "El jornal no puede ser negativo")
+    .min(0, "El jornal no puede ser negativo.")
     .max(9999.99, "Jornal demasiado alto")
     .optional()
 );
@@ -27,7 +27,7 @@ const jornalSchema = z.preprocess(
 // DNI: sólo opcional en Zod (sin validación de formato aquí). La regla
 // "obligatorio si no voluntario" se evalúa en la action.
 const baseEmpleado = z.object({
-  nombre: z.string().trim().min(2, "El nombre es obligatorio").max(120),
+  nombre: z.string().trim().min(2, "Completa el nombre").max(120),
   dni: opcionalString(20),
   email: emailOpcional,
   telefono: opcionalString(40),

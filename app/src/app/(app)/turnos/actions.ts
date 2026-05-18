@@ -174,7 +174,7 @@ export async function crearTurnoAction(
         if (data.empleadoIdsJson.length > 0) {
           for (const empleadoId of data.empleadoIdsJson) {
             const tipoImputadoId = tiposEmpleadoMap.get(empleadoId);
-            if (!tipoImputadoId) throw new Error("La persona no tiene tipo asignado.");
+            if (!tipoImputadoId) throw new Error("El personal no tiene tipo asignado.");
           }
           await tx.turnoEmpleado.createMany({
             data: data.empleadoIdsJson.map((empleadoId) => ({

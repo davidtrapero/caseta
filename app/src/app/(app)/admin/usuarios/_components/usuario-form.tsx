@@ -88,7 +88,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
             placeholder="Mínimo 8 caracteres"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            El usuario podrá cambiarla después.
+            Podrás cambiarla después.
           </p>
           <FieldError messages={errors.password} />
         </div>

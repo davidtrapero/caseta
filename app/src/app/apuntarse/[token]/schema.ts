@@ -14,7 +14,7 @@ export const crearSolicitudSchema = z
     nombre: z
       .string()
       .trim()
-      .min(2, "El nombre es obligatorio")
+      .min(2, "Completa el nombre")
       .max(120, "Máximo 120 caracteres"),
     telefono: z.preprocess(
       (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
