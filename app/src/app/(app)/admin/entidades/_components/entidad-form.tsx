@@ -20,6 +20,7 @@ export function CrearEntidadForm() {
   }, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form
@@ -34,6 +35,7 @@ export function CrearEntidadForm() {
         <Input
           id="nombre"
           name="nombre"
+          defaultValue={(vals.nombre as string | undefined) ?? ""}
           placeholder="Peña Los Madriles"
           required
           maxLength={80}
@@ -68,6 +70,7 @@ export function RenombrarEntidadForm({
   }, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   if (!editing) {
     return (
@@ -88,7 +91,7 @@ export function RenombrarEntidadForm({
       <div className="flex-1">
         <Input
           name="nombre"
-          defaultValue={nombreActual}
+          defaultValue={(vals.nombre as string | undefined) ?? nombreActual}
           autoFocus
           required
           maxLength={80}

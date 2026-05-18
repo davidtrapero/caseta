@@ -12,8 +12,8 @@ export async function crearEntidadAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.entidades.crud");
     const data = parseForm(crearEntidadSchema, formData);
 
@@ -26,7 +26,8 @@ export async function crearEntidadAction(
     revalidatePath("/admin/entidades");
     return { ok: true, data: { id: creada.id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
@@ -39,8 +40,8 @@ export async function renombrarEntidadAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.entidades.crud");
     const data = parseForm(renombrarEntidadSchema, formData);
 
@@ -54,7 +55,8 @@ export async function renombrarEntidadAction(
     revalidatePath("/admin/entidades");
     return { ok: true, data: { id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
 
