@@ -6,8 +6,8 @@ export default async function NuevoTipoEmpleadoPage() {
   await requireRole(["admin"]);
   return (
     <FormShell
-      title="Nuevo tipo de empleado"
-      subtitle="Categoría con color propio para empleados y plazas de turno."
+      title="Nueva categoría de personal"
+      subtitle="Categoría con color propio para el personal y las plazas de turno."
     >
       <TipoEmpleadoForm modo="crear" />
     </FormShell>

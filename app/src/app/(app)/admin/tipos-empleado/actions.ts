@@ -111,7 +111,7 @@ export async function eliminarTipoEmpleadoAction(
     });
 
     if (!tipo) {
-      return { ok: false, error: "El tipo de empleado no existe." };
+      return { ok: false, error: "La categoría de personal no existe." };
     }
 
     const enUso = tipo._count.empleadoTipos > 0 || tipo._count.plazas > 0;
@@ -127,7 +127,7 @@ export async function eliminarTipoEmpleadoAction(
       return {
         ok: false,
         error:
-          "Este tipo está en uso por empleados o plazas y no se puede borrar. Se ha marcado como inactivo.",
+          "Esta categoría está en uso por el personal o las plazas y no se puede borrar. Se ha marcado como inactiva.",
       };
     }
 

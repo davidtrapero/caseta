@@ -209,7 +209,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
             className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
           />
           <span>
-            Es tipo de voluntario (sin jornal, requiere entidad asignada).
+            Es categoría de voluntariado (sin jornal, requiere entidad asignada).
           </span>
         </label>
 
@@ -221,7 +221,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
               defaultChecked={initial?.activo ?? true}
               className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
             />
-            <span>Tipo activo (disponible para asignar a empleados y plazas).</span>
+            <span>Categoría activa (disponible para asignar al personal y las plazas).</span>
           </label>
         )}
 

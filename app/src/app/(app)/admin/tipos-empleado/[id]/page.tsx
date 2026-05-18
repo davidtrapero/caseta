@@ -23,7 +23,7 @@ export default async function EditarTipoEmpleadoPage({
   return (
     <FormShell
       title={`Editar: ${tipo.label}`}
-      subtitle="Los cambios afectan a empleados y plazas que usen este tipo."
+      subtitle="Los cambios afectan al personal y las plazas que usen esta categoría."
     >
       <TipoEmpleadoForm
         modo="editar"

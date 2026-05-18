@@ -58,8 +58,8 @@ export default async function TiposEmpleadoPage({
   return (
     <div>
       <SectionHeader
-        title="Tipos de empleado"
-        subtitle="Categorías editables (con color propio) que se aplican a empleados y plazas de turno."
+        title="Tipos de personal"
+        subtitle="Categorías editables (con color propio) que se aplican al personal y las plazas de turno."
         actionHref="/admin/tipos-empleado/nuevo"
         actionLabel="Nuevo tipo"
       />
@@ -73,8 +73,8 @@ export default async function TiposEmpleadoPage({
 
       {tipos.length === 0 ? (
         <EmptyState
-          title="Sin tipos de empleado"
-          description="Define los tipos (camarero, coordinador, voluntario…) y sus colores."
+          title="Sin tipos de personal"
+          description="Define las categorías (camarera/o, coordinación, voluntariado…) y sus colores."
           actionHref="/admin/tipos-empleado/nuevo"
           actionLabel="Crear tipo"
         />
