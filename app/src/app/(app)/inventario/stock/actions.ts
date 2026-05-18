@@ -17,8 +17,8 @@ export async function ajustarStockAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("inventario.stock.ajustar");
     const data = parseForm(ajustarStockSchema, formData);
 
@@ -94,6 +94,7 @@ export async function ajustarStockAction(
     revalidatePath("/inventario/movimientos");
     return { ok: true, data: { id: resultado.id } };
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 }
