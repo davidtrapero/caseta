@@ -9,6 +9,7 @@ import {
   toActionError,
   type ActionResult,
 } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { ajustarStockSchema } from "./schema";
 
@@ -17,23 +18,25 @@ export async function ajustarStockAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(ajustarStockSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
     if (!edicion) {
-      return { ok: false, error: "No hay edición activa." };
+      return { ok: false, error: "No hay edición activa.", values };
     }
 
     const producto = await prisma.producto.findUnique({
       where: { id: data.productoId },
       select: { casetaId: true, activo: true },
     });
-    if (!producto) return { ok: false, error: "Producto no encontrado." };
+    if (!producto) return { ok: false, error: "Producto no encontrado.", values };
     if (producto.casetaId !== data.casetaId) {
       return {
         ok: false,
         error: "El producto no pertenece a la caseta indicada.",
+        values,
       };
     }
 

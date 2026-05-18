@@ -10,6 +10,7 @@ import {
   toActionError,
   type ActionResult,
 } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import { crearPedidoSchema, editarPedidoSchema } from "./schema";
 
@@ -50,17 +51,18 @@ export async function crearPedidoAction(
 ): Promise<ActionResult<{ id: string }>> {
   let nuevoId: string | null = null;
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearPedidoSchema, formData);
 
     const edicion = await obtenerEdicionActiva();
-    if (!edicion) return { ok: false, error: "No hay edición activa." };
+    if (!edicion) return { ok: false, error: "No hay edición activa.", values };
 
     const errProd = await validarProductosEnCaseta(
       data.lineasJson.map((l) => l.productoId),
       data.casetaId
     );
-    if (errProd) return { ok: false, error: errProd };
+    if (errProd) return { ok: false, error: errProd, values };
 
     const total = calcularTotal(data.lineasJson);
 
@@ -109,6 +111,7 @@ export async function editarPedidoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(editarPedidoSchema, formData);
 
@@ -116,11 +119,12 @@ export async function editarPedidoAction(
       where: { id },
       select: { estado: true },
     });
-    if (!existente) return { ok: false, error: "Pedido no encontrado." };
+    if (!existente) return { ok: false, error: "Pedido no encontrado.", values };
     if (existente.estado !== "pendiente") {
       return {
         ok: false,
         error: `No se puede editar un pedido ${existente.estado}.`,
+        values,
       };
     }
 
@@ -128,7 +132,7 @@ export async function editarPedidoAction(
       data.lineasJson.map((l) => l.productoId),
       data.casetaId
     );
-    if (errProd) return { ok: false, error: errProd };
+    if (errProd) return { ok: false, error: errProd, values };
 
     const total = calcularTotal(data.lineasJson);
 

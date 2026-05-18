@@ -10,6 +10,7 @@ import {
   toActionError,
   type ActionResult,
 } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { crearProductoSchema, actualizarProductoSchema } from "./schema";
 
 export async function crearProductoAction(
@@ -17,6 +18,7 @@ export async function crearProductoAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearProductoSchema, formData);
 
@@ -24,7 +26,7 @@ export async function crearProductoAction(
       where: { id: data.casetaId },
       select: { activa: true },
     });
-    if (!caseta) return { ok: false, error: "Caseta no encontrada." };
+    if (!caseta) return { ok: false, error: "Caseta no encontrada.", values };
 
     await withAuditContext(user.id, () =>
       prisma.producto.create({
@@ -55,11 +57,12 @@ export async function actualizarProductoAction(
   }
 
   try {
+    const values = formDataToObject(formData);
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(actualizarProductoSchema, formData);
 
     const existente = await prisma.producto.findUnique({ where: { id } });
-    if (!existente) return { ok: false, error: "Producto no encontrado." };
+    if (!existente) return { ok: false, error: "Producto no encontrado.", values };
 
     await withAuditContext(user.id, () =>
       prisma.producto.update({
