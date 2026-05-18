@@ -17,8 +17,8 @@ export async function crearProductoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(crearProductoSchema, formData);
 
@@ -39,7 +39,8 @@ export async function crearProductoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/inventario/productos");
@@ -56,8 +57,8 @@ export async function actualizarProductoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(actualizarProductoSchema, formData);
 
@@ -76,7 +77,8 @@ export async function actualizarProductoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/inventario/productos");

@@ -42,6 +42,7 @@ export function ProductoForm({
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -56,7 +57,7 @@ export function ProductoForm({
         <select
           id="casetaId"
           name="casetaId"
-          defaultValue={initial?.casetaId ?? casetaPorDefecto ?? ""}
+          defaultValue={(vals.casetaId as string | undefined) ?? initial?.casetaId ?? casetaPorDefecto ?? ""}
           required
           className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
         >
@@ -77,7 +78,7 @@ export function ProductoForm({
         <Input
           id="nombre"
           name="nombre"
-          defaultValue={initial?.nombre ?? ""}
+          defaultValue={(vals.nombre as string | undefined) ?? initial?.nombre ?? ""}
           placeholder="Rebujito, cerveza, jamón..."
           required
         />
@@ -89,7 +90,7 @@ export function ProductoForm({
         <Input
           id="unidad"
           name="unidad"
-          defaultValue={initial?.unidad ?? "unidad"}
+          defaultValue={(vals.unidad as string | undefined) ?? initial?.unidad ?? "unidad"}
           placeholder="unidad, botella, kg, litro..."
         />
         <p className="text-xs text-muted-foreground mt-1">
@@ -102,7 +103,7 @@ export function ProductoForm({
         <input
           type="checkbox"
           name="activo"
-          defaultChecked={initial?.activo ?? true}
+          defaultChecked={vals.activo !== undefined ? (vals.activo as string) === "on" : (initial?.activo ?? true)}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
         />
         <span>Producto activo (disponible para stock y pedidos).</span>
