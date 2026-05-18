@@ -81,7 +81,27 @@ export function EmpleadoForm({
     }
   }, [esVoluntario]);
 
+  // Restaurar estado controlado tras error de validación
+  useEffect(() => {
+    if (state && !state.ok && state.values) {
+      const v = state.values;
+      // tipoIds puede ser string (uno) o string[] (varios) en values
+      const tipoIdsRaw = v.tipoIds;
+      if (tipoIdsRaw !== undefined) {
+        setSelectedTipoIds(Array.isArray(tipoIdsRaw) ? (tipoIdsRaw as string[]) : [tipoIdsRaw as string]);
+      }
+      if (v.esVoluntario !== undefined) {
+        setEsVoluntario((v.esVoluntario as string) === "on");
+      }
+      if (v.jornalDiario !== undefined) {
+        setJornalDiario(v.jornalDiario as string);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   function precargarCaseta(casetaId: string) {
     const caseta = casetasDefaults?.find((c) => c.id === casetaId);
@@ -129,7 +149,7 @@ export function EmpleadoForm({
         <Input
           id="nombre"
           name="nombre"
-          defaultValue={initial?.nombre ?? ""}
+          defaultValue={(vals.nombre as string | undefined) ?? initial?.nombre ?? ""}
           placeholder="Juan Pérez"
           required
         />
@@ -211,7 +231,7 @@ export function EmpleadoForm({
             <Input
               id="dni"
               name="dni"
-              defaultValue={initial?.dni ?? ""}
+              defaultValue={(vals.dni as string | undefined) ?? initial?.dni ?? ""}
               placeholder="12345678A"
             />
             <FieldError messages={errors.dni} />
@@ -224,7 +244,7 @@ export function EmpleadoForm({
           <Input
             id="telefono"
             name="telefono"
-            defaultValue={initial?.telefono ?? ""}
+            defaultValue={(vals.telefono as string | undefined) ?? initial?.telefono ?? ""}
             placeholder="600 123 456"
           />
           <FieldError messages={errors.telefono} />
@@ -235,7 +255,7 @@ export function EmpleadoForm({
             id="email"
             name="email"
             type="email"
-            defaultValue={initial?.email ?? ""}
+            defaultValue={(vals.email as string | undefined) ?? initial?.email ?? ""}
             placeholder="nombre@ejemplo.com"
           />
           <FieldError messages={errors.email} />
@@ -248,7 +268,7 @@ export function EmpleadoForm({
           <select
             id="entidadId"
             name="entidadId"
-            defaultValue={initial?.entidadId ?? ""}
+            defaultValue={(vals.entidadId as string | undefined) ?? initial?.entidadId ?? ""}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             <option value="">— Selecciona una entidad —</option>
@@ -287,7 +307,7 @@ export function EmpleadoForm({
         <input
           type="checkbox"
           name="activo"
-          defaultChecked={initial?.activo ?? true}
+          defaultChecked={vals.activo !== undefined ? (vals.activo as string) === "on" : (initial?.activo ?? true)}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
         />
         <span>Empleado activo (disponible para turnos).</span>

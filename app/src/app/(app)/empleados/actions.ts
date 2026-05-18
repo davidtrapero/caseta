@@ -87,8 +87,8 @@ export async function crearEmpleadoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.empleados.crud");
     const data = parseForm(crearEmpleadoSchema, formData);
 
@@ -136,7 +136,8 @@ export async function crearEmpleadoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/empleados");
@@ -152,8 +153,8 @@ export async function actualizarEmpleadoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.empleados.crud");
     const data = parseForm(actualizarEmpleadoSchema, formData);
 
@@ -204,7 +205,8 @@ export async function actualizarEmpleadoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/empleados");
