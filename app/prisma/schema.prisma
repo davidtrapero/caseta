@@ -519,3 +519,16 @@ model AuditLog {
   @@index([entidad, entidadId])
   @@index([fecha])
 }
+
+// Asignación granular de permisos por rol.
+// Permite editar dinámicamente qué permisos tiene cada rol desde /admin/permisos.
+model RolPermiso {
+  id        String   @id @default(cuid())
+  rol       Rol
+  permiso   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([rol, permiso])
+  @@index([rol])
+}
