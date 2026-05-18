@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireRole } from "@/lib/authz";
+import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
@@ -60,7 +60,7 @@ export async function aprobarTurnosAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string; aprobados: number }>> {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("solicitudes.decidir");
     const data = parseForm(aprobarTurnosSchema, formData);
 
     const result = await withAuditContext(user.id, () =>
@@ -265,7 +265,7 @@ export async function rechazarTurnosAction(
   formData: FormData
 ): Promise<ActionResult<RechazarResult>> {
   try {
-    const { user } = await requireRole(["admin", "gerente"]);
+    const { user } = await requirePermiso("solicitudes.decidir");
     const data = parseForm(rechazarTurnosSchema, formData);
 
     const result = await withAuditContext(user.id, () =>
