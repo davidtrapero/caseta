@@ -5,7 +5,7 @@ export type FieldErrors = Record<string, string[]>;
 
 export type ActionResult<T = undefined> =
   | { ok: true; data: T }
-  | { ok: false; error: string; fieldErrors?: FieldErrors };
+  | { ok: false; error: string; fieldErrors?: FieldErrors; values?: Record<string, unknown> };
 
 export function parseForm<T>(schema: ZodType<T>, formData: FormData): T {
   const raw: Record<string, unknown> = {};
