@@ -43,8 +43,6 @@ export default async function ApuntarseEmpleadoPage({ params }: PageProps) {
     select: {
       id: true,
       activa: true,
-      nombre: true,
-      anio: true,
     },
   });
 
@@ -89,8 +87,7 @@ export default async function ApuntarseEmpleadoPage({ params }: PageProps) {
   if (turnos.length === 0) {
     return (
       <FormularioEmpleado
-        edicionNombre={edicion.nombre}
-        edicionAnio={edicion.anio}
+        token={token}
         dias={[]}
       />
     );
@@ -161,8 +158,7 @@ export default async function ApuntarseEmpleadoPage({ params }: PageProps) {
 
   return (
     <FormularioEmpleado
-      edicionNombre={edicion.nombre}
-      edicionAnio={edicion.anio}
+      token={token}
       dias={diasOrdenados}
     />
   );
