@@ -35,6 +35,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -50,7 +51,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
           id="email"
           name="email"
           type="email"
-          defaultValue={initial?.email ?? ""}
+          defaultValue={(vals.email as string | undefined) ?? initial?.email ?? ""}
           placeholder="usuario@caseta.local"
           required={modo === "crear"}
           disabled={modo === "editar"}
@@ -69,7 +70,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
         <Input
           id="name"
           name="name"
-          defaultValue={initial?.name ?? ""}
+          defaultValue={(vals.name as string | undefined) ?? initial?.name ?? ""}
           placeholder="Juan Pérez"
           required
         />
@@ -99,7 +100,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
         <select
           id="rol"
           name="rol"
-          defaultValue={initial?.rol ?? "cajero"}
+          defaultValue={(vals.rol as string | undefined) ?? initial?.rol ?? "cajero"}
           disabled={esAutoedicion}
           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           required
@@ -120,7 +121,7 @@ export function UsuarioForm({ modo, initial, esAutoedicion = false }: UsuarioFor
         <input
           type="checkbox"
           name="activo"
-          defaultChecked={initial?.activo ?? true}
+          defaultChecked={vals.activo !== undefined ? (vals.activo as string) === "on" : (initial?.activo ?? true)}
           disabled={esAutoedicion}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))] disabled:cursor-not-allowed disabled:opacity-60"
         />
