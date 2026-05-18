@@ -18,6 +18,7 @@ const NAV: (NavItem & { roles?: Rol[] })[] = [
   { href: "/inventario", label: "Inventario" },
   { href: "/caja", label: "Caja" },
   { href: "/admin", label: "Administración" },
+  { href: "/admin/permisos", label: "Permisos", roles: ["admin"] },
 ];
 
 export default async function AppLayout({
