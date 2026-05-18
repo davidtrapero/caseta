@@ -50,3 +50,5 @@ vi.mock("next/navigation", () => ({
   }),
   useSearchParams: () => new URLSearchParams(),
 }));
+
+vi.mock("server-only", () => ({}));
