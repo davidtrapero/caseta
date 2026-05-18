@@ -34,6 +34,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
   >(action, null);
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
+  const vals = state && !state.ok ? state.values ?? {} : {};
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -48,7 +49,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
         <Input
           id="nombre"
           name="nombre"
-          defaultValue={initial?.nombre ?? ""}
+          defaultValue={(vals.nombre as string | undefined) ?? initial?.nombre ?? ""}
           placeholder="Bebidas González S.L."
           required
         />
@@ -60,7 +61,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
         <Input
           id="contacto"
           name="contacto"
-          defaultValue={initial?.contacto ?? ""}
+          defaultValue={(vals.contacto as string | undefined) ?? initial?.contacto ?? ""}
           placeholder="María López"
         />
         <FieldError messages={errors.contacto} />
@@ -73,7 +74,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
             id="email"
             name="email"
             type="email"
-            defaultValue={initial?.email ?? ""}
+            defaultValue={(vals.email as string | undefined) ?? initial?.email ?? ""}
             placeholder="pedidos@proveedor.com"
           />
           <FieldError messages={errors.email} />
@@ -83,7 +84,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
           <Input
             id="telefono"
             name="telefono"
-            defaultValue={initial?.telefono ?? ""}
+            defaultValue={(vals.telefono as string | undefined) ?? initial?.telefono ?? ""}
             placeholder="955 123 456"
           />
           <FieldError messages={errors.telefono} />
@@ -94,7 +95,7 @@ export function ProveedorForm({ modo, initial }: ProveedorFormProps) {
         <input
           type="checkbox"
           name="activo"
-          defaultChecked={initial?.activo ?? true}
+          defaultChecked={vals.activo !== undefined ? (vals.activo as string) === "on" : (initial?.activo ?? true)}
           className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
         />
         <span>Proveedor activo (disponible para pedidos).</span>

@@ -13,8 +13,8 @@ export async function crearProveedorAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.proveedores.crud");
     const data = parseForm(crearProveedorSchema, formData);
 
@@ -30,7 +30,8 @@ export async function crearProveedorAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/proveedores");
@@ -46,8 +47,8 @@ export async function actualizarProveedorAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.proveedores.crud");
     const data = parseForm(actualizarProveedorSchema, formData);
 
@@ -64,7 +65,8 @@ export async function actualizarProveedorAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidatePath("/admin/proveedores");
