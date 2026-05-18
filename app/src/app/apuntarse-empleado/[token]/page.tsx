@@ -86,10 +86,14 @@ export default async function ApuntarseEmpleadoPage({ params }: PageProps) {
   // 5. Si no hay turnos, retornar estructura vacía
   if (turnos.length === 0) {
     return (
-      <FormularioEmpleado
-        token={token}
-        dias={[]}
-      />
+      <main className="min-h-screen py-10 px-4">
+        <div className="mx-auto max-w-3xl">
+          <header className="mb-8">
+            <h1 className="text-2xl font-semibold">Apuntarse como empleado</h1>
+          </header>
+          <FormularioEmpleado token={token} dias={[]} />
+        </div>
+      </main>
     );
   }
 
@@ -157,9 +161,13 @@ export default async function ApuntarseEmpleadoPage({ params }: PageProps) {
     }));
 
   return (
-    <FormularioEmpleado
-      token={token}
-      dias={diasOrdenados}
-    />
+    <main className="min-h-screen py-10 px-4">
+      <div className="mx-auto max-w-3xl">
+        <header className="mb-8">
+          <h1 className="text-2xl font-semibold">Apuntarse como empleado</h1>
+        </header>
+        <FormularioEmpleado token={token} dias={diasOrdenados} />
+      </div>
+    </main>
   );
 }
