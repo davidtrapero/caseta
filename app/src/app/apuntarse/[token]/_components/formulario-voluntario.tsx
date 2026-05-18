@@ -97,6 +97,7 @@ export function FormularioVoluntario({
             required
             maxLength={120}
             placeholder="María García"
+            defaultValue={state?.values?.nombre as string}
           />
           <FieldError messages={errors.nombre} />
         </div>
@@ -114,6 +115,7 @@ export function FormularioVoluntario({
               type="tel"
               maxLength={20}
               placeholder="612 345 678"
+              defaultValue={state?.values?.telefono as string}
             />
             <FieldError messages={errors.telefono} />
           </div>
@@ -125,6 +127,7 @@ export function FormularioVoluntario({
               type="email"
               maxLength={254}
               placeholder="maria@ejemplo.com"
+              defaultValue={state?.values?.email as string}
             />
             <FieldError messages={errors.email} />
           </div>
@@ -136,7 +139,7 @@ export function FormularioVoluntario({
             id="entidadId"
             name="entidadId"
             required
-            defaultValue=""
+            defaultValue={(state?.values?.entidadId as string) || ""}
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
           >
             <option value="" disabled>
@@ -159,6 +162,7 @@ export function FormularioVoluntario({
             maxLength={500}
             rows={3}
             placeholder="Disponibilidad, restricciones, alergias…"
+            defaultValue={state?.values?.observaciones as string}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 outline-offset-2 outline-ring"
           />
           <FieldError messages={errors.observaciones} />
@@ -238,6 +242,7 @@ export function FormularioVoluntario({
                               type="checkbox"
                               name="turnoIds"
                               value={t.id}
+                              defaultChecked={(state?.values?.turnoIds as string[])?.includes(t.id)}
                               className="h-4 w-4 rounded border-input"
                             />
                             <span>{t.rango}</span>

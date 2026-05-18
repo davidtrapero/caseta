@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
+import { formDataToObject } from "@/lib/forms";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
 import { calcularHuecosVoluntario } from "@/app/(app)/turnos/_lib/huecos";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -23,9 +24,12 @@ export async function crearSolicitudAction(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
+    // Capturar valores antes de validar (para restaurar en error)
+    const values = formDataToObject(formData);
+
     const token = formData.get("_token");
     if (typeof token !== "string" || token.length < 20) {
-      return { ok: false, error: "Enlace inválido." };
+      return { ok: false, error: "Enlace inválido.", values };
     }
 
     const ip = await getClientIp();
@@ -34,6 +38,7 @@ export async function crearSolicitudAction(
       return {
         ok: false,
         error: "Demasiadas solicitudes desde tu conexión. Espera un minuto e inténtalo de nuevo.",
+        values,
       };
     }
 
@@ -136,12 +141,19 @@ export async function crearSolicitudAction(
 
     return { ok: true, data: { id: solicitud.id } };
   } catch (err) {
+    // Capturar valores nuevamente en catch por si el error ocurre antes del primer try
+    const values = formDataToObject(formData);
     const fieldErrors =
       err instanceof Error
         ? (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors
         : undefined;
     if (fieldErrors) {
-      return { ok: false, error: err instanceof Error ? err.message : "Error", fieldErrors };
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Error",
+        fieldErrors,
+        values,
+      };
     }
     return toActionError(err);
   }
