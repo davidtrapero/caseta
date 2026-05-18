@@ -39,7 +39,7 @@ export function ToggleActivoUsuarioForm({
           esSelf
             ? "No puedes desactivarte a ti misma"
             : disabled
-              ? "Solo un administrador puede cambiar este estado"
+              ? "Solo la administración puede cambiar este estado"
               : activo
                 ? "Desactivar cuenta"
                 : "Reactivar cuenta"

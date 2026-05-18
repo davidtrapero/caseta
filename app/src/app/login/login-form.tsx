@@ -32,7 +32,7 @@ function mapAuthError(msg: string | undefined): string {
     return "Demasiados intentos fallidos. Espera unos minutos.";
   }
   if (lower.includes("account disabled") || lower.includes("banned")) {
-    return "Esta cuenta ha sido desactivada. Contacta con el administrador.";
+    return "Esta cuenta ha sido desactivada. Contacta con la administración.";
   }
   return "Error al iniciar sesión. Inténtalo de nuevo.";
 }

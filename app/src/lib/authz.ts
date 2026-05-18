@@ -36,7 +36,7 @@ export async function requireRole(allowedRoles: Rol | Rol[]) {
   const user = session.user as typeof session.user & { rol: Rol; activo: boolean };
 
   if (!user.activo) {
-    throw new AuthError("Usuario desactivado", "inactive");
+    throw new AuthError("Cuenta desactivada", "inactive");
   }
 
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
@@ -79,7 +79,7 @@ export async function requirePermiso(requiredPermiso: Permission) {
   const user = session.user as typeof session.user & { rol: Rol; activo: boolean };
 
   if (!user.activo) {
-    throw new AuthError("Usuario desactivado", "inactive");
+    throw new AuthError("Cuenta desactivada", "inactive");
   }
 
   // Admin siempre tiene acceso

@@ -54,7 +54,7 @@ export async function crearUsuarioAction(
         },
       });
       if (!result.user) {
-        throw new Error("No se pudo crear el usuario.");
+        throw new Error("No se pudo crear la cuenta.");
       }
       await prisma.user.update({
         where: { id: result.user.id },
@@ -121,7 +121,7 @@ export async function actualizarUsuarioAction(
     if (await dejariaSinAdmins(id, { rol: data.rol, activo: data.activo })) {
       return {
         ok: false,
-        error: "No se puede: dejaría el sistema sin ningún administrador activo.",
+        error: "No se puede: dejaría el sistema sin ninguna persona administradora activa.",
         values,
       };
     }
@@ -183,7 +183,7 @@ export async function desactivarUsuarioAction(
     if (await dejariaSinAdmins(id, { activo: false })) {
       return {
         ok: false,
-        error: "No se puede: dejaría el sistema sin ningún administrador activo.",
+        error: "No se puede: dejaría el sistema sin ninguna persona administradora activa.",
       };
     }
 

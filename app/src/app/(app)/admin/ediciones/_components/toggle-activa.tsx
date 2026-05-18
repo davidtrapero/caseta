@@ -19,7 +19,7 @@ export function ToggleActivaForm({
         className="group inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
         title={
           disabled
-            ? "Solo un administrador puede cambiar este estado"
+            ? "Solo la administración puede cambiar este estado"
             : activa
               ? "Marcar como inactiva"
               : "Marcar como activa"

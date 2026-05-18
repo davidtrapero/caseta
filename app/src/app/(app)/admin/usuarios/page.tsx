@@ -73,7 +73,7 @@ export default async function UsuariosPage({
     <div>
       <SectionHeader
         title="Usuarios"
-        subtitle="Cuentas con acceso a la aplicación. Los empleados de caseta no son usuarios."
+        subtitle="Cuentas con acceso a la aplicación. El personal de caseta no tiene cuenta de acceso."
         actionHref="/admin/usuarios/nuevo"
         actionLabel="Nuevo usuario"
         canAct={puedeEditar}
