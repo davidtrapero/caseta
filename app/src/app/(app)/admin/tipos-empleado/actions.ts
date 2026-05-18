@@ -25,8 +25,8 @@ export async function crearTipoEmpleadoAction(
   _prev: ActionResult<{ id: string }> | null,
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.tipos-empleado.crud");
     const data = parseForm(crearTipoEmpleadoSchema, formData);
 
@@ -49,7 +49,8 @@ export async function crearTipoEmpleadoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidarTipos();
@@ -65,8 +66,8 @@ export async function actualizarTipoEmpleadoAction(
     return { ok: false, error: "Identificador inválido." };
   }
 
+  const values = formDataToObject(formData);
   try {
-    const values = formDataToObject(formData);
     const { user } = await requirePermiso("admin.tipos-empleado.crud");
     const data = parseForm(actualizarTipoEmpleadoSchema, formData);
 
@@ -84,7 +85,8 @@ export async function actualizarTipoEmpleadoAction(
       })
     );
   } catch (err) {
-    return toActionError(err);
+    const base = toActionError(err);
+    return base.ok ? base : { ...base, values };
   }
 
   revalidarTipos();

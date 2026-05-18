@@ -45,8 +45,9 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
     FormData
   >(eliminarTipoEmpleadoAction, null);
 
-  const [colorHex, setColorHex] = useState(initial?.colorHex ?? "#9b1c2c");
-  const [label, setLabel] = useState(initial?.label ?? "Tipo");
+  const vals = state && !state.ok ? state.values ?? {} : {};
+  const [colorHex, setColorHex] = useState((vals.colorHex as string | undefined) ?? initial?.colorHex ?? "#9b1c2c");
+  const [label, setLabel] = useState((vals.label as string | undefined) ?? initial?.label ?? "Tipo");
 
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
   const eliminarError =
@@ -100,6 +101,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
               <Input
                 id="slug"
                 name="slug"
+                defaultValue={(vals.slug as string | undefined) ?? ""}
                 placeholder="coordinador"
                 required
                 pattern="^[a-z][a-z0-9_-]*$"
@@ -132,7 +134,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
             <Input
               id="labelCorto"
               name="labelCorto"
-              defaultValue={initial?.labelCorto ?? ""}
+              defaultValue={(vals.labelCorto as string | undefined) ?? initial?.labelCorto ?? ""}
               placeholder="Coord"
               maxLength={8}
               required
@@ -191,7 +193,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
               type="number"
               min="0"
               step="1"
-              defaultValue={initial?.orden ?? 0}
+              defaultValue={(vals.orden as string | undefined) ?? initial?.orden ?? 0}
               required
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -205,7 +207,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
           <input
             type="checkbox"
             name="esVoluntario"
-            defaultChecked={initial?.esVoluntario ?? false}
+            defaultChecked={vals.esVoluntario !== undefined ? (vals.esVoluntario as string) === "on" : (initial?.esVoluntario ?? false)}
             className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
           />
           <span>
@@ -218,7 +220,7 @@ export function TipoEmpleadoForm({ modo, initial }: TipoEmpleadoFormProps) {
             <input
               type="checkbox"
               name="activo"
-              defaultChecked={initial?.activo ?? true}
+              defaultChecked={vals.activo !== undefined ? (vals.activo as string) === "on" : (initial?.activo ?? true)}
               className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
             />
             <span>Categoría activa (disponible para asignar al personal y las plazas).</span>
