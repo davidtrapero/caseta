@@ -19,6 +19,10 @@ import {
 } from "../../admin/_components/page-header";
 import { obtenerEdicionActiva } from "@/lib/edicion";
 import type { TipoMovimiento } from "@prisma/client";
+import { parseListParams } from "@/lib/list-params";
+import { DataTablePagination } from "@/components/ui/data-table-pagination";
+import { PageSizeSelect } from "@/components/ui/page-size-select";
+import { SortableHeader } from "@/components/ui/sortable-header";
 
 const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
   day: "2-digit",
@@ -47,6 +51,7 @@ type SearchParams = {
   tipo?: string;
   desde?: string;
   hasta?: string;
+  [key: string]: string | undefined;
 };
 
 export default async function MovimientosPage({
@@ -56,6 +61,12 @@ export default async function MovimientosPage({
 }) {
   await requireRole(["admin", "gerente", "cajero"]);
   const sp = await searchParams;
+
+  const listParams = parseListParams(sp, {
+    defaultPageSize: 25,
+    allowedPageSizes: [10, 25, 50, 100],
+    allowedSorts: ["fecha", "producto"],
+  });
 
   const edicion = await obtenerEdicionActiva();
   if (!edicion) {
@@ -83,7 +94,18 @@ export default async function MovimientosPage({
       ? ymdToUtcDate(sp.hasta, true)
       : undefined;
 
-  const [casetas, productos, movimientos] = await Promise.all([
+  // Construir orderBy dinámico
+  let orderBy: any = [{ fecha: "desc" }];
+  if (listParams.sort) {
+    const direction = listParams.order ?? "asc";
+    if (listParams.sort === "fecha") {
+      orderBy = [{ fecha: direction }];
+    } else if (listParams.sort === "producto") {
+      orderBy = [{ producto: { nombre: direction } }, { fecha: "desc" }];
+    }
+  }
+
+  const [casetas, productos, movimientos, total] = await Promise.all([
     prisma.caseta.findMany({
       orderBy: { nombre: "asc" },
       select: { id: true, nombre: true },
@@ -113,8 +135,25 @@ export default async function MovimientosPage({
         caseta: { select: { nombre: true } },
         usuario: { select: { name: true } },
       },
-      orderBy: { fecha: "desc" },
-      take: 200,
+      orderBy,
+      skip: listParams.skip,
+      take: listParams.take,
+    }),
+    prisma.movimientoStock.count({
+      where: {
+        edicionId: edicion.id,
+        ...(sp.caseta ? { casetaId: sp.caseta } : {}),
+        ...(sp.producto ? { productoId: sp.producto } : {}),
+        ...(tipo ? { tipo } : {}),
+        ...(desde || hasta
+          ? {
+              fecha: {
+                ...(desde ? { gte: desde } : {}),
+                ...(hasta ? { lte: hasta } : {}),
+              },
+            }
+          : {}),
+      },
     }),
   ]);
 
@@ -203,6 +242,20 @@ export default async function MovimientosPage({
         </div>
       </form>
 
+      <div className="mb-4 flex items-center justify-between">
+        <PageSizeSelect
+          currentPageSize={listParams.pageSize}
+          basePath="/inventario/movimientos"
+          queryParams={new URLSearchParams({
+            ...(sp.caseta && { caseta: sp.caseta }),
+            ...(sp.producto && { producto: sp.producto }),
+            ...(sp.tipo && { tipo: sp.tipo }),
+            ...(sp.desde && { desde: sp.desde }),
+            ...(sp.hasta && { hasta: sp.hasta }),
+          }).toString()}
+        />
+      </div>
+
       {movimientos.length === 0 ? (
         <EmptyState
           title="Sin movimientos"
@@ -213,9 +266,39 @@ export default async function MovimientosPage({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-36">Fecha</TableHead>
+                <TableHead className="w-36">
+                  <SortableHeader
+                    column="fecha"
+                    label="Fecha"
+                    basePath="/inventario/movimientos"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                    queryParams={new URLSearchParams({
+                      ...(sp.caseta && { caseta: sp.caseta }),
+                      ...(sp.producto && { producto: sp.producto }),
+                      ...(sp.tipo && { tipo: sp.tipo }),
+                      ...(sp.desde && { desde: sp.desde }),
+                      ...(sp.hasta && { hasta: sp.hasta }),
+                    }).toString()}
+                  />
+                </TableHead>
                 <TableHead className="w-24">Tipo</TableHead>
-                <TableHead>Producto</TableHead>
+                <TableHead>
+                  <SortableHeader
+                    column="producto"
+                    label="Producto"
+                    basePath="/inventario/movimientos"
+                    currentSort={listParams.sort}
+                    currentOrder={listParams.order}
+                    queryParams={new URLSearchParams({
+                      ...(sp.caseta && { caseta: sp.caseta }),
+                      ...(sp.producto && { producto: sp.producto }),
+                      ...(sp.tipo && { tipo: sp.tipo }),
+                      ...(sp.desde && { desde: sp.desde }),
+                      ...(sp.hasta && { hasta: sp.hasta }),
+                    }).toString()}
+                  />
+                </TableHead>
                 <TableHead className="w-40">Caseta</TableHead>
                 <TableHead className="w-28 text-right">Cantidad</TableHead>
                 <TableHead className="w-32">Usuario</TableHead>
@@ -267,12 +350,19 @@ export default async function MovimientosPage({
               })}
             </TableBody>
           </Table>
-          {movimientos.length === 200 ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              Mostrando los 200 movimientos más recientes. Afina los filtros si
-              necesitas ver más antiguos.
-            </p>
-          ) : null}
+          <DataTablePagination
+            page={listParams.page}
+            pageSize={listParams.pageSize}
+            total={total}
+            basePath="/inventario/movimientos"
+            queryParams={new URLSearchParams({
+              ...(sp.caseta && { caseta: sp.caseta }),
+              ...(sp.producto && { producto: sp.producto }),
+              ...(sp.tipo && { tipo: sp.tipo }),
+              ...(sp.desde && { desde: sp.desde }),
+              ...(sp.hasta && { hasta: sp.hasta }),
+            }).toString()}
+          />
         </>
       )}
     </div>
