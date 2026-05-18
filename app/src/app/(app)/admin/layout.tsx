@@ -4,7 +4,7 @@ import { AdminTab } from "./_components/admin-tab";
 const TABS = [
   { href: "/admin/ediciones", label: "Ediciones" },
   { href: "/admin/casetas", label: "Casetas" },
-  { href: "/admin/tipos-empleado", label: "Tipos de empleado" },
+  { href: "/admin/tipos-empleado", label: "Tipos de personal" },
   { href: "/admin/proveedores", label: "Proveedores" },
   { href: "/admin/entidades", label: "Entidades" },
   { href: "/admin/usuarios", label: "Usuarios" },

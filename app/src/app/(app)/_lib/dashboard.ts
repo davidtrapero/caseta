@@ -251,7 +251,7 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
   if (esAdminOGerente && solicitudesPendientes > 0) {
     alertas.push({
       tipo: "solicitud",
-      mensaje: `${solicitudesPendientes} solicitud${solicitudesPendientes > 1 ? "es" : ""} de voluntario${solicitudesPendientes > 1 ? "s" : ""} pendiente${solicitudesPendientes > 1 ? "s" : ""}`,
+      mensaje: `${solicitudesPendientes} solicitud${solicitudesPendientes > 1 ? "es" : ""} de voluntariado pendiente${solicitudesPendientes > 1 ? "s" : ""}`,
       href: "/admin/solicitudes",
       count: solicitudesPendientes,
     });

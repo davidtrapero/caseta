@@ -96,7 +96,7 @@ export function CasetaForm({ modo, tiposEmpleado, initial }: CasetaFormProps) {
             placeholder="80.00"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Se precargará al crear un empleado desde esta caseta.
+            Se precargará al registrar personal desde esta caseta.
           </p>
           <FieldError messages={errors.jornalDiarioDefault} />
         </div>

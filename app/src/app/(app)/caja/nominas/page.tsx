@@ -136,7 +136,7 @@ export default async function NominasPage({
           title="Sin nóminas calculadas"
           description={
             puedeCalcular
-              ? "Pulsa 'Calcular nóminas' para generar las nóminas de los empleados con asistencia registrada."
+              ? "Pulsa 'Calcular nóminas' para generar las nóminas del personal con asistencia registrada."
               : "Aún no se han calculado las nóminas de esta edición."
           }
         />

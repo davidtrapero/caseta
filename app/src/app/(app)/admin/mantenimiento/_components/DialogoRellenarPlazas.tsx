@@ -171,7 +171,7 @@ export function DialogoRellenarPlazas({
                     {tiposEmpleado.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.label}
-                        {t.esVoluntario ? " (voluntario)" : ""}
+                        {t.esVoluntario ? " (voluntariado)" : ""}
                       </option>
                     ))}
                   </select>

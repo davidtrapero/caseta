@@ -17,7 +17,7 @@ export default async function AjustesPage() {
     <div className="flex flex-col gap-6 max-w-3xl">
       <SectionHeader
         title="Plantillas de mensajes"
-        subtitle="Edita los textos enviados a voluntarios al rechazar turnos. Variables disponibles: {nombre}, {motivo}, {turnos}, {caseta}, {fechas}."
+        subtitle="Edita los textos enviados al voluntariado al rechazar turnos. Variables disponibles: {nombre}, {motivo}, {turnos}, {caseta}, {fechas}."
       />
       {plantillas.map((p) => (
         <EditorPlantilla

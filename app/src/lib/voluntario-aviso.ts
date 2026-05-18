@@ -17,7 +17,7 @@ export type AvisoRechazo = {
   whatsappUrl: string | null;
 };
 
-const ASUNTO_FALLBACK = "Tu solicitud de voluntario";
+const ASUNTO_FALLBACK = "Tu solicitud de voluntariado";
 
 export async function construirAvisoRechazo(params: {
   email: string | null;

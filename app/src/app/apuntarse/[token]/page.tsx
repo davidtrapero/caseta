@@ -90,7 +90,7 @@ export default async function ApuntarsePage({
     <main className="min-h-screen py-10 px-4">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
-          <h1 className="text-2xl font-semibold">Apuntarse como voluntario</h1>
+          <h1 className="text-2xl font-semibold">Formulario de voluntariado</h1>
           <p className="text-muted-foreground mt-1">
             {edicion.nombre} · {edicion.anio}
           </p>
