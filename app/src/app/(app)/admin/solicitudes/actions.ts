@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requirePermiso } from "@/lib/authz";
+import { requirePermiso, requireRole } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
 import { parseForm, toActionError, type ActionResult } from "@/lib/action-result";
 import { detectarSolape, type TurnoRango } from "@/lib/turnos-solape";
@@ -14,6 +14,7 @@ import {
   rechazarTurnosSchema,
   aprobarTurnosEmpleadoSchema,
   rechazarTurnosEmpleadoSchema,
+  aprobarSolicitudEmpleadoSchema,
 } from "./schema";
 import { calcularHuecosEmpleado } from "@/app/(app)/turnos/_lib/huecos-empleado";
 // El cliente Prisma de este proyecto va extendido (extensión de auditoría),
@@ -581,6 +582,238 @@ export async function aprobarTurnosEmpleadoAction(
         : undefined;
     if (fieldErrors) {
       return { ok: false, error: err instanceof Error ? err.message : "Error", fieldErrors };
+    }
+    return toActionError(err);
+  }
+}
+
+/**
+ * Decide toda una SolicitudEmpleado de una vez: aprueba o rechaza todos sus turnos.
+ *
+ * Si aprueba:
+ *  - Busca o crea el Empleado por DNI (errora si es voluntario).
+ *  - Valida huecos y solapes para cada turno.
+ *  - Crea TurnoEmpleado por cada turno de la solicitud.
+ *  - Actualiza SolicitudEmpleado + SolicitudEmpleadoTurno a "aprobada/aprobado".
+ *
+ * Si rechaza:
+ *  - Actualiza SolicitudEmpleado a "rechazada" con motivoRechazo.
+ *
+ * userId se pasa desde el componente cliente para evitar re-leer la sesión
+ * dentro de la transacción (Edge runtime / RSC compatibility).
+ */
+export async function aprobarSolicitudEmpleadoAction(
+  _prev: ActionResult<null> | null,
+  formData: FormData,
+  userId: string
+): Promise<ActionResult<null>> {
+  try {
+    // Auth: requiere admin o gerente
+    await requireRole(["admin", "gerente"]);
+
+    const data = parseForm(aprobarSolicitudEmpleadoSchema, formData);
+
+    await withAuditContext(userId, () =>
+      prisma.$transaction(async (tx) => {
+        // Cargar solicitud con edición y turnos
+        const solicitud = await tx.solicitudEmpleado.findUnique({
+          where: { id: data.solicitudId },
+          include: {
+            edicion: { select: { id: true } },
+            turnos: {
+              include: {
+                turno: {
+                  select: {
+                    id: true,
+                    casetaId: true,
+                    fechaInicio: true,
+                    fechaFin: true,
+                  },
+                },
+              },
+            },
+          },
+        });
+        if (!solicitud) throw new Error("Solicitud no encontrada.");
+
+        // ── Rechazo ──────────────────────────────────────────────────────
+        if (!data.aprobar) {
+          await tx.solicitudEmpleado.update({
+            where: { id: solicitud.id },
+            data: {
+              estado: "rechazada",
+              motivoRechazo: data.motivoRechazo ?? null,
+              decididaAt: new Date(),
+              decididaPorUserId: userId,
+            },
+          });
+          return;
+        }
+
+        // ── Aprobación ───────────────────────────────────────────────────
+
+        // 1. Resolver tipo empleado contratado
+        const tipoEmpleado = await tx.tipoEmpleado.findFirst({
+          where: { esVoluntario: false, activo: true },
+          select: { id: true },
+        });
+        if (!tipoEmpleado) {
+          throw new Error("No hay un tipo de empleado contratado activo configurado.");
+        }
+
+        // 2. Buscar o crear Empleado por DNI
+        let empleadoId: string;
+        const empleadoExistente = await tx.empleado.findUnique({
+          where: { dni: solicitud.dni },
+          select: { id: true, esVoluntario: true, activo: true },
+        });
+
+        if (empleadoExistente) {
+          if (empleadoExistente.esVoluntario) {
+            throw new Error(
+              "El empleado registrado con este DNI es voluntario. No se puede aprobar como contratado."
+            );
+          }
+          // Actualizar datos del empleado con la info de la solicitud
+          await tx.empleado.update({
+            where: { id: empleadoExistente.id },
+            data: {
+              nombre: solicitud.nombre,
+              email: solicitud.email ?? undefined,
+              telefono: solicitud.telefono ?? undefined,
+            },
+          });
+          empleadoId = empleadoExistente.id;
+        } else {
+          // Crear nuevo empleado
+          const nuevo = await tx.empleado.create({
+            data: {
+              nombre: solicitud.nombre,
+              email: solicitud.email ?? null,
+              telefono: solicitud.telefono ?? null,
+              dni: solicitud.dni,
+              esVoluntario: false,
+              activo: true,
+              tipos: { create: [{ tipoEmpleadoId: tipoEmpleado.id }] },
+            },
+            select: { id: true },
+          });
+          empleadoId = nuevo.id;
+        }
+
+        const turnoIds = solicitud.turnos.map((t) => t.turnoId);
+
+        // 3. Validar huecos (re-verificación al momento de aprobar)
+        const huecos = await calcularHuecosEmpleado(tx, solicitud.edicion.id, {
+          turnoIds,
+          excluirSolicitudId: solicitud.id,
+        });
+        const sinHueco = turnoIds.filter((id) => (huecos.get(id) ?? 0) <= 0);
+        if (sinHueco.length > 0) {
+          const err = new Error("Algunos turnos ya no tienen huecos disponibles.");
+          (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
+            turnos: [`${sinHueco.length} turno(s) sin huecos`],
+          };
+          throw err;
+        }
+
+        // 4. Validar solapes contra asignaciones existentes del empleado
+        const fechasOrden = solicitud.turnos
+          .map((t) => t.turno.fechaInicio.getTime())
+          .concat(solicitud.turnos.map((t) => t.turno.fechaFin.getTime()));
+        const minIni = new Date(Math.min(...fechasOrden));
+        const maxFin = new Date(Math.max(...fechasOrden));
+        const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
+        const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
+
+        const asignacionesExistentes = await tx.turnoEmpleado.findMany({
+          where: {
+            empleadoId,
+            turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
+          },
+          include: { turno: true },
+        });
+        const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
+          id: a.turno.id,
+          empleadoId,
+          casetaId: a.turno.casetaId,
+          fechaInicio: a.turno.fechaInicio,
+          fechaFin: a.turno.fechaFin,
+        }));
+        const nuevos: TurnoRango[] = solicitud.turnos.map((t) => ({
+          id: t.turno.id,
+          empleadoId,
+          casetaId: t.turno.casetaId,
+          fechaInicio: t.turno.fechaInicio,
+          fechaFin: t.turno.fechaFin,
+        }));
+
+        for (let i = 0; i < nuevos.length; i++) {
+          const candidato = nuevos[i]!;
+          const otrosNuevos = nuevos.filter((_, j) => j !== i);
+          const r = detectarSolape([...existentes, ...otrosNuevos], {
+            empleadoId,
+            fechaInicio: candidato.fechaInicio,
+            fechaFin: candidato.fechaFin,
+          });
+          if (r.solapa) {
+            const err = new Error(
+              "Solape con otros turnos del empleado. Revisa antes de aprobar."
+            );
+            (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
+              turnos: ["Solape detectado"],
+            };
+            throw err;
+          }
+        }
+
+        // 5. Crear asignaciones TurnoEmpleado
+        await tx.turnoEmpleado.createMany({
+          data: turnoIds.map((turnoId) => ({
+            turnoId,
+            empleadoId,
+            tipoImputadoId: tipoEmpleado.id,
+            asistio: false,
+          })),
+          skipDuplicates: true,
+        });
+
+        // 6. Actualizar SolicitudEmpleado → aprobada
+        await tx.solicitudEmpleado.update({
+          where: { id: solicitud.id },
+          data: {
+            estado: "aprobada",
+            decididaAt: new Date(),
+            decididaPorUserId: userId,
+          },
+        });
+
+        // 7. Actualizar todos los SolicitudEmpleadoTurno → aprobado
+        await tx.solicitudEmpleadoTurno.updateMany({
+          where: { solicitudId: solicitud.id },
+          data: {
+            estado: "aprobado",
+            decididaAt: new Date(),
+            decididaPorUserId: userId,
+          },
+        });
+      })
+    );
+
+    revalidatePath("/admin/solicitudes");
+    revalidatePath("/turnos");
+    return { ok: true, data: null };
+  } catch (err) {
+    const fieldErrors =
+      err instanceof Error
+        ? (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors
+        : undefined;
+    if (fieldErrors) {
+      return {
+        ok: false,
+        error: err instanceof Error ? err.message : "Error",
+        fieldErrors,
+      };
     }
     return toActionError(err);
   }

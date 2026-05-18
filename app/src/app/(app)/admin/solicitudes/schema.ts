@@ -42,3 +42,12 @@ export const rechazarTurnosEmpleadoSchema = z.object({
 });
 
 export type RechazarTurnosEmpleadoInput = z.infer<typeof rechazarTurnosEmpleadoSchema>;
+
+// Aprobar/rechazar solicitud completa de empleado (toda la solicitud de una vez).
+export const aprobarSolicitudEmpleadoSchema = z.object({
+  solicitudId: z.string().min(1),
+  aprobar: z.preprocess((v) => v === "true" || v === true, z.boolean()),
+  motivoRechazo: z.string().trim().max(500).optional(),
+});
+
+export type AprobarSolicitudEmpleadoInput = z.infer<typeof aprobarSolicitudEmpleadoSchema>;
