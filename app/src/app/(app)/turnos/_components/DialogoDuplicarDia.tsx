@@ -117,18 +117,18 @@ export function DialogoDuplicarDia({
           />
           <div className="flex flex-col">
             <Label htmlFor="copiarAsignaciones" className="font-normal">
-              Copiar también asignaciones de empleados
+              Copiar también asignaciones de personal
             </Label>
             <span className="text-xs text-muted-foreground">
               Si lo dejas desmarcado se copian solo los turnos y sus plazas, sin
-              asignar empleados.
+              asignar personal.
             </span>
           </div>
         </div>
 
         {casetaOrigen !== casetaId && copiarAsig ? (
           <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
-            Las asignaciones se replicarán; revisa que los empleados sigan dados
+            Las asignaciones se replicarán; revisa que el personal siga dado
             de alta para la caseta destino.
           </p>
         ) : null}

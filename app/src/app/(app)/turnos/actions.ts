@@ -23,9 +23,9 @@ import {
 // ---------- helpers ----------
 
 /**
- * Carga turnos (via TurnoEmpleado) de los empleados dados cuya fechaInicio cae
+ * Carga turnos (via TurnoEmpleado) del personal dado cuya fechaInicio cae
  * en [inicio, fin). Devuelve una lista plana de TurnoRango consumible por
- * detectarSolape. Nota: un turno con N empleados produce N filas aquí.
+ * detectarSolape. Nota: un turno con N personas produce N filas aquí.
  */
 async function cargarTurnosEmpleadoEnVentana(
   empleadoIds: string[],
@@ -105,10 +105,10 @@ export async function crearTurnoAction(
     const { user } = await requireRole(["admin", "gerente"]);
     const data = parseForm(crearTurnoSchema, formData);
 
-    // Duplicados en la lista de empleados.
+    // Duplicados en la lista de personal.
     const uniq = new Set(data.empleadoIdsJson);
     if (uniq.size !== data.empleadoIdsJson.length) {
-      return { ok: false, error: "Un empleado aparece duplicado en la lista." };
+      return { ok: false, error: "Una persona aparece duplicada en la lista." };
     }
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -174,7 +174,7 @@ export async function crearTurnoAction(
         if (data.empleadoIdsJson.length > 0) {
           for (const empleadoId of data.empleadoIdsJson) {
             const tipoImputadoId = tiposEmpleadoMap.get(empleadoId);
-            if (!tipoImputadoId) throw new Error("El empleado no tiene tipo asignado.");
+            if (!tipoImputadoId) throw new Error("La persona no tiene tipo asignado.");
           }
           await tx.turnoEmpleado.createMany({
             data: data.empleadoIdsJson.map((empleadoId) => ({
@@ -319,7 +319,7 @@ export async function asignarEmpleadoAction(
     if (!turno) return { ok: false, error: "Turno no encontrado." };
 
     if (turno.asignaciones.some((a) => a.empleadoId === data.empleadoId)) {
-      return { ok: false, error: "El empleado ya está asignado a este turno." };
+      return { ok: false, error: "La persona ya está asignada a este turno." };
     }
 
     const empErr = await validarEmpleadosActivos([data.empleadoId]);
@@ -359,7 +359,7 @@ export async function asignarEmpleadoAction(
         .join("; ");
       return {
         ok: false,
-        error: `Solape con otro turno del empleado: ${detalle}.`,
+        error: `Solape con otro turno de la persona: ${detalle}.`,
       };
     }
 
@@ -844,7 +844,7 @@ async function validarYCopiarTurnos(args: {
     copiarAsignaciones,
   } = args;
 
-  // Empleados involucrados (sólo si vamos a copiar asignaciones).
+  // Personal involucrado (sólo si vamos a copiar asignaciones).
   const empleadoIds = copiarAsignaciones
     ? Array.from(
         new Set(origenes.flatMap((t) => t.asignaciones.map((a) => a.empleadoId)))
@@ -863,7 +863,7 @@ async function validarYCopiarTurnos(args: {
   }));
 
   if (copiarAsignaciones && empleadoIds.length > 0) {
-    // Validar: empleados activos.
+    // Validar: personal activo.
     const empErr = await validarEmpleadosActivos(empleadoIds);
     if (empErr) return { error: empErr };
 
@@ -894,7 +894,7 @@ async function validarYCopiarTurnos(args: {
         });
         if (res.solapa) {
           return {
-            error: "Solape al duplicar: algún empleado ya tiene turno en el destino.",
+            error: "Solape al duplicar: alguna persona ya tiene turno en el destino.",
           };
         }
       }

@@ -99,7 +99,7 @@ export function DialogoNuevoTurno({
       open={open}
       onClose={onClose}
       title="Nuevo turno"
-      description="Define el horario y los empleados asignados (0..N)."
+      description="Define el horario y el personal asignado (0..N)."
     >
       <form
         onSubmit={(e) => {
@@ -182,11 +182,11 @@ export function DialogoNuevoTurno({
         </label>
 
         <div>
-          <Label>Empleados asignados ({seleccionados.length})</Label>
+          <Label>Personal asignado ({seleccionados.length})</Label>
           <div className="mt-1 max-h-56 overflow-auto rounded-md border border-border p-2 flex flex-wrap gap-1.5">
             {empleados.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No hay empleados activos.
+                No hay personal activo.
               </p>
             ) : (
               empleados.map((e) => {

@@ -127,8 +127,8 @@ export default async function ImprimirPage({
                           <BloqueRol
                             titulo={
                               grupos.trabajadores.length === 1
-                                ? "Trabajador"
-                                : "Trabajadores"
+                                ? "Personal contratado"
+                                : "Personal contratado"
                             }
                             asignaciones={grupos.trabajadores}
                             tipos={dia.tiposEmpleado}
@@ -136,7 +136,7 @@ export default async function ImprimirPage({
                           />
                         ) : null}
                         {grupos.voluntarios.length > 0 ? (
-                          <BloqueVoluntarios
+                          <BloquePersonasVoluntarias
                             asignaciones={grupos.voluntarios}
                             tipos={dia.tiposEmpleado}
                           />
@@ -246,7 +246,7 @@ function BloqueRol({
   );
 }
 
-function BloqueVoluntarios({
+function BloquePersonasVoluntarias({
   asignaciones,
   tipos,
 }: {
@@ -257,7 +257,7 @@ function BloqueVoluntarios({
   return (
     <div className="bloque-rol bloque-vol">
       <div className="bloque-rol-titulo">
-        {asignaciones.length === 1 ? "Voluntario" : "Voluntarios"}{" "}
+        {asignaciones.length === 1 ? "Persona voluntaria" : "Personas voluntarias"}{" "}
         <span className="bloque-rol-count">({asignaciones.length})</span>
       </div>
       {porEntidad.map((g) => (

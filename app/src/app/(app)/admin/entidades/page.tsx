@@ -30,8 +30,8 @@ export default async function EntidadesPage() {
   return (
     <div className="flex flex-col gap-8">
       <SectionHeader
-        title="Entidades de voluntarios"
-        subtitle="Hermandades, peñas o agrupaciones a las que pertenecen los voluntarios. Las inactivas no aparecen en el formulario público pero conservan sus referencias."
+        title="Entidades de personas voluntarias"
+        subtitle="Hermandades, peñas o agrupaciones a las que pertenecen las personas voluntarias. Las inactivas no aparecen en el formulario público pero conservan sus referencias."
       />
 
       <section className="rounded-lg border bg-card p-6">
@@ -42,14 +42,14 @@ export default async function EntidadesPage() {
       {entidades.length === 0 ? (
         <EmptyState
           title="Sin entidades registradas"
-          description="Crea al menos una entidad para poder publicar el formulario público de voluntarios."
+          description="Crea al menos una entidad para poder publicar el formulario público de personas voluntarias."
         />
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead className="w-32 text-right">Empleados</TableHead>
+              <TableHead className="w-32 text-right">Personal</TableHead>
               <TableHead className="w-32 text-right">Solicitudes</TableHead>
               <TableHead className="w-32">Estado</TableHead>
             </TableRow>

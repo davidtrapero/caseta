@@ -117,7 +117,7 @@ export default async function NominasPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Empleado</TableHead>
+                <TableHead>Personal</TableHead>
                 <TableHead className="w-24 text-right">Días</TableHead>
                 <TableHead className="w-32 text-right">Jornal</TableHead>
                 <TableHead className="w-36 text-right">Total</TableHead>

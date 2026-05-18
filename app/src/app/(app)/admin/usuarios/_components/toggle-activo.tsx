@@ -37,12 +37,12 @@ export function ToggleActivoUsuarioForm({
         className="group inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
         title={
           esSelf
-            ? "No puedes desactivarte a ti mismo"
+            ? "No puedes desactivarte a ti misma"
             : disabled
               ? "Solo un administrador puede cambiar este estado"
               : activo
-                ? "Desactivar usuario"
-                : "Reactivar usuario"
+                ? "Desactivar cuenta"
+                : "Reactivar cuenta"
         }
       >
         <Badge variant={activo ? "active" : "inactive"}>

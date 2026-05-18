@@ -56,8 +56,8 @@ export default async function SemanaTurnosPage({
 
   const ROL_LABEL: Record<"coordinadores" | "trabajadores" | "voluntarios" | "otros", { singular: string; plural: string }> = {
     coordinadores: { singular: "Coordinador", plural: "Coordinadores" },
-    trabajadores: { singular: "Trabajador", plural: "Trabajadores" },
-    voluntarios: { singular: "Voluntario", plural: "Voluntarios" },
+    trabajadores: { singular: "Personal contratado", plural: "Personal contratado" },
+    voluntarios: { singular: "Persona voluntaria", plural: "Personas voluntarias" },
     otros: { singular: "Otros", plural: "Otros" },
   };
 

@@ -96,8 +96,8 @@ export default async function ExportarDiaPage({
                   key: "trab",
                   etiqueta:
                     grupos.trabajadores.length === 1
-                      ? "Trabajador"
-                      : "Trabajadores",
+                      ? "Personal contratado"
+                      : "Personal contratado",
                   count: grupos.trabajadores.length,
                   nombres: grupos.trabajadores.map((a) => a.empleadoNombre),
                   esVoluntario: false,
@@ -108,8 +108,8 @@ export default async function ExportarDiaPage({
                   key: "vol",
                   etiqueta:
                     grupos.voluntarios.length === 1
-                      ? "Voluntario"
-                      : "Voluntarios",
+                      ? "Persona voluntaria"
+                      : "Personas voluntarias",
                   count: grupos.voluntarios.length,
                   nombres: grupos.voluntarios.map((a) => a.empleadoNombre),
                   esVoluntario: true,
