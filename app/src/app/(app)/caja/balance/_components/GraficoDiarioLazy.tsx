@@ -4,7 +4,12 @@ import dynamic from "next/dynamic";
 
 const GraficoDiario = dynamic(
   () => import("./GraficoDiario").then((m) => ({ default: m.GraficoDiario })),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-72 w-full animate-pulse rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)]" />
+    ),
+  }
 );
 
 type Props = {

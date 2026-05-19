@@ -51,7 +51,7 @@ export function DataTablePagination({
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -67,7 +67,7 @@ export function DataTablePagination({
           <button
             type="button"
             disabled
-            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
