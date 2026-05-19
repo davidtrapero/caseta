@@ -11,11 +11,9 @@ import { EmptyState } from "./admin/_components/page-header";
 import { hoyIso, fromYmd } from "./turnos/_lib/fechas";
 import { FMT_FECHA_LARGA } from "@/lib/intl";
 
-const FECHA_LARGA = FMT_FECHA_LARGA;
-
 function formatFechaLarga(ymd: string): string {
   const d = fromYmd(ymd);
-  const s = FECHA_LARGA.format(d);
+  const s = FMT_FECHA_LARGA.format(d);
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 

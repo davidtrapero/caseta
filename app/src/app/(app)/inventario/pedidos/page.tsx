@@ -22,9 +22,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_EUR, FMT_FECHA } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-const FORMATO_FECHA = FMT_FECHA;
-
 function badgeEstado(estado: "pendiente" | "recibido" | "cancelado") {
   if (estado === "pendiente") return <Badge variant="outline">Pendiente</Badge>;
   if (estado === "recibido") return <Badge variant="active">Recibido</Badge>;
@@ -150,7 +147,7 @@ export default async function PedidosPage({
               {pedidos.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-xs">
-                    {FORMATO_FECHA.format(p.fechaPedido)}
+                    {FMT_FECHA.format(p.fechaPedido)}
                   </TableCell>
                   <TableCell className="font-medium">
                     {p.proveedor.nombre}
@@ -162,7 +159,7 @@ export default async function PedidosPage({
                     {p.detalles.length}
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {FORMATO_EUR.format(Number(p.total))}
+                    {FMT_EUR.format(Number(p.total))}
                   </TableCell>
                   <TableCell>{badgeEstado(p.estado)}</TableCell>
                   <TableCell className="text-right">

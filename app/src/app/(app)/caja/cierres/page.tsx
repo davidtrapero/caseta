@@ -27,9 +27,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_EUR, FMT_FECHA_UTC } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-const FORMATO_FECHA = FMT_FECHA_UTC;
-
 export default async function CierresPage({
   searchParams,
 }: {
@@ -156,13 +153,13 @@ export default async function CierresPage({
                 return (
                   <TableRow key={c.id}>
                     <TableCell className="font-mono text-xs">
-                      {FORMATO_FECHA.format(c.fecha)}
+                      {FMT_FECHA_UTC.format(c.fecha)}
                     </TableCell>
                     <TableCell className="font-medium">
                       {c.caseta.nombre}
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      {FORMATO_EUR.format(importe)}
+                      {FMT_EUR.format(importe)}
                     </TableCell>
                     <TableCell>
                       {c.bloqueado ? (

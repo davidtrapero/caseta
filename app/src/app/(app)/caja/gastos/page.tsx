@@ -24,9 +24,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_EUR, FMT_FECHA_UTC } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-const FORMATO_FECHA = FMT_FECHA_UTC;
-
 export default async function GastosPage({
   searchParams,
 }: {
@@ -195,7 +192,7 @@ export default async function GastosPage({
               {gastos.map((g) => (
                 <TableRow key={g.id}>
                   <TableCell className="font-mono text-xs">
-                    {FORMATO_FECHA.format(g.fecha)}
+                    {FMT_FECHA_UTC.format(g.fecha)}
                   </TableCell>
                   <TableCell className="font-medium">{g.descripcion}</TableCell>
                   <TableCell>
@@ -211,7 +208,7 @@ export default async function GastosPage({
                     )}
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {FORMATO_EUR.format(Number(g.monto))}
+                    {FMT_EUR.format(Number(g.monto))}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-3">

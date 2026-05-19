@@ -27,9 +27,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_EUR, FMT_FECHA_UTC } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-const FORMATO_FECHA = FMT_FECHA_UTC;
-
 export default async function NominasPage({
   searchParams,
 }: {
@@ -190,10 +187,10 @@ export default async function NominasPage({
                     {n.diasTrabajados}
                   </TableCell>
                   <TableCell className="text-right font-mono text-muted-foreground">
-                    {FORMATO_EUR.format(Number(n.jornalAplicado))}
+                    {FMT_EUR.format(Number(n.jornalAplicado))}
                   </TableCell>
                   <TableCell className="text-right font-mono font-medium">
-                    {FORMATO_EUR.format(Number(n.total))}
+                    {FMT_EUR.format(Number(n.total))}
                   </TableCell>
                   <TableCell>
                     {n.pagada ? (
@@ -203,7 +200,7 @@ export default async function NominasPage({
                     )}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {n.fechaPago ? FORMATO_FECHA.format(n.fechaPago) : "—"}
+                    {n.fechaPago ? FMT_FECHA_UTC.format(n.fechaPago) : "—"}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-3">
@@ -255,7 +252,7 @@ function ResumenCard({
             : "mt-1 font-mono text-2xl"
         }
       >
-        {FORMATO_EUR.format(valor)}
+        {FMT_EUR.format(valor)}
       </p>
     </div>
   );

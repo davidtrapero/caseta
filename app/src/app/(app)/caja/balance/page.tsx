@@ -23,8 +23,6 @@ import { SelectorCasetaBalance } from "./_components/SelectorCasetaBalance";
 import { GraficoDiario } from "./_components/GraficoDiario";
 import { FMT_EUR } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-
 export default async function BalancePage({
   searchParams,
 }: {
@@ -225,7 +223,7 @@ export default async function BalancePage({
                         {nombreCaseta.get(r.casetaId) ?? "—"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {FORMATO_EUR.format(
+                        {FMT_EUR.format(
                           Number(r._sum.ingresosTotales ?? 0)
                         )}
                       </TableCell>
@@ -272,7 +270,7 @@ export default async function BalancePage({
                         {r._count._all}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {FORMATO_EUR.format(Number(r._sum.monto ?? 0))}
+                        {FMT_EUR.format(Number(r._sum.monto ?? 0))}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -316,10 +314,10 @@ export default async function BalancePage({
                     {n.diasTrabajados}
                   </TableCell>
                   <TableCell className="text-right font-mono text-muted-foreground">
-                    {FORMATO_EUR.format(Number(n.jornalAplicado))}
+                    {FMT_EUR.format(Number(n.jornalAplicado))}
                   </TableCell>
                   <TableCell className="text-right font-mono font-medium">
-                    {FORMATO_EUR.format(Number(n.total))}
+                    {FMT_EUR.format(Number(n.total))}
                   </TableCell>
                   <TableCell>
                     {n.pagada ? (
@@ -369,7 +367,7 @@ function BalanceCard({
         {label}
       </p>
       <p className={`mt-1 font-mono text-2xl font-semibold tabular-nums leading-none ${valorClase}`}>
-        {FORMATO_EUR.format(valor)}
+        {FMT_EUR.format(valor)}
       </p>
       <p className="mt-1 text-xs text-muted-foreground">{nota}</p>
     </div>

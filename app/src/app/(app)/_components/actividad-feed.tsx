@@ -1,15 +1,13 @@
 import type { ActividadData } from "../_lib/dashboard";
 import { FMT_FECHA_RELATIVA } from "@/lib/intl";
 
-const FECHA_RELATIVA = FMT_FECHA_RELATIVA;
-
 function tiempoRelativo(isoFecha: string): string {
   const diff = (new Date(isoFecha).getTime() - Date.now()) / 1000;
   const abs = Math.abs(diff);
   if (abs < 60) return "ahora";
-  if (abs < 3600) return FECHA_RELATIVA.format(Math.round(diff / 60), "minutes");
-  if (abs < 86400) return FECHA_RELATIVA.format(Math.round(diff / 3600), "hours");
-  return FECHA_RELATIVA.format(Math.round(diff / 86400), "days");
+  if (abs < 3600) return FMT_FECHA_RELATIVA.format(Math.round(diff / 60), "minutes");
+  if (abs < 86400) return FMT_FECHA_RELATIVA.format(Math.round(diff / 3600), "hours");
+  return FMT_FECHA_RELATIVA.format(Math.round(diff / 86400), "days");
 }
 
 export function ActividadFeed({ actividad }: { actividad: ActividadData[] }) {

@@ -25,8 +25,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_FECHA_HORA } from "@/lib/intl";
 
-const FORMATO_FECHA = FMT_FECHA_HORA;
-
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function ymdToUtcDate(ymd: string, fin = false): Date {
@@ -306,7 +304,7 @@ export default async function MovimientosPage({
                 return (
                   <TableRow key={m.id}>
                     <TableCell className="font-mono text-xs">
-                      {FORMATO_FECHA.format(m.fecha)}
+                      {FMT_FECHA_HORA.format(m.fecha)}
                     </TableCell>
                     <TableCell>
                       {m.tipo === "entrada" ? (

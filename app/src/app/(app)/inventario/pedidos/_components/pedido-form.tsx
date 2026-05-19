@@ -13,8 +13,6 @@ import type { ActionResult } from "@/lib/action-result";
 import { crearPedidoAction, editarPedidoAction } from "../actions";
 import { FMT_EUR } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-
 type Modo = "crear" | "editar";
 
 type Opcion = { id: string; nombre: string };
@@ -305,7 +303,7 @@ export function PedidoForm({
       <div className="flex items-center justify-between rounded-md border bg-muted/40 px-3 py-2">
         <span className="text-sm text-muted-foreground">Total estimado</span>
         <span className="font-mono text-lg font-medium">
-          {FORMATO_EUR.format(total)}
+          {FMT_EUR.format(total)}
         </span>
       </div>
 

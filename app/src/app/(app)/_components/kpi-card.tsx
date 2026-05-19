@@ -1,7 +1,5 @@
 import { FMT_EUR_ENTERO } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR_ENTERO;
-
 type Tono = "positivo" | "negativo" | "neto-positivo" | "neto-negativo" | "neutro";
 
 export function KpiCard({
@@ -27,7 +25,7 @@ export function KpiCard({
           : "text-foreground";
 
   const valorFormateado = esMoneda
-    ? FORMATO_EUR.format(valor)
+    ? FMT_EUR_ENTERO.format(valor)
     : valor.toString();
 
   return (

@@ -21,9 +21,6 @@ import {
 
 import { FMT_EUR, FMT_FECHA_HORA } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-const FORMATO_FECHA = FMT_FECHA_HORA;
-
 function badgeEstado(estado: "pendiente" | "recibido" | "cancelado") {
   if (estado === "pendiente") return <Badge variant="outline">Pendiente</Badge>;
   if (estado === "recibido") return <Badge variant="active">Recibido</Badge>;
@@ -84,7 +81,7 @@ export default async function DetallePedidoPage({
           <div>
             <h2 className="text-xl">Pedido pendiente</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Creado {FORMATO_FECHA.format(pedido.fechaPedido)}.
+              Creado {FMT_FECHA_HORA.format(pedido.fechaPedido)}.
               Puedes editar las líneas o cambiar el estado.
             </p>
           </div>
@@ -126,9 +123,9 @@ export default async function DetallePedidoPage({
             {badgeEstado(pedido.estado)}
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Creado {FORMATO_FECHA.format(pedido.fechaPedido)}
+            Creado {FMT_FECHA_HORA.format(pedido.fechaPedido)}
             {pedido.fechaRecepcion
-              ? ` · Recibido ${FORMATO_FECHA.format(pedido.fechaRecepcion)}`
+              ? ` · Recibido ${FMT_FECHA_HORA.format(pedido.fechaRecepcion)}`
               : null}
           </p>
         </div>
@@ -176,10 +173,10 @@ export default async function DetallePedidoPage({
                   {d.producto.unidad}
                 </TableCell>
                 <TableCell className="text-right font-mono text-muted-foreground">
-                  {FORMATO_EUR.format(prec)}
+                  {FMT_EUR.format(prec)}
                 </TableCell>
                 <TableCell className="text-right font-mono">
-                  {FORMATO_EUR.format(cant * prec)}
+                  {FMT_EUR.format(cant * prec)}
                 </TableCell>
               </TableRow>
             );
@@ -190,7 +187,7 @@ export default async function DetallePedidoPage({
       <div className="flex items-center justify-end rounded-md border bg-muted/40 px-3 py-2">
         <span className="mr-3 text-sm text-muted-foreground">Total</span>
         <span className="font-mono text-lg font-medium">
-          {FORMATO_EUR.format(Number(pedido.total))}
+          {FMT_EUR.format(Number(pedido.total))}
         </span>
       </div>
     </div>

@@ -5,15 +5,11 @@ import { ToggleActivoEmpleadoForm } from "./toggle-activo";
 import { colorFor, type TipoEmpleadoLite } from "../../turnos/_lib/perfiles";
 import { FMT_EUR, FMT_HORA } from "@/lib/intl";
 
-const FORMATO_EUR = FMT_EUR;
-
 const FECHA_TURNO = new Intl.DateTimeFormat("es-ES", {
   weekday: "short",
   day: "2-digit",
   month: "short",
 });
-
-const HORA_TURNO = FMT_HORA;
 
 export type TurnoLite = {
   id: string;
@@ -81,7 +77,7 @@ export function EmpleadoCard({
                 <Badge variant="outline">Voluntario</Badge>
               ) : (
                 <span className="font-mono">
-                  {FORMATO_EUR.format(empleado.jornalDiario)}
+                  {FMT_EUR.format(empleado.jornalDiario)}
                 </span>
               )}
             </span>
@@ -123,8 +119,8 @@ export function EmpleadoCard({
                     {FECHA_TURNO.format(t.fechaInicio)}
                   </span>
                   <span className="text-muted-foreground">
-                    {HORA_TURNO.format(t.fechaInicio)}–
-                    {HORA_TURNO.format(t.fechaFin)}
+                    {FMT_HORA.format(t.fechaInicio)}–
+                    {FMT_HORA.format(t.fechaFin)}
                   </span>
                   <span className="text-muted-foreground/80">
                     · {t.caseta.nombre}

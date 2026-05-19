@@ -20,8 +20,6 @@ import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { FMT_FECHA } from "@/lib/intl";
 
-const FORMATO_FECHA = FMT_FECHA;
-
 export default async function EdicionesPage({
   searchParams,
 }: {
@@ -132,7 +130,7 @@ export default async function EdicionesPage({
                   <TableCell className="font-mono">{e.anio}</TableCell>
                   <TableCell className="font-medium">{e.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {FORMATO_FECHA.format(e.fechaInicio)} — {FORMATO_FECHA.format(e.fechaFin)}
+                    {FMT_FECHA.format(e.fechaInicio)} — {FMT_FECHA.format(e.fechaFin)}
                   </TableCell>
                   <TableCell>
                     <ToggleActivaForm

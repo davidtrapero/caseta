@@ -64,8 +64,6 @@ export default async function StockPage({
     stock: stockPorPar.get(`${v.casetaId}:${v.productoId}`) ?? null,
   }));
 
-  const FORMATO_FECHA = FMT_FECHA;
-
   return (
     <div>
       <SectionHeader
@@ -106,7 +104,7 @@ export default async function StockPage({
             {filas.map((fila) => {
               const cantidad = fila.stock ? Number(fila.stock.cantidad) : 0;
               const actualizado = fila.stock?.updatedAt
-                ? FORMATO_FECHA.format(fila.stock.updatedAt)
+                ? FMT_FECHA.format(fila.stock.updatedAt)
                 : "—";
               return (
                 <TableRow key={fila.id}>

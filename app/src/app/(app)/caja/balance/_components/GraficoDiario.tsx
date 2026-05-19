@@ -17,8 +17,6 @@ type Props = {
   data: { fecha: string; ingresos: number; gastos: number }[];
 };
 
-const FORMATO_EUR = FMT_EUR_ENTERO;
-
 export function GraficoDiario({ data }: Props) {
   if (data.length === 0) {
     return (
@@ -40,11 +38,11 @@ export function GraficoDiario({ data }: Props) {
           />
           <YAxis
             tick={{ fontSize: 11 }}
-            tickFormatter={(v) => FORMATO_EUR.format(Number(v))}
+            tickFormatter={(v) => FMT_EUR_ENTERO.format(Number(v))}
             width={70}
           />
           <Tooltip
-            formatter={(v) => FORMATO_EUR.format(Number(v))}
+            formatter={(v) => FMT_EUR_ENTERO.format(Number(v))}
             labelFormatter={(l) => String(l)}
           />
           <Legend />
