@@ -135,7 +135,7 @@ export function FormularioVoluntario({
         </div>
 
         <div>
-          <Label htmlFor="entidadId">Entidad / hermandad</Label>
+          <Label htmlFor="entidadId">Entidad</Label>
           <select
             id="entidadId"
             name="entidadId"

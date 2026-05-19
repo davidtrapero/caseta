@@ -62,7 +62,7 @@ export default async function EntidadesPage({
     <div className="flex flex-col gap-8">
       <SectionHeader
         title="Entidades de personas voluntarias"
-        subtitle="Hermandades, peñas o agrupaciones a las que pertenecen las personas voluntarias. Las inactivas no aparecen en el formulario público pero conservan sus referencias."
+        subtitle="Entidades a las que pertenecen las personas voluntarias. Las inactivas no aparecen en el formulario público pero conservan sus referencias."
       />
 
       <section className="rounded-lg border bg-card p-6">
