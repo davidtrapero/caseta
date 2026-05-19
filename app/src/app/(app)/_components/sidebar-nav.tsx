@@ -13,6 +13,7 @@ import {
   Package,
   Receipt,
   Settings,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   "/inventario": Package,
   "/caja": Receipt,
   "/admin": Settings,
+  "/admin/permisos": ShieldCheck,
 };
 
 interface SidebarNavProps {
@@ -74,7 +76,7 @@ function NavLinks({ items, onNavClick }: { items: NavItem[]; onNavClick?: () => 
                 : "hover:bg-accent/20 hover:text-accent-foreground"
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            {Icon ? <Icon className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0" />}
             {label}
           </Link>
         );
