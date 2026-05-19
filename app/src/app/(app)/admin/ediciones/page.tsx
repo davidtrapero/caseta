@@ -18,12 +18,9 @@ import { parseListParams } from "@/lib/list-params";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { FMT_FECHA } from "@/lib/intl";
 
-const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
+const FORMATO_FECHA = FMT_FECHA;
 
 export default async function EdicionesPage({
   searchParams,

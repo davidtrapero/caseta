@@ -1,6 +1,7 @@
 import type { ActividadData } from "../_lib/dashboard";
+import { FMT_FECHA_RELATIVA } from "@/lib/intl";
 
-const FECHA_RELATIVA = new Intl.RelativeTimeFormat("es-ES", { numeric: "auto" });
+const FECHA_RELATIVA = FMT_FECHA_RELATIVA;
 
 function tiempoRelativo(isoFecha: string): string {
   const diff = (new Date(isoFecha).getTime() - Date.now()) / 1000;

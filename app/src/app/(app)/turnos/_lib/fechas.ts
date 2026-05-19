@@ -8,6 +8,8 @@
 // Por eso TODOS los formatters de Date deben fijar `timeZone: "UTC"`. Si no,
 // en Vercel (proceso UTC) se vería bien pero en local Windows (Madrid +2)
 // aparecerían +2h, y viceversa.
+import { FMT_FECHA_LARGA } from "@/lib/intl";
+
 export const TZ_TURNOS = "UTC";
 
 export const DIAS_SEMANA_CORTOS = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
@@ -92,15 +94,8 @@ export function duracionHoras(inicio: string, fin: string): number {
   return Math.round(ms / 3_600_000);
 }
 
-const FECHA_LARGA = new Intl.DateTimeFormat("es-ES", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
-
 export function formatFechaLarga(ymd: string): string {
-  return FECHA_LARGA.format(fromYmd(ymd));
+  return FMT_FECHA_LARGA.format(fromYmd(ymd));
 }
 
 const FECHA_CORTA = new Intl.DateTimeFormat("es-ES", {

@@ -1,8 +1,6 @@
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
+import { FMT_EUR_ENTERO } from "@/lib/intl";
+
+const FORMATO_EUR = FMT_EUR_ENTERO;
 
 type Tono = "positivo" | "negativo" | "neto-positivo" | "neto-negativo" | "neutro";
 

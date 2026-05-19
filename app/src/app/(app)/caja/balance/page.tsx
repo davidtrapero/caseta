@@ -21,11 +21,9 @@ import {
 import { construirSerieDiaria } from "./_lib/series";
 import { SelectorCasetaBalance } from "./_components/SelectorCasetaBalance";
 import { GraficoDiario } from "./_components/GraficoDiario";
+import { FMT_EUR } from "@/lib/intl";
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-});
+const FORMATO_EUR = FMT_EUR;
 
 export default async function BalancePage({
   searchParams,

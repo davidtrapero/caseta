@@ -14,6 +14,7 @@ import {
 } from "../../admin/_components/page-header";
 import { FiltroCaseta } from "../_lib/caseta-filtro";
 import { AjustarStockModal } from "./_components/ajustar-stock-modal";
+import { FMT_FECHA } from "@/lib/intl";
 
 export default async function StockPage({
   searchParams,
@@ -63,11 +64,7 @@ export default async function StockPage({
     stock: stockPorPar.get(`${v.casetaId}:${v.productoId}`) ?? null,
   }));
 
-  const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const FORMATO_FECHA = FMT_FECHA;
 
   return (
     <div>

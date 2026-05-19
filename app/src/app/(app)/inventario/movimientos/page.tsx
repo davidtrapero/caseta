@@ -23,14 +23,9 @@ import { parseListParams } from "@/lib/list-params";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { FMT_FECHA_HORA } from "@/lib/intl";
 
-const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+const FORMATO_FECHA = FMT_FECHA_HORA;
 
 const FECHA_RE = /^\d{4}-\d{2}-\d{2}$/;
 

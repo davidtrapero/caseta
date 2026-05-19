@@ -9,13 +9,9 @@ import { AlertasPanel } from "./_components/alertas-panel";
 import { ActividadFeed } from "./_components/actividad-feed";
 import { EmptyState } from "./admin/_components/page-header";
 import { hoyIso, fromYmd } from "./turnos/_lib/fechas";
+import { FMT_FECHA_LARGA } from "@/lib/intl";
 
-const FECHA_LARGA = new Intl.DateTimeFormat("es-ES", {
-  weekday: "long",
-  day: "numeric",
-  month: "long",
-  year: "numeric",
-});
+const FECHA_LARGA = FMT_FECHA_LARGA;
 
 function formatFechaLarga(ymd: string): string {
   const d = fromYmd(ymd);

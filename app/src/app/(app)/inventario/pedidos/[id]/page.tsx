@@ -19,18 +19,10 @@ import {
   BotonCancelar,
 } from "../_components/acciones-pedido";
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-});
+import { FMT_EUR, FMT_FECHA_HORA } from "@/lib/intl";
 
-const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
+const FORMATO_EUR = FMT_EUR;
+const FORMATO_FECHA = FMT_FECHA_HORA;
 
 function badgeEstado(estado: "pendiente" | "recibido" | "cancelado") {
   if (estado === "pendiente") return <Badge variant="outline">Pendiente</Badge>;

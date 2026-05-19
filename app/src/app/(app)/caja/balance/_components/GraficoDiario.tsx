@@ -11,16 +11,13 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { FMT_EUR_ENTERO } from "@/lib/intl";
 
 type Props = {
   data: { fecha: string; ingresos: number; gastos: number }[];
 };
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
+const FORMATO_EUR = FMT_EUR_ENTERO;
 
 export function GraficoDiario({ data }: Props) {
   if (data.length === 0) {

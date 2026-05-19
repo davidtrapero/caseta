@@ -11,11 +11,9 @@ import {
 } from "../../../admin/_components/page-header";
 import type { ActionResult } from "@/lib/action-result";
 import { crearPedidoAction, editarPedidoAction } from "../actions";
+import { FMT_EUR } from "@/lib/intl";
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-});
+const FORMATO_EUR = FMT_EUR;
 
 type Modo = "crear" | "editar";
 

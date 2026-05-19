@@ -3,11 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ToggleActivoEmpleadoForm } from "./toggle-activo";
 import { colorFor, type TipoEmpleadoLite } from "../../turnos/_lib/perfiles";
+import { FMT_EUR, FMT_HORA } from "@/lib/intl";
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-});
+const FORMATO_EUR = FMT_EUR;
 
 const FECHA_TURNO = new Intl.DateTimeFormat("es-ES", {
   weekday: "short",
@@ -15,10 +13,7 @@ const FECHA_TURNO = new Intl.DateTimeFormat("es-ES", {
   month: "short",
 });
 
-const HORA_TURNO = new Intl.DateTimeFormat("es-ES", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
+const HORA_TURNO = FMT_HORA;
 
 export type TurnoLite = {
   id: string;

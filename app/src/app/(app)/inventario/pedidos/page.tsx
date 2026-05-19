@@ -20,17 +20,10 @@ import { parseListParams } from "@/lib/list-params";
 import { DataTablePagination } from "@/components/ui/data-table-pagination";
 import { PageSizeSelect } from "@/components/ui/page-size-select";
 import { SortableHeader } from "@/components/ui/sortable-header";
+import { FMT_EUR, FMT_FECHA } from "@/lib/intl";
 
-const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
-  style: "currency",
-  currency: "EUR",
-});
-
-const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
+const FORMATO_EUR = FMT_EUR;
+const FORMATO_FECHA = FMT_FECHA;
 
 function badgeEstado(estado: "pendiente" | "recibido" | "cancelado") {
   if (estado === "pendiente") return <Badge variant="outline">Pendiente</Badge>;
