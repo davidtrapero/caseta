@@ -2,6 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { invalidarEdicionActiva } from "@/lib/edicion";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermiso } from "@/lib/authz";
@@ -29,6 +30,7 @@ export async function crearEdicionAction(
     return base.ok ? base : { ...base, values };
   }
 
+  invalidarEdicionActiva();
   revalidatePath("/admin/ediciones");
   redirect("/admin/ediciones");
 }
@@ -55,6 +57,7 @@ export async function actualizarEdicionAction(
     return base.ok ? base : { ...base, values };
   }
 
+  invalidarEdicionActiva();
   revalidatePath("/admin/ediciones");
   redirect("/admin/ediciones");
 }
@@ -70,6 +73,7 @@ export async function toggleActivaAction(formData: FormData): Promise<void> {
   await withAuditContext(user.id, () =>
     prisma.edicion.update({ where: { id }, data: { activa: !actual.activa } })
   );
+  invalidarEdicionActiva();
   revalidatePath("/admin/ediciones");
 }
 
