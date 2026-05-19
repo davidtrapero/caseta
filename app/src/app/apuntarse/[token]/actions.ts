@@ -44,7 +44,7 @@ export async function crearSolicitudAction(
 
     const data = parseForm(crearSolicitudSchema, formData);
 
-    const solicitud = await withAuditContext("public:apuntarse", () =>
+    const solicitud = await withAuditContext(`public:apuntarse:${token.slice(0, 8)}`, () =>
       prisma.$transaction(async (tx) => {
         const edicion = await tx.edicion.findUnique({
           where: { formularioToken: token },

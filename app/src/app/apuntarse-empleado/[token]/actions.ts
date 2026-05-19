@@ -115,7 +115,7 @@ export async function crearSolicitudEmpleadoAction(
   // 5. Transacción
   try {
     const solicitud = await withAuditContext(
-      "public:apuntarse-empleado",
+      `public:apuntarse-empleado:${token.slice(0, 8)}`,
       () =>
         prisma.$transaction(async (tx) => {
           // 5a. Buscar edición por token
