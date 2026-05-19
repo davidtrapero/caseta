@@ -48,12 +48,13 @@ export function DataTablePagination({
             <ChevronLeft className="w-4 h-4" />
           </Link>
         ) : (
-          <span
+          <button
+            type="button"
+            disabled
             className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
-            aria-disabled="true"
           >
             <ChevronLeft className="w-4 h-4" />
-          </span>
+          </button>
         )}
         {hasNextPage ? (
           <Link
@@ -63,12 +64,13 @@ export function DataTablePagination({
             <ChevronRight className="w-4 h-4" />
           </Link>
         ) : (
-          <span
+          <button
+            type="button"
+            disabled
             className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
-            aria-disabled="true"
           >
             <ChevronRight className="w-4 h-4" />
-          </span>
+          </button>
         )}
       </div>
     </div>

@@ -20,7 +20,7 @@ import {
 } from "../gastos/_lib/categorias";
 import { construirSerieDiaria } from "./_lib/series";
 import { SelectorCasetaBalance } from "./_components/SelectorCasetaBalance";
-import { GraficoDiario } from "./_components/GraficoDiario";
+import { GraficoDiarioLazy } from "./_components/GraficoDiarioLazy";
 import { FMT_EUR } from "@/lib/intl";
 
 export default async function BalancePage({
@@ -189,7 +189,7 @@ export default async function BalancePage({
         <h3 className="mb-3 text-[10px] font-medium uppercase tracking-widest text-primary">
           Movimiento diario
         </h3>
-        <GraficoDiario data={serieDiaria} />
+        <GraficoDiarioLazy data={serieDiaria} />
       </section>
 
       <div className="grid gap-6 md:grid-cols-2">
