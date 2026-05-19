@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,13 +21,23 @@ type ProductoFormProps = {
   casetas: CasetaMin[];
   initial?: {
     id: string;
-    casetaId: string;
+    casetaIds: string[];
     nombre: string;
     unidad: string;
     activo: boolean;
   };
   casetaPorDefecto?: string;
 };
+
+function parseValsCasetaIds(raw: unknown): string[] | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === "string") : null;
+  } catch {
+    return null;
+  }
+}
 
 export function ProductoForm({
   modo,
@@ -44,6 +54,24 @@ export function ProductoForm({
   const errors = state && !state.ok ? state.fieldErrors ?? {} : {};
   const vals = state && !state.ok ? state.values ?? {} : {};
 
+  const idsIniciales =
+    parseValsCasetaIds(vals.casetaIds) ??
+    initial?.casetaIds ??
+    (casetaPorDefecto ? [casetaPorDefecto] : []);
+
+  const [seleccionadas, setSeleccionadas] = useState<Set<string>>(
+    () => new Set(idsIniciales)
+  );
+
+  const toggle = (id: string) => {
+    setSeleccionadas((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state && !state.ok ? <FormError message={state.error} /> : null}
@@ -52,25 +80,34 @@ export function ProductoForm({
         <input type="hidden" name="_id" value={initial.id} />
       ) : null}
 
+      <input
+        type="hidden"
+        name="casetaIds"
+        value={JSON.stringify([...seleccionadas])}
+      />
+
       <div>
-        <Label htmlFor="casetaId">Caseta</Label>
-        <select
-          id="casetaId"
-          name="casetaId"
-          defaultValue={(vals.casetaId as string | undefined) ?? initial?.casetaId ?? casetaPorDefecto ?? ""}
-          required
-          className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-        >
-          <option value="" disabled>
-            Selecciona una caseta
-          </option>
+        <Label>Casetas disponibles</Label>
+        <div className="mt-1 flex flex-col gap-1.5 rounded-md border border-input p-3">
           {casetas.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nombre}
-            </option>
+            <label
+              key={c.id}
+              className="flex items-center gap-2 text-sm"
+            >
+              <input
+                type="checkbox"
+                checked={seleccionadas.has(c.id)}
+                onChange={() => toggle(c.id)}
+                className="h-4 w-4 rounded border-input accent-[hsl(var(--primary))]"
+              />
+              <span>{c.nombre}</span>
+            </label>
           ))}
-        </select>
-        <FieldError messages={errors.casetaId} />
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Marca todas las casetas donde se vende este producto. El stock se gestiona por caseta de forma independiente.
+        </p>
+        <FieldError messages={errors.casetaIds} />
       </div>
 
       <div>

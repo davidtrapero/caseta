@@ -22,19 +22,23 @@ export async function crearProductoAction(
     const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(crearProductoSchema, formData);
 
-    const caseta = await prisma.caseta.findUnique({
-      where: { id: data.casetaId },
-      select: { activa: true },
+    const casetas = await prisma.caseta.findMany({
+      where: { id: { in: data.casetaIds } },
+      select: { id: true },
     });
-    if (!caseta) return { ok: false, error: "Caseta no encontrada.", values };
+    if (casetas.length !== data.casetaIds.length) {
+      return { ok: false, error: "Alguna caseta no existe.", values };
+    }
 
     await withAuditContext(user.id, () =>
       prisma.producto.create({
         data: {
-          casetaId: data.casetaId,
           nombre: data.nombre,
           unidad: data.unidad ?? "unidad",
           activo: data.activo,
+          casetas: {
+            create: data.casetaIds.map((casetaId) => ({ casetaId })),
+          },
         },
       })
     );
@@ -62,18 +66,47 @@ export async function actualizarProductoAction(
     const { user } = await requirePermiso("inventario.productos.crud");
     const data = parseForm(actualizarProductoSchema, formData);
 
-    const existente = await prisma.producto.findUnique({ where: { id } });
+    const existente = await prisma.producto.findUnique({
+      where: { id },
+      include: { casetas: { select: { casetaId: true } } },
+    });
     if (!existente) return { ok: false, error: "Producto no encontrado.", values };
 
+    const actuales = new Set(existente.casetas.map((c) => c.casetaId));
+    const nuevas = new Set(data.casetaIds);
+    const aQuitar = [...actuales].filter((c) => !nuevas.has(c));
+    const aAniadir = [...nuevas].filter((c) => !actuales.has(c));
+
+    if (aAniadir.length > 0) {
+      const casetasNuevas = await prisma.caseta.findMany({
+        where: { id: { in: aAniadir } },
+        select: { id: true },
+      });
+      if (casetasNuevas.length !== aAniadir.length) {
+        return { ok: false, error: "Alguna caseta no existe.", values };
+      }
+    }
+
     await withAuditContext(user.id, () =>
-      prisma.producto.update({
-        where: { id },
-        data: {
-          casetaId: data.casetaId,
-          nombre: data.nombre,
-          unidad: data.unidad ?? "unidad",
-          activo: data.activo,
-        },
+      prisma.$transaction(async (tx) => {
+        await tx.producto.update({
+          where: { id },
+          data: {
+            nombre: data.nombre,
+            unidad: data.unidad ?? "unidad",
+            activo: data.activo,
+          },
+        });
+        if (aQuitar.length > 0) {
+          await tx.productoCaseta.deleteMany({
+            where: { productoId: id, casetaId: { in: aQuitar } },
+          });
+        }
+        if (aAniadir.length > 0) {
+          await tx.productoCaseta.createMany({
+            data: aAniadir.map((casetaId) => ({ productoId: id, casetaId })),
+          });
+        }
       })
     );
   } catch (err) {

@@ -111,9 +111,9 @@ export default async function MovimientosPage({
       select: { id: true, nombre: true },
     }),
     prisma.producto.findMany({
-      where: sp.caseta ? { casetaId: sp.caseta } : {},
+      where: sp.caseta ? { casetas: { some: { casetaId: sp.caseta } } } : {},
       orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true, casetaId: true },
+      select: { id: true, nombre: true },
     }),
     prisma.movimientoStock.findMany({
       where: {

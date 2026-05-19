@@ -152,7 +152,7 @@ model Caseta {
 
   tipoEmpleadoDefecto TipoEmpleado? @relation(fields: [tipoEmpleadoDefectoId], references: [id], onDelete: SetNull)
   turnos       Turno[]
-  productos    Producto[]
+  productos    ProductoCaseta[]
   stock        Stock[]
   movimientos  MovimientoStock[]
   pedidos      Pedido[]
@@ -256,22 +256,33 @@ model EmpleadoTipo {
   @@index([tipoEmpleadoId])
 }
 
-// Catálogo por caseta.
+// Catálogo transversal: un producto puede estar disponible en varias casetas vía ProductoCaseta.
 model Producto {
   id        String   @id @default(cuid())
-  casetaId  String
   nombre    String
   unidad    String   @default("unidad")
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  caseta         Caseta            @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+  casetas        ProductoCaseta[]
   stock          Stock[]
   movimientos    MovimientoStock[]
   detallesPedido DetallePedido[]
+}
 
-  @@unique([casetaId, nombre])
+// Tabla pivote N:M Producto ↔ Caseta. Stock y movimientos siguen apuntando a (casetaId, productoId).
+model ProductoCaseta {
+  id         String   @id @default(cuid())
+  productoId String
+  casetaId   String
+  createdAt  DateTime @default(now())
+
+  producto Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  caseta   Caseta   @relation(fields: [casetaId], references: [id], onDelete: Cascade)
+
+  @@unique([productoId, casetaId])
+  @@index([casetaId])
 }
 
 // Stock actual por caseta y producto (desnormalizado para lecturas rápidas).

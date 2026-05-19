@@ -157,10 +157,10 @@ export async function crearProducto(params: {
 }) {
   return prisma.producto.create({
     data: {
-      casetaId: params.casetaId,
       nombre: params.nombre,
       unidad: params.unidad ?? "unidad",
       activo: params.activo ?? true,
+      casetas: { create: { casetaId: params.casetaId } },
     },
   });
 }

@@ -34,7 +34,7 @@ export default async function ProductosPage({
   const listParams = parseListParams(sp, {
     defaultPageSize: 25,
     allowedPageSizes: [10, 25, 50, 100],
-    allowedSorts: ["nombre", "activo", "caseta"],
+    allowedSorts: ["nombre", "activo"],
   });
 
   const casetas = await prisma.caseta.findMany({
@@ -42,30 +42,34 @@ export default async function ProductosPage({
     select: { id: true, nombre: true },
   });
 
-  // Construir orderBy dinámico
-  let orderBy: any = [{ activo: "desc" }, { caseta: { nombre: "asc" } }, { nombre: "asc" }];
+  let orderBy: any = [{ activo: "desc" }, { nombre: "asc" }];
   if (listParams.sort) {
     const direction = listParams.order ?? "asc";
     if (listParams.sort === "nombre") {
       orderBy = [{ nombre: direction }];
     } else if (listParams.sort === "activo") {
       orderBy = [{ activo: direction }, { nombre: "asc" }];
-    } else if (listParams.sort === "caseta") {
-      orderBy = [{ caseta: { nombre: direction } }, { nombre: "asc" }];
     }
   }
 
+  const where = filtroCaseta
+    ? { casetas: { some: { casetaId: filtroCaseta } } }
+    : {};
+
   const [productos, total] = await Promise.all([
     prisma.producto.findMany({
-      where: filtroCaseta ? { casetaId: filtroCaseta } : {},
-      include: { caseta: { select: { nombre: true } } },
+      where,
+      include: {
+        casetas: {
+          include: { caseta: { select: { nombre: true } } },
+          orderBy: { caseta: { nombre: "asc" } },
+        },
+      },
       orderBy,
       skip: listParams.skip,
       take: listParams.take,
     }),
-    prisma.producto.count({
-      where: filtroCaseta ? { casetaId: filtroCaseta } : {},
-    }),
+    prisma.producto.count({ where }),
   ]);
 
   const nuevoHref = filtroCaseta
@@ -76,7 +80,7 @@ export default async function ProductosPage({
     <div>
       <SectionHeader
         title="Productos"
-        subtitle="Catálogo de productos por caseta. Un producto desactivado no se borra — queda oculto."
+        subtitle="Catálogo transversal de productos. Cada producto puede estar disponible en varias casetas. Desactivar oculta el producto en todas."
         actionHref={nuevoHref}
         actionLabel="Nuevo producto"
         canAct={puedeEditar}
@@ -122,16 +126,7 @@ export default async function ProductosPage({
                     queryParams={filtroCaseta ? `caseta=${filtroCaseta}` : ""}
                   />
                 </TableHead>
-                <TableHead className="w-40">
-                  <SortableHeader
-                    column="caseta"
-                    label="Caseta"
-                    basePath="/inventario/productos"
-                    currentSort={listParams.sort}
-                    currentOrder={listParams.order}
-                    queryParams={filtroCaseta ? `caseta=${filtroCaseta}` : ""}
-                  />
-                </TableHead>
+                <TableHead className="w-64">Casetas</TableHead>
                 <TableHead className="w-32">Unidad</TableHead>
                 <TableHead className="w-32">
                   <SortableHeader
@@ -151,7 +146,7 @@ export default async function ProductosPage({
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {p.caseta.nombre}
+                    {p.casetas.map((c) => c.caseta.nombre).join(", ")}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {p.unidad}

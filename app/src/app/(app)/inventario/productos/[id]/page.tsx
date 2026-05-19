@@ -12,8 +12,15 @@ export default async function EditarProductoPage({
   await requireRole(["admin", "gerente"]);
   const { id } = await params;
 
-  const [producto, casetas] = await Promise.all([
-    prisma.producto.findUnique({ where: { id } }),
+  const [producto, casetasActivas] = await Promise.all([
+    prisma.producto.findUnique({
+      where: { id },
+      include: {
+        casetas: {
+          include: { caseta: { select: { id: true, nombre: true } } },
+        },
+      },
+    }),
     prisma.caseta.findMany({
       where: { activa: true },
       orderBy: { nombre: "asc" },
@@ -22,6 +29,14 @@ export default async function EditarProductoPage({
   ]);
 
   if (!producto) notFound();
+
+  const idsActivas = new Set(casetasActivas.map((c) => c.id));
+  const inactivasVinculadas = producto.casetas
+    .map((pc) => pc.caseta)
+    .filter((c) => !idsActivas.has(c.id));
+  const casetas = [...casetasActivas, ...inactivasVinculadas].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, "es")
+  );
 
   return (
     <FormShell
@@ -33,7 +48,7 @@ export default async function EditarProductoPage({
         casetas={casetas}
         initial={{
           id: producto.id,
-          casetaId: producto.casetaId,
+          casetaIds: producto.casetas.map((pc) => pc.casetaId),
           nombre: producto.nombre,
           unidad: producto.unidad,
           activo: producto.activo,

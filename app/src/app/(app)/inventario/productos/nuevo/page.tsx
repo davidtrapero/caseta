@@ -34,7 +34,7 @@ export default async function NuevoProductoPage({
   return (
     <FormShell
       title="Nuevo producto"
-      subtitle="El catálogo es por caseta: dos casetas pueden tener el mismo producto con stocks independientes."
+      subtitle="Un producto puede estar disponible en varias casetas. El stock se gestiona por caseta de forma independiente."
     >
       <ProductoForm
         modo="crear"

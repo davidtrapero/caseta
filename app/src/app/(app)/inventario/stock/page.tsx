@@ -29,22 +29,39 @@ export default async function StockPage({
     select: { id: true, nombre: true },
   });
 
-  // Base: todos los productos activos (opcionalmente filtrados por caseta).
-  // El LEFT JOIN con Stock lo hacemos en JS porque stock puede no existir.
-  const productos = await prisma.producto.findMany({
+  const vinculos = await prisma.productoCaseta.findMany({
     where: {
-      activo: true,
+      producto: { activo: true },
       ...(filtroCaseta ? { casetaId: filtroCaseta } : {}),
     },
     include: {
       caseta: { select: { nombre: true } },
-      stock: { select: { id: true, cantidad: true, updatedAt: true } },
+      producto: { select: { id: true, nombre: true, unidad: true } },
     },
     orderBy: [
       { caseta: { nombre: "asc" } },
-      { nombre: "asc" },
+      { producto: { nombre: "asc" } },
     ],
   });
+
+  const stocks = await prisma.stock.findMany({
+    where: {
+      productoId: { in: vinculos.map((v) => v.productoId) },
+      ...(filtroCaseta ? { casetaId: filtroCaseta } : {}),
+    },
+    select: { casetaId: true, productoId: true, cantidad: true, updatedAt: true },
+  });
+  const stockPorPar = new Map(
+    stocks.map((s) => [`${s.casetaId}:${s.productoId}`, s])
+  );
+
+  const filas = vinculos.map((v) => ({
+    id: v.id,
+    casetaId: v.casetaId,
+    casetaNombre: v.caseta.nombre,
+    producto: v.producto,
+    stock: stockPorPar.get(`${v.casetaId}:${v.productoId}`) ?? null,
+  }));
 
   const FORMATO_FECHA = new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
@@ -56,7 +73,7 @@ export default async function StockPage({
     <div>
       <SectionHeader
         title="Stock"
-        subtitle="Cantidad disponible por producto. Pulsa 'Ajustar' para corregir tras un inventario físico."
+        subtitle="Cantidad disponible por producto y caseta. Pulsa 'Ajustar' para corregir tras un inventario físico."
       />
 
       <FiltroCaseta
@@ -65,7 +82,7 @@ export default async function StockPage({
         activo={filtroCaseta}
       />
 
-      {productos.length === 0 ? (
+      {filas.length === 0 ? (
         <EmptyState
           title="Sin productos activos"
           description={
@@ -89,23 +106,22 @@ export default async function StockPage({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {productos.map((p) => {
-              const stockFila = p.stock[0];
-              const cantidad = stockFila ? Number(stockFila.cantidad) : 0;
-              const actualizado = stockFila?.updatedAt
-                ? FORMATO_FECHA.format(stockFila.updatedAt)
+            {filas.map((fila) => {
+              const cantidad = fila.stock ? Number(fila.stock.cantidad) : 0;
+              const actualizado = fila.stock?.updatedAt
+                ? FORMATO_FECHA.format(fila.stock.updatedAt)
                 : "—";
               return (
-                <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.nombre}</TableCell>
+                <TableRow key={fila.id}>
+                  <TableCell className="font-medium">{fila.producto.nombre}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {p.caseta.nombre}
+                    {fila.casetaNombre}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {cantidad}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {p.unidad}
+                    {fila.producto.unidad}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     {actualizado}
@@ -113,10 +129,10 @@ export default async function StockPage({
                   <TableCell className="text-right">
                     {puedeEditar ? (
                       <AjustarStockModal
-                        casetaId={p.casetaId}
-                        productoId={p.id}
-                        productoNombre={p.nombre}
-                        unidad={p.unidad}
+                        casetaId={fila.casetaId}
+                        productoId={fila.producto.id}
+                        productoNombre={fila.producto.nombre}
+                        unidad={fila.producto.unidad}
                         cantidadActual={cantidad}
                       />
                     ) : (

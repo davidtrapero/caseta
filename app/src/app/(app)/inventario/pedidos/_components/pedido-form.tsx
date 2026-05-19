@@ -19,7 +19,7 @@ const FORMATO_EUR = new Intl.NumberFormat("es-ES", {
 
 type Modo = "crear" | "editar";
 
-type Opcion = { id: string; nombre: string; casetaId?: string };
+type Opcion = { id: string; nombre: string };
 
 type Linea = {
   productoId: string;
@@ -31,7 +31,12 @@ type PedidoFormProps = {
   modo: Modo;
   proveedores: Opcion[];
   casetas: Opcion[];
-  productos: Array<{ id: string; nombre: string; casetaId: string; unidad: string }>;
+  productos: Array<{
+    id: string;
+    nombre: string;
+    unidad: string;
+    casetas: Array<{ casetaId: string }>;
+  }>;
   initial?: {
     id: string;
     proveedorId: string;
@@ -93,7 +98,7 @@ export function PedidoForm({
   }, [state]);
 
   const productosDeLaCaseta = useMemo(
-    () => productos.filter((p) => p.casetaId === casetaId),
+    () => productos.filter((p) => p.casetas.some((c) => c.casetaId === casetaId)),
     [productos, casetaId]
   );
 
@@ -128,7 +133,7 @@ export function PedidoForm({
     setLineas((prev) =>
       prev.map((l) => {
         const prod = productos.find((p) => p.id === l.productoId);
-        if (prod && prod.casetaId !== nuevaId) {
+        if (prod && !prod.casetas.some((c) => c.casetaId === nuevaId)) {
           return { ...l, productoId: "" };
         }
         return l;

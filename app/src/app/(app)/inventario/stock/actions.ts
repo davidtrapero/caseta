@@ -27,15 +27,19 @@ export async function ajustarStockAction(
       return { ok: false, error: "No hay edición activa.", values };
     }
 
-    const producto = await prisma.producto.findUnique({
-      where: { id: data.productoId },
-      select: { casetaId: true, activo: true },
+    const vinculo = await prisma.productoCaseta.findUnique({
+      where: {
+        productoId_casetaId: {
+          productoId: data.productoId,
+          casetaId: data.casetaId,
+        },
+      },
+      select: { id: true },
     });
-    if (!producto) return { ok: false, error: "Producto no encontrado.", values };
-    if (producto.casetaId !== data.casetaId) {
+    if (!vinculo) {
       return {
         ok: false,
-        error: "El producto no pertenece a la caseta indicada.",
+        error: "El producto no está disponible en esta caseta.",
         values,
       };
     }

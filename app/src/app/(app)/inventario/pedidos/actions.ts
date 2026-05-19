@@ -29,14 +29,18 @@ async function validarProductosEnCaseta(
 ): Promise<string | null> {
   const productos = await prisma.producto.findMany({
     where: { id: { in: productoIds } },
-    select: { id: true, casetaId: true, activo: true },
+    select: {
+      id: true,
+      activo: true,
+      casetas: { select: { casetaId: true } },
+    },
   });
   if (productos.length !== productoIds.length) {
     return "Algún producto no existe.";
   }
   for (const p of productos) {
-    if (p.casetaId !== casetaId) {
-      return "Todos los productos deben pertenecer a la caseta seleccionada.";
+    if (!p.casetas.some((c) => c.casetaId === casetaId)) {
+      return "Algún producto no está vinculado a esta caseta.";
     }
     if (!p.activo) {
       return "No se pueden pedir productos desactivados.";

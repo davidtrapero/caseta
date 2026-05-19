@@ -36,7 +36,12 @@ export default async function NuevoPedidoPage() {
     prisma.producto.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
-      select: { id: true, nombre: true, casetaId: true, unidad: true },
+      select: {
+        id: true,
+        nombre: true,
+        unidad: true,
+        casetas: { select: { casetaId: true } },
+      },
     }),
   ]);
 
