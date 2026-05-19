@@ -221,7 +221,7 @@ export async function actualizarTurnoAction(
 
   const values = formDataToObject(formData);
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.editar");
     const data = parseForm(actualizarTurnoSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
@@ -290,7 +290,7 @@ export async function eliminarTurnoAction(
   }
 
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.eliminar");
 
     const existente = await prisma.turno.findUnique({
       where: { id },
@@ -400,7 +400,7 @@ export async function desasignarEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.eliminar");
     const data = parseForm(desasignarEmpleadoSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -440,7 +440,7 @@ export async function desasignarTurnoDesdeEmpleadoAction(
   formData: FormData
 ): Promise<ActionResult<{ turnoId: string; empleadoId: string }>> {
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.eliminar");
     const data = parseForm(desasignarEmpleadoSchema, formData);
 
     const fila = await prisma.turnoEmpleado.findUnique({
@@ -728,7 +728,7 @@ export async function actualizarPlazasAction(
 ): Promise<ActionResult<undefined>> {
   const values = formDataToObject(formData);
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.editar");
     const data = parseForm(actualizarPlazasSchema, formData);
 
     const turno = await prisma.turno.findUnique({
@@ -767,7 +767,7 @@ export async function actualizarTurnoYPlazasAction(
 
   const values = formDataToObject(formData);
   try {
-    const { user } = await requirePermiso("turnos.semana.crear");
+    const { user } = await requirePermiso("turnos.semana.editar");
     const data = parseForm(actualizarTurnoYPlazasSchema, formData);
 
     const edErr = await validarEdicionActiva(data.edicionId);
