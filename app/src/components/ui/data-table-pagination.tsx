@@ -40,36 +40,36 @@ export function DataTablePagination({
         {start}–{end} de {total}
       </div>
       <div className="flex gap-2">
-        <Link
-          href={prevUrl}
-          className={`inline-flex items-center justify-center w-8 h-8 rounded border ${
-            hasPrevPage
-              ? "border-gray-300 text-gray-700 hover:bg-gray-50"
-              : "border-gray-200 text-gray-400 cursor-not-allowed"
-          }`}
-          aria-disabled={!hasPrevPage}
-          tabIndex={hasPrevPage ? 0 : -1}
-          onClick={(e) => {
-            if (!hasPrevPage) e.preventDefault();
-          }}
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Link>
-        <Link
-          href={nextUrl}
-          className={`inline-flex items-center justify-center w-8 h-8 rounded border ${
-            hasNextPage
-              ? "border-gray-300 text-gray-700 hover:bg-gray-50"
-              : "border-gray-200 text-gray-400 cursor-not-allowed"
-          }`}
-          aria-disabled={!hasNextPage}
-          tabIndex={hasNextPage ? 0 : -1}
-          onClick={(e) => {
-            if (!hasNextPage) e.preventDefault();
-          }}
-        >
-          <ChevronRight className="w-4 h-4" />
-        </Link>
+        {hasPrevPage ? (
+          <Link
+            href={prevUrl}
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Link>
+        ) : (
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </span>
+        )}
+        {hasNextPage ? (
+          <Link
+            href={nextUrl}
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        ) : (
+          <span
+            className="inline-flex items-center justify-center w-8 h-8 rounded border border-gray-200 text-gray-400 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </span>
+        )}
       </div>
     </div>
   );
