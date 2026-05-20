@@ -70,6 +70,93 @@ export async function aprobarTurnosAction(
     const { user } = await requirePermiso("solicitudes.decidir");
     const data = parseForm(aprobarTurnosSchema, formData);
 
+    const solicitudPrev = await prisma.solicitudVoluntario.findUnique({
+      where: { id: data.solicitudId },
+      include: {
+        turnos: {
+          where: { id: { in: data.turnoIds } },
+          include: { turno: true },
+        },
+      },
+    });
+    if (!solicitudPrev) throw new Error("Solicitud no encontrada.");
+
+    const aResolverPrev = solicitudPrev.turnos.filter((t) => t.estado === "pendiente");
+    if (aResolverPrev.length === 0) {
+      throw new Error("Los turnos seleccionados ya fueron resueltos.");
+    }
+
+    const tipoVoluntarioPrev = await prisma.tipoEmpleado.findFirst({
+      where: { esVoluntario: true, activo: true },
+      select: { id: true },
+    });
+    if (!tipoVoluntarioPrev) {
+      throw new Error("No hay ninguna categoría marcada como voluntariado.");
+    }
+
+    // Lookup del empleado existente (sólo para validar solapes fuera de tx).
+    // La creación / update real ocurre dentro de la transacción.
+    const empleadoExistentePrev = solicitudPrev.telefono
+      ? await prisma.empleado.findFirst({
+          where: {
+            telefono: solicitudPrev.telefono,
+            tipos: { some: { tipoEmpleadoId: tipoVoluntarioPrev.id } },
+          },
+          select: { id: true },
+        })
+      : null;
+
+    if (empleadoExistentePrev) {
+      const fechasOrden = aResolverPrev
+        .map((t) => t.turno.fechaInicio.getTime())
+        .concat(aResolverPrev.map((t) => t.turno.fechaFin.getTime()));
+      const minIni = new Date(Math.min(...fechasOrden));
+      const maxFin = new Date(Math.max(...fechasOrden));
+      const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
+      const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
+
+      const asignacionesExistentes = await prisma.turnoEmpleado.findMany({
+        where: {
+          empleadoId: empleadoExistentePrev.id,
+          turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
+        },
+        include: { turno: true },
+      });
+      const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
+        id: a.turno.id,
+        empleadoId: empleadoExistentePrev.id,
+        casetaId: a.turno.casetaId,
+        fechaInicio: a.turno.fechaInicio,
+        fechaFin: a.turno.fechaFin,
+      }));
+      const nuevos: TurnoRango[] = aResolverPrev.map((t) => ({
+        id: t.turno.id,
+        empleadoId: empleadoExistentePrev.id,
+        casetaId: t.turno.casetaId,
+        fechaInicio: t.turno.fechaInicio,
+        fechaFin: t.turno.fechaFin,
+      }));
+
+      for (let i = 0; i < nuevos.length; i++) {
+        const candidato = nuevos[i]!;
+        const otrosNuevos = nuevos.filter((_, j) => j !== i);
+        const r = detectarSolape([...existentes, ...otrosNuevos], {
+          empleadoId: empleadoExistentePrev.id,
+          fechaInicio: candidato.fechaInicio,
+          fechaFin: candidato.fechaFin,
+        });
+        if (r.solapa) {
+          const err = new Error(
+            "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
+          );
+          (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
+            turnos: ["Solape detectado"],
+          };
+          throw err;
+        }
+      }
+    }
+
     const result = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         const solicitud = await tx.solicitudVoluntario.findUnique({
@@ -88,7 +175,6 @@ export async function aprobarTurnosAction(
           throw new Error("Los turnos seleccionados ya fueron resueltos.");
         }
 
-        // Resolver el tipo "voluntario" (asume un único tipo con esVoluntario=true).
         const tipoVoluntario = await tx.tipoEmpleado.findFirst({
           where: { esVoluntario: true, activo: true },
           select: { id: true },
@@ -157,57 +243,6 @@ export async function aprobarTurnosAction(
             turnos: [`${sinHueco.length} turno(s) sin huecos`],
           };
           throw err;
-        }
-
-        // Validación de solapes contra asignaciones existentes y entre los nuevos.
-        const fechasOrden = aResolver
-          .map((t) => t.turno.fechaInicio.getTime())
-          .concat(aResolver.map((t) => t.turno.fechaFin.getTime()));
-        const minIni = new Date(Math.min(...fechasOrden));
-        const maxFin = new Date(Math.max(...fechasOrden));
-        const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
-        const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
-
-        const asignacionesExistentes = await tx.turnoEmpleado.findMany({
-          where: {
-            empleadoId: empleado.id,
-            turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
-          },
-          include: { turno: true },
-        });
-        const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
-          id: a.turno.id,
-          empleadoId: empleado!.id,
-          casetaId: a.turno.casetaId,
-          fechaInicio: a.turno.fechaInicio,
-          fechaFin: a.turno.fechaFin,
-        }));
-
-        const nuevos: TurnoRango[] = aResolver.map((t) => ({
-          id: t.turno.id,
-          empleadoId: empleado!.id,
-          casetaId: t.turno.casetaId,
-          fechaInicio: t.turno.fechaInicio,
-          fechaFin: t.turno.fechaFin,
-        }));
-
-        for (let i = 0; i < nuevos.length; i++) {
-          const candidato = nuevos[i]!;
-          const otrosNuevos = nuevos.filter((_, j) => j !== i);
-          const r = detectarSolape([...existentes, ...otrosNuevos], {
-            empleadoId: empleado!.id,
-            fechaInicio: candidato.fechaInicio,
-            fechaFin: candidato.fechaFin,
-          });
-          if (r.solapa) {
-            const err = new Error(
-              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
-            );
-            (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
-              turnos: ["Solape detectado"],
-            };
-            throw err;
-          }
         }
 
         // Marca los turnos solicitados como aprobados.
@@ -437,6 +472,78 @@ export async function aprobarTurnosEmpleadoAction(
     const { user } = await requirePermiso("solicitudes.decidir");
     const data = parseForm(aprobarTurnosEmpleadoSchema, formData);
 
+    const solicitudPrev = await prisma.solicitudEmpleado.findUnique({
+      where: { id: data.solicitudId },
+      include: {
+        turnos: {
+          where: { id: { in: data.turnoIds } },
+          include: { turno: true },
+        },
+      },
+    });
+    if (!solicitudPrev) throw new Error("Solicitud no encontrada.");
+
+    const aResolverPrev = solicitudPrev.turnos.filter((t) => t.estado === "pendiente");
+    if (aResolverPrev.length === 0) {
+      throw new Error("Los turnos seleccionados ya fueron resueltos.");
+    }
+
+    const empleadoPrev = await prisma.empleado.findUnique({
+      where: { dni: solicitudPrev.dni },
+      select: { id: true },
+    });
+
+    if (empleadoPrev) {
+      const fechasOrden = aResolverPrev
+        .map((t) => t.turno.fechaInicio.getTime())
+        .concat(aResolverPrev.map((t) => t.turno.fechaFin.getTime()));
+      const minIni = new Date(Math.min(...fechasOrden));
+      const maxFin = new Date(Math.max(...fechasOrden));
+      const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
+      const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
+
+      const asignacionesExistentes = await prisma.turnoEmpleado.findMany({
+        where: {
+          empleadoId: empleadoPrev.id,
+          turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
+        },
+        include: { turno: true },
+      });
+      const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
+        id: a.turno.id,
+        empleadoId: empleadoPrev.id,
+        casetaId: a.turno.casetaId,
+        fechaInicio: a.turno.fechaInicio,
+        fechaFin: a.turno.fechaFin,
+      }));
+      const nuevos: TurnoRango[] = aResolverPrev.map((t) => ({
+        id: t.turno.id,
+        empleadoId: empleadoPrev.id,
+        casetaId: t.turno.casetaId,
+        fechaInicio: t.turno.fechaInicio,
+        fechaFin: t.turno.fechaFin,
+      }));
+
+      for (let i = 0; i < nuevos.length; i++) {
+        const candidato = nuevos[i]!;
+        const otrosNuevos = nuevos.filter((_, j) => j !== i);
+        const r = detectarSolape([...existentes, ...otrosNuevos], {
+          empleadoId: empleadoPrev.id,
+          fechaInicio: candidato.fechaInicio,
+          fechaFin: candidato.fechaFin,
+        });
+        if (r.solapa) {
+          const err = new Error(
+            "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
+          );
+          (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
+            turnos: ["Solape detectado"],
+          };
+          throw err;
+        }
+      }
+    }
+
     const result = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         const solicitud = await tx.solicitudEmpleado.findUnique({
@@ -490,56 +597,6 @@ export async function aprobarTurnosEmpleadoAction(
             turnos: [`${sinHueco.length} turno(s) sin huecos`],
           };
           throw err;
-        }
-
-        // Validación de solapes.
-        const fechasOrden = aResolver
-          .map((t) => t.turno.fechaInicio.getTime())
-          .concat(aResolver.map((t) => t.turno.fechaFin.getTime()));
-        const minIni = new Date(Math.min(...fechasOrden));
-        const maxFin = new Date(Math.max(...fechasOrden));
-        const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
-        const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
-
-        const asignacionesExistentes = await tx.turnoEmpleado.findMany({
-          where: {
-            empleadoId: empleado.id,
-            turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
-          },
-          include: { turno: true },
-        });
-        const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
-          id: a.turno.id,
-          empleadoId: empleado.id,
-          casetaId: a.turno.casetaId,
-          fechaInicio: a.turno.fechaInicio,
-          fechaFin: a.turno.fechaFin,
-        }));
-        const nuevos: TurnoRango[] = aResolver.map((t) => ({
-          id: t.turno.id,
-          empleadoId: empleado.id,
-          casetaId: t.turno.casetaId,
-          fechaInicio: t.turno.fechaInicio,
-          fechaFin: t.turno.fechaFin,
-        }));
-
-        for (let i = 0; i < nuevos.length; i++) {
-          const candidato = nuevos[i]!;
-          const otrosNuevos = nuevos.filter((_, j) => j !== i);
-          const r = detectarSolape([...existentes, ...otrosNuevos], {
-            empleadoId: empleado.id,
-            fechaInicio: candidato.fechaInicio,
-            fechaFin: candidato.fechaFin,
-          });
-          if (r.solapa) {
-            const err = new Error(
-              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
-            );
-            (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
-              turnos: ["Solape detectado"],
-            };
-            throw err;
-          }
         }
 
         // Marca los turnos como aprobados.
@@ -612,6 +669,83 @@ export async function aprobarSolicitudEmpleadoAction(
     await requirePermiso("solicitudes.decidir");
 
     const data = parseForm(aprobarSolicitudEmpleadoSchema, formData);
+
+    if (data.aprobar) {
+      const solicitudPrev = await prisma.solicitudEmpleado.findUnique({
+        where: { id: data.solicitudId },
+        include: {
+          turnos: {
+            include: {
+              turno: {
+                select: {
+                  id: true,
+                  casetaId: true,
+                  fechaInicio: true,
+                  fechaFin: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      if (!solicitudPrev) throw new Error("Solicitud no encontrada.");
+
+      const empleadoPrev = await prisma.empleado.findUnique({
+        where: { dni: solicitudPrev.dni },
+        select: { id: true },
+      });
+
+      if (empleadoPrev && solicitudPrev.turnos.length > 0) {
+        const fechasOrden = solicitudPrev.turnos
+          .map((t) => t.turno.fechaInicio.getTime())
+          .concat(solicitudPrev.turnos.map((t) => t.turno.fechaFin.getTime()));
+        const minIni = new Date(Math.min(...fechasOrden));
+        const maxFin = new Date(Math.max(...fechasOrden));
+        const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
+        const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
+
+        const asignacionesExistentes = await prisma.turnoEmpleado.findMany({
+          where: {
+            empleadoId: empleadoPrev.id,
+            turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
+          },
+          include: { turno: true },
+        });
+        const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
+          id: a.turno.id,
+          empleadoId: empleadoPrev.id,
+          casetaId: a.turno.casetaId,
+          fechaInicio: a.turno.fechaInicio,
+          fechaFin: a.turno.fechaFin,
+        }));
+        const nuevos: TurnoRango[] = solicitudPrev.turnos.map((t) => ({
+          id: t.turno.id,
+          empleadoId: empleadoPrev.id,
+          casetaId: t.turno.casetaId,
+          fechaInicio: t.turno.fechaInicio,
+          fechaFin: t.turno.fechaFin,
+        }));
+
+        for (let i = 0; i < nuevos.length; i++) {
+          const candidato = nuevos[i]!;
+          const otrosNuevos = nuevos.filter((_, j) => j !== i);
+          const r = detectarSolape([...existentes, ...otrosNuevos], {
+            empleadoId: empleadoPrev.id,
+            fechaInicio: candidato.fechaInicio,
+            fechaFin: candidato.fechaFin,
+          });
+          if (r.solapa) {
+            const err = new Error(
+              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
+            );
+            (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
+              turnos: ["Solape detectado"],
+            };
+            throw err;
+          }
+        }
+      }
+    }
 
     await withAuditContext(userId, () =>
       prisma.$transaction(async (tx) => {
@@ -715,56 +849,6 @@ export async function aprobarSolicitudEmpleadoAction(
             turnos: [`${sinHueco.length} turno(s) sin huecos`],
           };
           throw err;
-        }
-
-        // 4. Validar solapes contra asignaciones existentes del empleado
-        const fechasOrden = solicitud.turnos
-          .map((t) => t.turno.fechaInicio.getTime())
-          .concat(solicitud.turnos.map((t) => t.turno.fechaFin.getTime()));
-        const minIni = new Date(Math.min(...fechasOrden));
-        const maxFin = new Date(Math.max(...fechasOrden));
-        const ventanaIni = new Date(minIni.getTime() - 24 * 60 * 60 * 1000);
-        const ventanaFin = new Date(maxFin.getTime() + 24 * 60 * 60 * 1000);
-
-        const asignacionesExistentes = await tx.turnoEmpleado.findMany({
-          where: {
-            empleadoId,
-            turno: { fechaInicio: { gte: ventanaIni, lt: ventanaFin } },
-          },
-          include: { turno: true },
-        });
-        const existentes: TurnoRango[] = asignacionesExistentes.map((a) => ({
-          id: a.turno.id,
-          empleadoId,
-          casetaId: a.turno.casetaId,
-          fechaInicio: a.turno.fechaInicio,
-          fechaFin: a.turno.fechaFin,
-        }));
-        const nuevos: TurnoRango[] = solicitud.turnos.map((t) => ({
-          id: t.turno.id,
-          empleadoId,
-          casetaId: t.turno.casetaId,
-          fechaInicio: t.turno.fechaInicio,
-          fechaFin: t.turno.fechaFin,
-        }));
-
-        for (let i = 0; i < nuevos.length; i++) {
-          const candidato = nuevos[i]!;
-          const otrosNuevos = nuevos.filter((_, j) => j !== i);
-          const r = detectarSolape([...existentes, ...otrosNuevos], {
-            empleadoId,
-            fechaInicio: candidato.fechaInicio,
-            fechaFin: candidato.fechaFin,
-          });
-          if (r.solapa) {
-            const err = new Error(
-              "Hay solapamiento con otros turnos de esta persona. Revisa antes de aprobar."
-            );
-            (err as Error & { fieldErrors?: Record<string, string[]> }).fieldErrors = {
-              turnos: ["Solape detectado"],
-            };
-            throw err;
-          }
         }
 
         // 5. Crear asignaciones TurnoEmpleado
