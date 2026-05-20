@@ -94,8 +94,6 @@ export async function aprobarTurnosAction(
       throw new Error("No hay ninguna categoría marcada como voluntariado.");
     }
 
-    // Lookup del empleado existente (sólo para validar solapes fuera de tx).
-    // La creación / update real ocurre dentro de la transacción.
     const empleadoExistentePrev = solicitudPrev.telefono
       ? await prisma.empleado.findFirst({
           where: {
