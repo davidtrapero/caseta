@@ -101,7 +101,7 @@ describe("aprobarSolicitudEmpleadoAction", () => {
     });
 
     const fd = buildFormData({ solicitudId: solicitud.id, aprobar: true });
-    const result = await aprobarSolicitudEmpleadoAction(null, fd, userId);
+    const result = await aprobarSolicitudEmpleadoAction(null, fd);
 
     expect(result.ok).toBe(true);
 
@@ -155,7 +155,7 @@ describe("aprobarSolicitudEmpleadoAction", () => {
     });
 
     const fd = buildFormData({ solicitudId: solicitud.id, aprobar: true });
-    const result = await aprobarSolicitudEmpleadoAction(null, fd, userId);
+    const result = await aprobarSolicitudEmpleadoAction(null, fd);
 
     expect(result.ok).toBe(true);
 
@@ -257,7 +257,7 @@ describe("aprobarSolicitudEmpleadoAction", () => {
     });
 
     const fd = buildFormData({ solicitudId: solicitud.id, aprobar: true });
-    const result = await aprobarSolicitudEmpleadoAction(null, fd, userId);
+    const result = await aprobarSolicitudEmpleadoAction(null, fd);
 
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/hueco/i);
@@ -308,7 +308,7 @@ describe("aprobarSolicitudEmpleadoAction", () => {
     });
 
     const fd = buildFormData({ solicitudId: solicitud.id, aprobar: true });
-    const result = await aprobarSolicitudEmpleadoAction(null, fd, userId);
+    const result = await aprobarSolicitudEmpleadoAction(null, fd);
 
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/voluntario/i);

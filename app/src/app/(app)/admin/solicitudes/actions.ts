@@ -653,18 +653,14 @@ export async function aprobarTurnosEmpleadoAction(
  *
  * Si rechaza:
  *  - Actualiza SolicitudEmpleado a "rechazada" con motivoRechazo.
- *
- * userId se pasa desde el componente cliente para evitar re-leer la sesión
- * dentro de la transacción (Edge runtime / RSC compatibility).
  */
 export async function aprobarSolicitudEmpleadoAction(
   _prev: ActionResult<null> | null,
-  formData: FormData,
-  userId: string
+  formData: FormData
 ): Promise<ActionResult<null>> {
   try {
     // Auth: requiere permiso de decidir solicitudes
-    await requirePermiso("solicitudes.decidir");
+    const { user } = await requirePermiso("solicitudes.decidir");
 
     const data = parseForm(aprobarSolicitudEmpleadoSchema, formData);
 
@@ -745,7 +741,7 @@ export async function aprobarSolicitudEmpleadoAction(
       }
     }
 
-    await withAuditContext(userId, () =>
+    await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
         // Cargar solicitud con edición y turnos
         const solicitud = await tx.solicitudEmpleado.findUnique({
@@ -776,7 +772,7 @@ export async function aprobarSolicitudEmpleadoAction(
               estado: "rechazada",
               motivoRechazo: data.motivoRechazo ?? null,
               decididaAt: new Date(),
-              decididaPorUserId: userId,
+              decididaPorUserId: user.id,
             },
           });
           return;
@@ -866,7 +862,7 @@ export async function aprobarSolicitudEmpleadoAction(
           data: {
             estado: "aprobada",
             decididaAt: new Date(),
-            decididaPorUserId: userId,
+            decididaPorUserId: user.id,
           },
         });
 
@@ -876,7 +872,7 @@ export async function aprobarSolicitudEmpleadoAction(
           data: {
             estado: "aprobado",
             decididaAt: new Date(),
-            decididaPorUserId: userId,
+            decididaPorUserId: user.id,
           },
         });
       })
