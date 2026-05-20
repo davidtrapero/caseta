@@ -13,8 +13,8 @@ type TurnoItem = {
   id: string;
   estado: EstadoSolicitudTurno;
   motivoRechazo: string | null;
-  fechaInicio: Date;
-  fechaFin: Date;
+  fechaInicio: Date | string;
+  fechaFin: Date | string;
   casetaNombre: string;
 };
 
@@ -123,8 +123,8 @@ export function AccionesEmpleado({ solicitudId, turnos }: Props) {
                 />
                 <div className="flex-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span className="font-mono text-xs text-muted-foreground">
-                    {FECHA_DIA.format(t.fechaInicio)} ·{" "}
-                    {formatRangoTurno(t.fechaInicio, t.fechaFin)}
+                    {FECHA_DIA.format(new Date(t.fechaInicio))} ·{" "}
+                    {formatRangoTurno(new Date(t.fechaInicio), new Date(t.fechaFin))}
                   </span>
                   <span>· {t.casetaNombre}</span>
                   <Badge variant={badgeVariant(t.estado)} className="ml-1">
@@ -245,8 +245,8 @@ function TurnoLinea({ turno: t }: { turno: TurnoItem }) {
   return (
     <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
       <span className="font-mono text-xs text-muted-foreground">
-        {FECHA_DIA.format(t.fechaInicio)} ·{" "}
-        {formatRangoTurno(t.fechaInicio, t.fechaFin)}
+        {FECHA_DIA.format(new Date(t.fechaInicio))} ·{" "}
+        {formatRangoTurno(new Date(t.fechaInicio), new Date(t.fechaFin))}
       </span>
       <span>· {t.casetaNombre}</span>
       <Badge variant={badgeVariant(t.estado)} className="ml-1">

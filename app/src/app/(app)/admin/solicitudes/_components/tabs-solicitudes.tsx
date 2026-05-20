@@ -16,7 +16,7 @@ type SolicitudVoluntario = {
   email: string | null;
   observaciones: string | null;
   estado: EstadoSolicitud;
-  createdAt: Date;
+  createdAt: Date | string;
   entidad: { nombre: string };
   edicion: { anio: number; nombre: string };
   turnos: Array<{
@@ -24,8 +24,8 @@ type SolicitudVoluntario = {
     estado: EstadoSolicitudTurno;
     motivoRechazo: string | null;
     turno: {
-      fechaInicio: Date;
-      fechaFin: Date;
+      fechaInicio: Date | string;
+      fechaFin: Date | string;
       caseta: { nombre: string };
     };
   }>;
@@ -39,15 +39,15 @@ type SolicitudEmpleado = {
   telefono: string | null;
   email: string | null;
   estado: EstadoSolicitud;
-  createdAt: Date;
+  createdAt: Date | string;
   edicion: { anio: number; nombre: string };
   turnos: Array<{
     id: string;
     estado: EstadoSolicitudTurno;
     motivoRechazo: string | null;
     turno: {
-      fechaInicio: Date;
-      fechaFin: Date;
+      fechaInicio: Date | string;
+      fechaFin: Date | string;
       caseta: { nombre: string };
     };
   }>;
@@ -156,7 +156,7 @@ export function TabsSolicitudes({
                       {[s.telefono, s.email].filter(Boolean).join(" · ")} · {s.entidad.nombre} · {s.edicion.anio}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Recibida {FECHA.format(s.createdAt)}
+                      Recibida {FECHA.format(new Date(s.createdAt))}
                     </p>
                   </div>
 
@@ -213,7 +213,7 @@ export function TabsSolicitudes({
                       {" · "}{s.edicion.anio}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Recibida {FECHA.format(s.createdAt)}
+                      Recibida {FECHA.format(new Date(s.createdAt))}
                     </p>
                   </div>
 
