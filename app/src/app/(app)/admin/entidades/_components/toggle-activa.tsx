@@ -1,8 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
-import { Badge } from "@/components/ui/badge";
-import type { ActionResult } from "@/lib/action-result";
+import { ToggleEstadoForm } from "@/components/forms/toggle-estado-form";
 import { desactivarEntidadAction, reactivarEntidadAction } from "../actions";
 
 export function ToggleActivaEntidadForm({
@@ -12,31 +10,19 @@ export function ToggleActivaEntidadForm({
   id: string;
   activa: boolean;
 }) {
-  const action = activa ? desactivarEntidadAction : reactivarEntidadAction;
-
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
-    action,
-    null
-  );
-
-  const errorMsg = state && !state.ok ? state.error : null;
-
   return (
-    <form action={formAction} className="flex flex-col items-start gap-1">
-      <input type="hidden" name="_id" value={id} />
-      <button
-        type="submit"
-        disabled={pending}
-        className="group inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-        title={activa ? "Marcar como inactiva (no aparece en formularios públicos)" : "Reactivar entidad"}
-      >
-        <Badge variant={activa ? "active" : "inactive"}>
-          {activa ? "Activa" : "Inactiva"}
-        </Badge>
-      </button>
-      {errorMsg ? (
-        <span className="text-xs text-destructive">{errorMsg}</span>
-      ) : null}
-    </form>
+    <ToggleEstadoForm
+      id={id}
+      activo={activa}
+      action={{
+        whenActive: desactivarEntidadAction,
+        whenInactive: reactivarEntidadAction,
+      }}
+      labels={{ activo: "Activa", inactivo: "Inactiva" }}
+      titles={{
+        whenActive: "Marcar como inactiva (no aparece en formularios públicos)",
+        whenInactive: "Reactivar entidad",
+      }}
+    />
   );
 }
