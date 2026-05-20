@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import type { ActionResult } from "@/lib/action-result";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ToggleAction = (prev: any, formData: FormData) => Promise<ActionResult<any> | null>;
+type ToggleAction = (prev: any, formData: FormData) => Promise<ActionResult<unknown>>;
 
 export function ToggleEstadoForm({
   id,
@@ -14,6 +14,7 @@ export function ToggleEstadoForm({
   labels,
   titles,
   disabled,
+  errorVariant = "inline",
 }: {
   id: string;
   activo: boolean;
@@ -31,6 +32,8 @@ export function ToggleEstadoForm({
     whenInactive: string;
   };
   disabled?: boolean;
+  /** Estilo del mensaje de error. "pill" para fondo rojo destacado; "inline" para texto discreto (por defecto). */
+  errorVariant?: "inline" | "pill";
 }) {
   const resolvedAction =
     typeof action === "function"
@@ -39,7 +42,7 @@ export function ToggleEstadoForm({
         ? action.whenActive
         : action.whenInactive;
 
-  const [state, formAction, pending] = useActionState<ActionResult | null, FormData>(
+  const [state, formAction, pending] = useActionState<ActionResult<unknown> | null, FormData>(
     resolvedAction,
     null
   );
@@ -65,7 +68,17 @@ export function ToggleEstadoForm({
           {activo ? labels.activo : labels.inactivo}
         </Badge>
       </button>
-      {errorMsg ? <span className="text-xs text-destructive">{errorMsg}</span> : null}
+      {errorMsg ? (
+        <span
+          className={
+            errorVariant === "pill"
+              ? "text-xs text-destructive-foreground bg-destructive/90 rounded-sm px-2 py-1"
+              : "text-xs text-destructive"
+          }
+        >
+          {errorMsg}
+        </span>
+      ) : null}
     </form>
   );
 }

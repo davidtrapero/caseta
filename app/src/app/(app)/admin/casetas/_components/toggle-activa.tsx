@@ -19,6 +19,7 @@ export function ToggleActivaCasetaForm({
       disabled={disabled}
       action={toggleActivaCasetaAction}
       labels={{ activo: "Activa", inactivo: "Inactiva" }}
+      errorVariant="pill"
       titles={{
         disabled: "Necesitas rol admin o gerente para cambiar este estado",
         whenActive: "Marcar como inactiva",

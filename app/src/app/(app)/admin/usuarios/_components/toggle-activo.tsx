@@ -24,6 +24,7 @@ export function ToggleActivoUsuarioForm({
         whenInactive: reactivarUsuarioAction,
       }}
       labels={{ activo: "Activo", inactivo: "Inactivo" }}
+      errorVariant="pill"
       titles={{
         disabled: esSelf
           ? "No puedes desactivarte a ti misma"
