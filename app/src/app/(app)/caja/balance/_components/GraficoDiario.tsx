@@ -28,7 +28,7 @@ export function GraficoDiario({ data }: Props) {
 
   return (
     <div className="h-72 w-full rounded-xl border border-[var(--surface-glass-border)] bg-[var(--surface-glass)] p-4 backdrop-blur-md">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height={256}>
         <ComposedChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis

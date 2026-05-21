@@ -297,8 +297,8 @@ export async function loadDashboard(rol: "admin" | "gerente" | "cajero"): Promis
     edicion: {
       id: edicion.id,
       nombre: edicion.nombre,
-      fechaInicio: edicion.fechaInicio.toISOString(),
-      fechaFin: edicion.fechaFin.toISOString(),
+      fechaInicio: new Date(edicion.fechaInicio).toISOString(),
+      fechaFin: new Date(edicion.fechaFin).toISOString(),
     },
     kpis,
     operativo,
