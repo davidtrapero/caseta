@@ -15,8 +15,13 @@ export class AuthError extends Error {
   }
 }
 
+// disableCookieCache: la caché de cookie dura 5 min y no vería un usuario desactivado ni un cambio
+// de rol. Con 2-5 usuarios, una consulta por acción no cuesta nada.
 export async function getSession() {
-  return auth.api.getSession({ headers: await headers() });
+  return auth.api.getSession({
+    headers: await headers(),
+    query: { disableCookieCache: true },
+  });
 }
 
 /**

@@ -36,6 +36,30 @@ describe("requireRole", () => {
     });
   });
 
+  it("desactivado DESPUÉS de iniciar sesión → AuthError(inactive) sin esperar a la caché", async () => {
+    await signInAs("cajero");
+    await prisma.user.update({
+      where: { email: "cajero@caseta.test" },
+      data: { activo: false },
+    });
+    await expect(requireRole(["cajero"])).rejects.toMatchObject({
+      name: "AuthError",
+      code: "inactive",
+    });
+  });
+
+  it("rol degradado DESPUÉS de iniciar sesión → AuthError(forbidden)", async () => {
+    await signInAs("admin");
+    await prisma.user.update({
+      where: { email: "admin@caseta.test" },
+      data: { rol: "cajero" },
+    });
+    await expect(requireRole(["admin"])).rejects.toMatchObject({
+      name: "AuthError",
+      code: "forbidden",
+    });
+  });
+
   it("rol insuficiente → AuthError(forbidden)", async () => {
     await signInAs("cajero");
     await expect(requireRole(["admin"])).rejects.toMatchObject({
