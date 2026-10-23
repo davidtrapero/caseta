@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
-import { calcularNominasAction, marcarPagadaAction } from "./actions";
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from "vitest";
+import { calcularNominasAction } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { resetAndSeed } from "@/test/integration-helpers";
 import { crearEmpleado, crearTurno } from "@/test/fixtures";
@@ -40,6 +40,10 @@ describe("calcularNominasAction", () => {
 
   beforeEach(async () => {
     seed = await resetAndSeed();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -303,7 +307,6 @@ describe("calcularNominasAction", () => {
     }) as never);
 
     await calcularNominasAction();
-    vi.restoreAllMocks();
 
     const final = await prisma.nomina.findUniqueOrThrow({ where: { id: nomina.id } });
     expect(final.pagada).toBe(true);
