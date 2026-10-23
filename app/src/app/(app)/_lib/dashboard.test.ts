@@ -72,7 +72,7 @@ describe("Dashboard KPIs — agregar por edición", () => {
     await prisma.caseta.deleteMany({ where: { id: casetaId } });
     await prisma.tipoEmpleado.deleteMany({ where: { id: { in: [tipoEmpleado1Id, tipoEmpleado2Id] } } });
     await prisma.user.deleteMany({ where: { id: usuarioId } });
-    await prisma.empleado.deleteMany({});
+    await prisma.empleado.deleteMany({ where: { dni: { startsWith: "DNI" } } });
   });
 
   it("debe sumar ingresos de TODA la edición, no solo un día", async () => {

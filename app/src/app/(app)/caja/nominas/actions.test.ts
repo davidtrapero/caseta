@@ -95,6 +95,12 @@ describe("calcularNominasAction", () => {
   });
 
   it("nóminas ya pagadas NO se sobrescriben (gerente)", async () => {
+    // El catálogo por defecto no da caja.nominas.crear al gerente; se concede aquí
+    // para ejercitar la regla de pagadas y no el chequeo de permiso. El setup global
+    // restaura RolPermiso antes del siguiente fichero.
+    await prisma.rolPermiso.create({
+      data: { rol: "gerente", permiso: "caja.nominas.crear" },
+    });
     await signInAs("gerente");
     const emp = await crearEmpleado({
       nombre: "Ana",

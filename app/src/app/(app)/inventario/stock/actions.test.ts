@@ -119,6 +119,6 @@ describe("ajustarStockAction", () => {
       formData({ casetaId: otraCaseta.id, productoId, nuevaCantidad: 10 })
     );
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toMatch(/no pertenece/i);
+    if (!res.ok) expect(res.error).toMatch(/no está disponible/i);
   });
 });

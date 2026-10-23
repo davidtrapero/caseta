@@ -4,7 +4,7 @@
 //  - next/cache: no-op revalidatePath / revalidateTag.
 //  - next/navigation: redirect lanza error REDIRECT:<url> para que los
 //    tests puedan aserturar la redirección sin que Next intente navegar.
-import { vi } from "vitest";
+import { beforeAll, vi } from "vitest";
 import { getTestCookie } from "./auth-helper";
 
 vi.mock("next/headers", async () => {
@@ -52,3 +52,18 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("server-only", () => ({}));
+
+// RolPermiso es un catálogo que resetDb no trunca y que ningún seed carga en la BD de tests.
+// Se deja en su estado por defecto antes de cada fichero: así no depende del orden de los
+// tests ni de lo que borre permissions.test.ts.
+beforeAll(async () => {
+  const { prisma } = await import("../lib/prisma");
+  const { DEFAULT_PERMISSIONS_BY_ROLE } = await import("../lib/permissions/catalog");
+  const data = (["gerente", "cajero"] as const).flatMap((rol) =>
+    DEFAULT_PERMISSIONS_BY_ROLE[rol].map((permiso) => ({ rol, permiso }))
+  );
+  await prisma.$transaction([
+    prisma.rolPermiso.deleteMany({ where: { rol: { in: ["gerente", "cajero"] } } }),
+    prisma.rolPermiso.createMany({ data }),
+  ]);
+});

@@ -109,7 +109,7 @@ describe("crearTurnoAction", () => {
       })
     );
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toMatch(/duplicado/i);
+    if (!res.ok) expect(res.error).toMatch(/duplicada/i);
   });
 
   it("asigna varios empleados en la misma creación", async () => {
@@ -219,6 +219,6 @@ describe("asignar/desasignar empleado", () => {
       formData({ turnoId, empleadoId, tipoImputadoId })
     );
     expect(r2.ok).toBe(false);
-    if (!r2.ok) expect(r2.error).toMatch(/ya está asignado/i);
+    if (!r2.ok) expect(r2.error).toMatch(/ya está asignada/i);
   });
 });
