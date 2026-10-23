@@ -43,7 +43,7 @@ Carga esperada: **2–5 usuarios concurrentes**. Back-office, no POS. Sin offlin
 | `npm run test:reset-db` | Reset BD de tests (script `scripts/reset-db.ts`). |
 | `npx prisma migrate dev --name <nombre>` | Crea/aplica migración al branch dev. |
 | `npx prisma generate` | Regenera cliente tras cambios en schema. |
-| `npx tsx prisma/seed.ts` | Seed inicial (crea admin si no existe). |
+| `SEED_ADMIN_PASSWORD=<min. 12 car.> npx tsx prisma/seed.ts` | Seed inicial (crea admin si no existe). La contraseña es obligatoria. |
 
 ## Decisiones arquitectónicas
 
