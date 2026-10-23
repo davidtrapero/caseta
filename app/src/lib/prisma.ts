@@ -7,7 +7,9 @@ if (!connectionString) {
   throw new Error("DATABASE_URL no está definida en el entorno.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+// Sin límite, cada instancia serverless abre hasta 10 conexiones y agota las de Neon.
+// En Vercel usar además el host -pooler en DATABASE_URL.
+const adapter = new PrismaPg({ connectionString, max: 5, idleTimeoutMillis: 10_000 });
 
 function createPrismaClient() {
   const base = new PrismaClient({ adapter });
@@ -17,7 +19,6 @@ function createPrismaClient() {
 type ExtendedPrismaClient = ReturnType<typeof createPrismaClient>;
 
 declare global {
-  // eslint-disable-next-line no-var
   var prismaClient: ExtendedPrismaClient | undefined;
 }
 
