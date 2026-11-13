@@ -5,7 +5,10 @@ dotenvConfig({ path: ".env.local", override: true });
 
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@caseta.local";
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "admin1234!";
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminPassword || adminPassword.length < 12) {
+    throw new Error("SEED_ADMIN_PASSWORD es obligatoria y debe tener al menos 12 caracteres");
+  }
   const adminName = process.env.SEED_ADMIN_NAME ?? "Admin Caseta";
 
   // Imports dinámicos para asegurar que las env vars están cargadas antes.
@@ -36,7 +39,7 @@ async function main() {
       data: { rol: "admin" },
     });
 
-    console.log(`✓ Admin creado: ${adminEmail} (contraseña: ${adminPassword})`);
+    console.log(`✓ Admin creado: ${adminEmail}`);
     console.log("  Cambia la contraseña en el primer login.");
   }
 

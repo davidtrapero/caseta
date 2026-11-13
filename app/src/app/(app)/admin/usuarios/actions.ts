@@ -126,6 +126,11 @@ export async function actualizarUsuarioAction(
       };
     }
 
+    const anterior = await prisma.user.findUnique({
+      where: { id },
+      select: { rol: true, activo: true },
+    });
+
     await withAuditContext(user.id, () =>
       prisma.user.update({
         where: { id },
@@ -136,6 +141,10 @@ export async function actualizarUsuarioAction(
         },
       })
     );
+
+    if (anterior && (anterior.rol !== data.rol || anterior.activo !== data.activo)) {
+      await prisma.session.deleteMany({ where: { userId: id } });
+    }
   } catch (err) {
     const fieldErrors = err instanceof z.ZodError
       ? Object.fromEntries(
@@ -190,6 +199,7 @@ export async function desactivarUsuarioAction(
     await withAuditContext(user.id, () =>
       prisma.user.update({ where: { id }, data: { activo: false } })
     );
+    await prisma.session.deleteMany({ where: { userId: id } });
 
     revalidatePath("/admin/usuarios");
     return { ok: true, data: { id } };

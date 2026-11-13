@@ -311,6 +311,6 @@ describe("aprobarSolicitudEmpleadoAction", () => {
     const result = await aprobarSolicitudEmpleadoAction(null, fd);
 
     expect(result.ok).toBe(false);
-    expect(result.error).toMatch(/voluntario/i);
+    expect(result.error).toMatch(/voluntariado/i);
   });
 });

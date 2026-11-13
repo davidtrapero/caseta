@@ -12,7 +12,8 @@ export const auth = betterAuth({
     // que ejecuta la action acaba con la sesión del usuario recién creado.
     autoSignIn: false,
   },
-  // Registro deshabilitado: las cuentas las crea un admin manualmente.
+  // El registro HTTP público se corta en src/app/api/auth/[...all]/route.ts; las cuentas
+  // las crea un admin con auth.api.signUpEmail desde el servidor.
   advanced: {
     database: {
       generateId: false,

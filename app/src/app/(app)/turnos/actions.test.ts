@@ -3,6 +3,7 @@ import {
   crearTurnoAction,
   asignarEmpleadoAction,
   desasignarEmpleadoAction,
+  toggleAsistenciaAction,
 } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { resetAndSeed, formData } from "@/test/integration-helpers";
@@ -109,7 +110,7 @@ describe("crearTurnoAction", () => {
       })
     );
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toMatch(/duplicado/i);
+    if (!res.ok) expect(res.error).toMatch(/duplicada/i);
   });
 
   it("asigna varios empleados en la misma creación", async () => {
@@ -219,6 +220,77 @@ describe("asignar/desasignar empleado", () => {
       formData({ turnoId, empleadoId, tipoImputadoId })
     );
     expect(r2.ok).toBe(false);
-    if (!r2.ok) expect(r2.error).toMatch(/ya está asignado/i);
+    if (!r2.ok) expect(r2.error).toMatch(/ya está asignada/i);
+  });
+});
+
+describe("toggleAsistenciaAction con nómina", () => {
+  let seed: MinimalSeed;
+
+  beforeEach(async () => {
+    seed = await resetAndSeed();
+    await signInAs("admin");
+  });
+
+  afterAll(async () => {
+    clearTestCookie();
+    await prisma.$disconnect();
+  });
+
+  async function turnoPasadoConEmpleado() {
+    const emp = await crearEmpleado({ nombre: "Ana", dni: "11111111A", jornalDiario: 80 });
+    const turno = await crearTurno({
+      edicionId: seed.edicion.id,
+      casetaId: seed.caseta.id,
+      fechaInicio: new Date(Date.UTC(2026, 4, 2, 12)),
+      fechaFin: new Date(Date.UTC(2026, 4, 2, 18)),
+      empleadoIds: [emp.id],
+    });
+    return { emp, turno };
+  }
+
+  it("con la nómina del empleado pagada no se puede cambiar la asistencia", async () => {
+    const { emp, turno } = await turnoPasadoConEmpleado();
+    await prisma.nomina.create({
+      data: {
+        edicionId: seed.edicion.id,
+        empleadoId: emp.id,
+        diasTrabajados: 1,
+        jornalAplicado: 80,
+        total: 80,
+        pagada: true,
+      },
+    });
+
+    const res = await toggleAsistenciaAction(
+      null,
+      formData({ turnoId: turno.id, empleadoId: emp.id, asistio: "on" })
+    );
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/nómina.*pagada/i);
+    const fila = await prisma.turnoEmpleado.findFirstOrThrow({ where: { turnoId: turno.id } });
+    expect(fila.asistio).toBe(false);
+  });
+
+  it("con la nómina sin pagar sí se puede cambiar la asistencia", async () => {
+    const { emp, turno } = await turnoPasadoConEmpleado();
+    await prisma.nomina.create({
+      data: {
+        edicionId: seed.edicion.id,
+        empleadoId: emp.id,
+        diasTrabajados: 1,
+        jornalAplicado: 80,
+        total: 80,
+        pagada: false,
+      },
+    });
+
+    const res = await toggleAsistenciaAction(
+      null,
+      formData({ turnoId: turno.id, empleadoId: emp.id, asistio: "on" })
+    );
+
+    expect(res.ok).toBe(true);
   });
 });

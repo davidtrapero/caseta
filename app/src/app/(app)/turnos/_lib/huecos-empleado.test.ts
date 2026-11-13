@@ -51,10 +51,11 @@ describe("calcularHuecosEmpleado", () => {
     turnoId = turno.id;
 
     const tipoEmpleado = await prisma.tipoEmpleado.findFirst({
-      where: { slug: "contratado", esVoluntario: false },
+      where: { esVoluntario: false },
+      orderBy: { orden: "asc" },
     });
     if (!tipoEmpleado) {
-      throw new Error("No hay tipo empleado contratado en BD");
+      throw new Error("No hay ningún tipo de empleado no voluntario en BD");
     }
     tipoEmpleadoId = tipoEmpleado.id;
 

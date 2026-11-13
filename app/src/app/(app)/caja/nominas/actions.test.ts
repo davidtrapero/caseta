@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from "vitest";
 import { calcularNominasAction } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { resetAndSeed } from "@/test/integration-helpers";
@@ -40,6 +40,10 @@ describe("calcularNominasAction", () => {
 
   beforeEach(async () => {
     seed = await resetAndSeed();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -95,6 +99,12 @@ describe("calcularNominasAction", () => {
   });
 
   it("nóminas ya pagadas NO se sobrescriben (gerente)", async () => {
+    // El catálogo por defecto no da caja.nominas.crear al gerente; se concede aquí
+    // para ejercitar la regla de pagadas y no el chequeo de permiso. El setup global
+    // restaura RolPermiso antes del siguiente fichero.
+    await prisma.rolPermiso.create({
+      data: { rol: "gerente", permiso: "caja.nominas.crear" },
+    });
     await signInAs("gerente");
     const emp = await crearEmpleado({
       nombre: "Ana",
@@ -227,5 +237,80 @@ describe("calcularNominasAction", () => {
     expect(res.ok).toBe(true);
     // Sin asistencia marcada no hay nómina.
     expect(await prisma.nomina.count()).toBe(0);
+  });
+
+  it("el total usa aritmética decimal exacta (33.33 × 3 = 99.99)", async () => {
+    await signInAs("admin");
+    const emp = await crearEmpleado({ nombre: "Ana", dni: "11111111A", jornalDiario: 33.33 });
+    await crearTurnosConAsistencia({
+      edicionId: seed.edicion.id,
+      casetaId: seed.caseta.id,
+      empleadoId: emp.id,
+      dias: [2, 3, 4],
+    });
+
+    await calcularNominasAction();
+
+    const nomina = await prisma.nomina.findFirstOrThrow({ where: { empleadoId: emp.id } });
+    expect(nomina.total.toString()).toBe("99.99");
+  });
+
+  it("dos turnos el mismo día cuentan como un solo día trabajado", async () => {
+    await signInAs("admin");
+    const emp = await crearEmpleado({ nombre: "Ana", dni: "11111111A", jornalDiario: 80 });
+    // Dos turnos el día 2 y uno el día 3.
+    for (const [dia, hora] of [[2, 8], [2, 16], [3, 12]]) {
+      const turno = await crearTurno({
+        edicionId: seed.edicion.id,
+        casetaId: seed.caseta.id,
+        fechaInicio: iso(dia, hora),
+        fechaFin: iso(dia, hora + 4),
+        empleadoIds: [emp.id],
+      });
+      await prisma.turnoEmpleado.updateMany({
+        where: { turnoId: turno.id, empleadoId: emp.id },
+        data: { asistio: true },
+      });
+    }
+
+    await calcularNominasAction();
+
+    const nomina = await prisma.nomina.findFirstOrThrow({ where: { empleadoId: emp.id } });
+    expect(nomina.diasTrabajados).toBe(2);
+    expect(nomina.total.toString()).toBe("160");
+  });
+
+  it("si la nómina se paga mientras se calcula, su importe no cambia", async () => {
+    await signInAs("admin");
+    const emp = await crearEmpleado({ nombre: "Ana", dni: "11111111A", jornalDiario: 80 });
+    await crearTurnosConAsistencia({
+      edicionId: seed.edicion.id,
+      casetaId: seed.caseta.id,
+      empleadoId: emp.id,
+      dias: [2, 3],
+    });
+    await calcularNominasAction();
+    const nomina = await prisma.nomina.findFirstOrThrow({ where: { empleadoId: emp.id } });
+    await crearTurnosConAsistencia({
+      edicionId: seed.edicion.id,
+      casetaId: seed.caseta.id,
+      empleadoId: emp.id,
+      dias: [5],
+    });
+
+    // Se paga justo antes de abrir la transacción de recálculo, es decir, después de que
+    // calcular haya leído la nómina como no pagada.
+    const originalTx = prisma.$transaction.bind(prisma) as (...a: unknown[]) => Promise<unknown>;
+    vi.spyOn(prisma, "$transaction").mockImplementationOnce((async (...args: unknown[]) => {
+      await prisma.nomina.update({ where: { id: nomina.id }, data: { pagada: true } });
+      return originalTx(...args);
+    }) as never);
+
+    await calcularNominasAction();
+
+    const final = await prisma.nomina.findUniqueOrThrow({ where: { id: nomina.id } });
+    expect(final.pagada).toBe(true);
+    expect(final.diasTrabajados).toBe(2);
+    expect(final.total.toString()).toBe("160");
   });
 });

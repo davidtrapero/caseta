@@ -487,9 +487,18 @@ export async function toggleAsistenciaAction(
           empleadoId: data.empleadoId,
         },
       },
-      include: { turno: { select: { fechaInicio: true } } },
+      include: { turno: { select: { fechaInicio: true, edicionId: true } } },
     });
     if (!fila) return { ok: false, error: "Asignación no encontrada." };
+
+    // Cambiar la asistencia con la nómina ya pagada deja el importe pagado desfasado.
+    const nominaPagada = await prisma.nomina.findFirst({
+      where: { empleadoId: data.empleadoId, edicionId: fila.turno.edicionId, pagada: true },
+      select: { id: true },
+    });
+    if (nominaPagada) {
+      return { ok: false, error: "La nómina de este empleado ya está pagada." };
+    }
 
     // DATE(turno.fechaInicio) <= hoy
     const hoy = new Date();

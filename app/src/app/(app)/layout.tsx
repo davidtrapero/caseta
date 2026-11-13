@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/authz";
 import { LogOutButton } from "./_components/logout-button";
 import { SidebarNav, type NavItem } from "./_components/sidebar-nav";
 import { EnforcePasswordChange } from "./_components/EnforcePasswordChange";
@@ -26,14 +26,19 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getSession();
   if (!session?.user) {
     redirect("/login");
   }
   const user = session.user as typeof session.user & {
     rol: Rol;
+    activo: boolean;
     debeCambiarPassword?: boolean;
   };
+  // Cubre las páginas que no llaman a requireRole (/, /turnos, /caja, /inventario).
+  if (!user.activo) {
+    redirect("/login");
+  }
   const theme = await getTheme();
   const debeCambiar = user.debeCambiarPassword ?? false;
 

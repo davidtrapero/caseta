@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
@@ -81,9 +82,11 @@ export async function actualizarCierreAction(
       };
     }
 
+    // Fuera de admin, el update exige bloqueado:false: si el cierre se bloqueó después de la
+    // lectura de arriba, no casa y lanza P2025 en vez de pisar un cierre bloqueado.
     await withAuditContext(user.id, () =>
       prisma.cierreDiario.update({
-        where: { id },
+        where: user.rol === "admin" ? { id } : { id, bloqueado: false },
         data: {
           casetaId: data.casetaId,
           fecha: ymdToUtcDate(data.fecha),
@@ -93,6 +96,13 @@ export async function actualizarCierreAction(
       })
     );
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return {
+        ok: false,
+        error: "El cierre está bloqueado. Solo admin puede editarlo.",
+        values,
+      };
+    }
     const base = toActionError(err);
     return base.ok ? base : { ...base, values };
   }
@@ -177,7 +187,8 @@ export async function eliminarCierreAction(
   }
 
   try {
-    // Solo admin puede borrar.
+    // Solo admin puede borrar, también un cierre bloqueado: es una decisión de negocio, no un
+    // olvido (bloquear protege de ediciones de cajero/gerente, no de admin).
     const { user } = await requirePermiso("caja.cierres.bloquear");
 
     const existente = await prisma.cierreDiario.findUnique({

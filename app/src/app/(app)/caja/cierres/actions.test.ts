@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, afterAll, vi } from "vitest";
 import { actualizarCierreAction } from "./actions";
 import { prisma } from "@/lib/prisma";
 import { resetAndSeed, formData } from "@/test/integration-helpers";
@@ -85,5 +85,85 @@ describe("actualizarCierreAction: cierre bloqueado", () => {
     const res = await actualizarCierreAction(null, fd);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toMatch(/bloqueado/i);
+  });
+});
+
+describe("actualizarCierreAction: cierre que se bloquea mientras se edita", () => {
+  let seed: MinimalSeed;
+  let cierreId: string;
+
+  beforeEach(async () => {
+    seed = await resetAndSeed();
+    const cierre = await crearCierre({
+      edicionId: seed.edicion.id,
+      casetaId: seed.caseta.id,
+      fecha: new Date(Date.UTC(2026, 4, 2)),
+      ingresosTotales: 500,
+    });
+    cierreId = cierre.id;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
+
+  // Bloquea el cierre después de que la acción lo haya leído como no bloqueado y antes de
+  // que escriba: la ventana donde el chequeo previo ya no vale.
+  function bloquearJustoAntesDeEscribir() {
+    const original = prisma.cierreDiario.update.bind(prisma.cierreDiario) as (
+      a: unknown
+    ) => Promise<unknown>;
+    let bloqueado = false;
+    vi.spyOn(prisma.cierreDiario, "update").mockImplementation(((args: unknown) => {
+      if (bloqueado) return original(args);
+      bloqueado = true;
+      return prisma.cierreDiario
+        .updateMany({ where: { id: cierreId }, data: { bloqueado: true } })
+        .then(() => original(args));
+    }) as never);
+  }
+
+  it("cajero: si el cierre se bloquea antes de escribir, el importe no cambia", async () => {
+    await signInAs("cajero");
+    bloquearJustoAntesDeEscribir();
+
+    const res = await actualizarCierreAction(
+      null,
+      formData({
+        _id: cierreId,
+        casetaId: seed.caseta.id,
+        fecha: "2026-05-02",
+        ingresosTotales: 999,
+      })
+    );
+
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error).toMatch(/bloqueado/i);
+    const cierre = await prisma.cierreDiario.findUniqueOrThrow({ where: { id: cierreId } });
+    expect(Number(cierre.ingresosTotales)).toBe(500);
+  });
+
+  it("admin sigue pudiendo editar aunque se bloquee antes de escribir", async () => {
+    await signInAs("admin");
+    bloquearJustoAntesDeEscribir();
+
+    await expectRedirectOrOk(
+      actualizarCierreAction(
+        null,
+        formData({
+          _id: cierreId,
+          casetaId: seed.caseta.id,
+          fecha: "2026-05-02",
+          ingresosTotales: 999,
+        })
+      )
+    );
+
+    const cierre = await prisma.cierreDiario.findUniqueOrThrow({ where: { id: cierreId } });
+    expect(Number(cierre.ingresosTotales)).toBe(999);
   });
 });

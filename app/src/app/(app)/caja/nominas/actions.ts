@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requirePermiso } from "@/lib/authz";
 import { withAuditContext } from "@/lib/audit";
@@ -34,54 +35,53 @@ export async function calcularNominasAction(): Promise<
     const edicion = await obtenerEdicionActiva();
     if (!edicion) return { ok: false, error: "No hay edición activa." };
 
-    // ¿Hay nóminas pagadas en la edición?
-    const hayPagadas = await prisma.nomina.count({
-      where: { edicionId: edicion.id, pagada: true },
-    });
-    if (hayPagadas > 0 && user.rol !== "admin") {
-      return {
-        ok: false,
-        error:
-          "Hay nóminas ya pagadas en esta edición. Solo admin puede recalcular.",
-      };
-    }
-
-    // Asignaciones con asistencia, agrupadas por empleado.
-    const asistencias = await prisma.turnoEmpleado.groupBy({
-      by: ["empleadoId"],
-      where: {
-        asistio: true,
-        turno: { edicionId: edicion.id },
-      },
-      _count: { _all: true },
-    });
-
-    // Empleados implicados.
-    const empleadoIds = asistencias.map((a) => a.empleadoId);
-    const empleados = empleadoIds.length
-      ? await prisma.empleado.findMany({
-          where: { id: { in: empleadoIds } },
-          select: { id: true, jornalDiario: true },
-        })
-      : [];
-    const empleadoPorId = new Map(empleados.map((e) => [e.id, e]));
-
-    // Nóminas existentes (para detectar pagadas y decidir create vs update).
-    const existentes = await prisma.nomina.findMany({
-      where: { edicionId: edicion.id },
-      select: { id: true, empleadoId: true, pagada: true },
-    });
-    const nominaPorEmpleado = new Map(existentes.map((n) => [n.empleadoId, n]));
-
     let creadas = 0;
     let actualizadas = 0;
     let pagadasOmitidas = 0;
     let voluntariosOmitidos = 0;
 
-    await withAuditContext(user.id, () =>
+    // Lecturas y escrituras en la misma transacción: si alguien marca una nómina como pagada
+    // entre medias, el update condicional (pagada: false) la deja intacta.
+    const rechazo = await withAuditContext(user.id, () =>
       prisma.$transaction(async (tx) => {
+        const hayPagadas = await tx.nomina.count({
+          where: { edicionId: edicion.id, pagada: true },
+        });
+        if (hayPagadas > 0 && user.rol !== "admin") {
+          return "Hay nóminas ya pagadas en esta edición. Solo admin puede recalcular.";
+        }
+
+        // Un día trabajado = una fecha UTC distinta con asistencia (DATE(fechaInicio)),
+        // aunque el empleado tenga varios turnos ese día.
+        const asistencias = await tx.turnoEmpleado.findMany({
+          where: { asistio: true, turno: { edicionId: edicion.id } },
+          select: { empleadoId: true, turno: { select: { fechaInicio: true } } },
+        });
+        const diasPorEmpleado = new Map<string, Set<string>>();
         for (const a of asistencias) {
-          const empleado = empleadoPorId.get(a.empleadoId);
+          const dia = a.turno.fechaInicio.toISOString().slice(0, 10);
+          const dias = diasPorEmpleado.get(a.empleadoId) ?? new Set<string>();
+          dias.add(dia);
+          diasPorEmpleado.set(a.empleadoId, dias);
+        }
+
+        const empleadoIds = [...diasPorEmpleado.keys()];
+        const empleados = empleadoIds.length
+          ? await tx.empleado.findMany({
+              where: { id: { in: empleadoIds } },
+              select: { id: true, jornalDiario: true },
+            })
+          : [];
+        const empleadoPorId = new Map(empleados.map((e) => [e.id, e]));
+
+        const existentes = await tx.nomina.findMany({
+          where: { edicionId: edicion.id },
+          select: { id: true, empleadoId: true, pagada: true },
+        });
+        const nominaPorEmpleado = new Map(existentes.map((n) => [n.empleadoId, n]));
+
+        for (const [empleadoId, diasSet] of diasPorEmpleado) {
+          const empleado = empleadoPorId.get(empleadoId);
           if (!empleado) continue;
 
           // Voluntarios: excluidos.
@@ -90,31 +90,36 @@ export async function calcularNominasAction(): Promise<
             continue;
           }
 
-          const existente = nominaPorEmpleado.get(a.empleadoId);
+          const existente = nominaPorEmpleado.get(empleadoId);
           if (existente?.pagada) {
             pagadasOmitidas++;
             continue;
           }
 
-          const dias = a._count._all;
+          const dias = diasSet.size;
           const jornal = empleado.jornalDiario;
-          const total = Number(jornal) * dias;
+          const total = jornal.mul(dias);
 
           if (existente) {
-            await tx.nomina.update({
-              where: { id: existente.id },
-              data: {
-                diasTrabajados: dias,
-                jornalAplicado: jornal,
-                total,
-              },
-            });
-            actualizadas++;
+            try {
+              await tx.nomina.update({
+                where: { id: existente.id, pagada: false },
+                data: { diasTrabajados: dias, jornalAplicado: jornal, total },
+              });
+              actualizadas++;
+            } catch (err) {
+              // P2025: se pagó entre la lectura y la escritura.
+              if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+                pagadasOmitidas++;
+                continue;
+              }
+              throw err;
+            }
           } else {
             await tx.nomina.create({
               data: {
                 edicionId: edicion.id,
-                empleadoId: a.empleadoId,
+                empleadoId,
                 diasTrabajados: dias,
                 jornalAplicado: jornal,
                 total,
@@ -123,8 +128,10 @@ export async function calcularNominasAction(): Promise<
             creadas++;
           }
         }
+        return null;
       })
     );
+    if (rechazo) return { ok: false, error: rechazo };
 
     revalidatePath("/caja/nominas");
     revalidatePath("/caja/balance");
